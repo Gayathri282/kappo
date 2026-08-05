@@ -1,0 +1,398 @@
+/* ==========================================================================
+   TETRIS ENGINE - KAPPO CRUNCH STACK
+   10x20 Grid, SRS Rotation System, Wall Kicks, 7-Bag Randomizer, Flavor Mapping
+   ========================================================================== */
+
+export const GRID_COLS = 10;
+export const GRID_ROWS = 20;
+
+// 4 Kappo Flavors
+export const FLAVORS = [
+  { id: 'dynamite', name: 'Cassava Dynamite', mainColor: '#e63946', accentColor: '#f4a261', badge: '🔥' },
+  { id: 'tomato', name: 'Tangy Tomato', mainColor: '#d62828', accentColor: '#ff70a6', badge: '🍅' },
+  { id: 'chilli', name: 'Banana Chili Garlic', mainColor: '#2a9d8f', accentColor: '#80b918', badge: '🧄' },
+  { id: 'salted', name: 'Banana Classic Salted', mainColor: '#e9c46a', accentColor: '#f4a261', badge: '🍌' },
+];
+
+// 7 Tetromino Definitions
+export const SHAPES = {
+  I: {
+    matrix: [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0]
+    ],
+    flavorIndex: 0 // Dynamite
+  },
+  J: {
+    matrix: [
+      [1, 0, 0],
+      [1, 1, 1],
+      [0, 0, 0]
+    ],
+    flavorIndex: 1 // Tomato
+  },
+  L: {
+    matrix: [
+      [0, 0, 1],
+      [1, 1, 1],
+      [0, 0, 0]
+    ],
+    flavorIndex: 3 // Salted
+  },
+  O: {
+    matrix: [
+      [1, 1],
+      [1, 1]
+    ],
+    flavorIndex: 3 // Salted
+  },
+  S: {
+    matrix: [
+      [0, 1, 1],
+      [1, 1, 0],
+      [0, 0, 0]
+    ],
+    flavorIndex: 2 // Chili Garlic
+  },
+  T: {
+    matrix: [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 0, 0]
+    ],
+    flavorIndex: 1 // Tomato
+  },
+  Z: {
+    matrix: [
+      [1, 1, 0],
+      [0, 1, 1],
+      [0, 0, 0]
+    ],
+    flavorIndex: 0 // Dynamite
+  }
+};
+
+// SRS Wall Kick Offsets for J, L, S, T, Z pieces
+const KICK_OFFSETS_JLSTZ = [
+  // 0->1
+  [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+  // 1->2
+  [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+  // 2->3
+  [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+  // 3->0
+  [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+];
+
+// SRS Wall Kick Offsets for I piece
+const KICK_OFFSETS_I = [
+  // 0->1
+  [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+  // 1->2
+  [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+  // 2->3
+  [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+  // 3->0
+  [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+];
+
+export class TetrisGame {
+  constructor() {
+    this.grid = this.createGrid();
+    this.bag = [];
+    this.currentPiece = null;
+    this.holdPiece = null;
+    this.canHold = true;
+    this.nextQueue = [];
+
+    this.score = 0;
+    this.lines = 0;
+    this.level = 1;
+    this.gameOver = false;
+    this.paused = false;
+
+    this.initQueue();
+    this.spawnPiece();
+  }
+
+  createGrid() {
+    const grid = [];
+    for (let r = 0; r < GRID_ROWS; r++) {
+      grid.push(new Array(GRID_COLS).fill(null));
+    }
+    return grid;
+  }
+
+  reset() {
+    this.grid = this.createGrid();
+    this.bag = [];
+    this.currentPiece = null;
+    this.holdPiece = null;
+    this.canHold = true;
+    this.nextQueue = [];
+    this.score = 0;
+    this.lines = 0;
+    this.level = 1;
+    this.gameOver = false;
+    this.paused = false;
+
+    this.initQueue();
+    this.spawnPiece();
+  }
+
+  // 7-Bag Randomizer
+  refillBag() {
+    const types = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+    // Shuffle array
+    for (let i = types.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [types[i], types[j]] = [types[j], types[i]];
+    }
+    this.bag.push(...types);
+  }
+
+  getNextType() {
+    if (this.bag.length < 7) {
+      this.refillBag();
+    }
+    return this.bag.shift();
+  }
+
+  initQueue() {
+    while (this.nextQueue.length < 4) {
+      this.nextQueue.push(this.getNextType());
+    }
+  }
+
+  createPiece(type) {
+    const shapeDef = SHAPES[type];
+    const flavor = FLAVORS[shapeDef.flavorIndex];
+
+    return {
+      type: type,
+      matrix: shapeDef.matrix.map(row => [...row]),
+      rotation: 0,
+      flavor: flavor,
+      x: Math.floor((GRID_COLS - shapeDef.matrix[0].length) / 2),
+      y: type === 'I' ? -1 : 0
+    };
+  }
+
+  spawnPiece() {
+    const nextType = this.nextQueue.shift();
+    this.nextQueue.push(this.getNextType());
+
+    this.currentPiece = this.createPiece(nextType);
+    this.canHold = true;
+
+    // Game Over check on spawn collision
+    if (this.checkCollision(this.currentPiece.x, this.currentPiece.y, this.currentPiece.matrix)) {
+      this.gameOver = true;
+    }
+  }
+
+  checkCollision(px, py, matrix) {
+    for (let r = 0; r < matrix.length; r++) {
+      for (let c = 0; c < matrix[r].length; c++) {
+        if (matrix[r][c]) {
+          const gridX = px + c;
+          const gridY = py + r;
+
+          // Boundary checks
+          if (gridX < 0 || gridX >= GRID_COLS || gridY >= GRID_ROWS) {
+            return true;
+          }
+          // Grid block collision (ignore above top grid)
+          if (gridY >= 0 && this.grid[gridY][gridX] !== null) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  moveLeft() {
+    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (!this.checkCollision(this.currentPiece.x - 1, this.currentPiece.y, this.currentPiece.matrix)) {
+      this.currentPiece.x--;
+      return true;
+    }
+    return false;
+  }
+
+  moveRight() {
+    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (!this.checkCollision(this.currentPiece.x + 1, this.currentPiece.y, this.currentPiece.matrix)) {
+      this.currentPiece.x++;
+      return true;
+    }
+    return false;
+  }
+
+  rotateMatrix(matrix, dir) {
+    const N = matrix.length;
+    const result = Array.from({ length: N }, () => new Array(N).fill(0));
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        if (dir > 0) {
+          result[c][N - 1 - r] = matrix[r][c]; // CW
+        } else {
+          result[N - 1 - c][r] = matrix[r][c]; // CCW
+        }
+      }
+    }
+    return result;
+  }
+
+  rotate(dir = 1) {
+    if (this.gameOver || this.paused || !this.currentPiece) return false;
+
+    const piece = this.currentPiece;
+    if (piece.type === 'O') return false; // O piece doesn't rotate
+
+    const rotatedMatrix = this.rotateMatrix(piece.matrix, dir);
+    const oldRotation = piece.rotation;
+    const newRotation = (oldRotation + dir + 4) % 4;
+
+    // SRS Wall kick test
+    const kickIndex = dir > 0 ? oldRotation : newRotation;
+    const kickTable = piece.type === 'I' ? KICK_OFFSETS_I : KICK_OFFSETS_JLSTZ;
+    const offsets = kickTable[kickIndex] || [[0, 0]];
+
+    for (let i = 0; i < offsets.length; i++) {
+      const [dx, dy] = offsets[i];
+      const testX = piece.x + (dir > 0 ? dx : -dx);
+      const testY = piece.y + (dir > 0 ? -dy : dy);
+
+      if (!this.checkCollision(testX, testY, rotatedMatrix)) {
+        piece.matrix = rotatedMatrix;
+        piece.x = testX;
+        piece.y = testY;
+        piece.rotation = newRotation;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  softDrop() {
+    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
+      this.currentPiece.y++;
+      this.score += 1;
+      return true;
+    }
+    this.lockPiece();
+    return false;
+  }
+
+  hardDrop() {
+    if (this.gameOver || this.paused || !this.currentPiece) return 0;
+    let dropDistance = 0;
+    while (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
+      this.currentPiece.y++;
+      dropDistance++;
+    }
+    this.score += dropDistance * 2;
+    this.lockPiece();
+    return dropDistance;
+  }
+
+  hold() {
+    if (this.gameOver || this.paused || !this.canHold || !this.currentPiece) return false;
+
+    const currentType = this.currentPiece.type;
+    if (this.holdPiece === null) {
+      this.holdPiece = this.createPiece(currentType);
+      this.spawnPiece();
+    } else {
+      const tempType = this.holdPiece.type;
+      this.holdPiece = this.createPiece(currentType);
+      this.currentPiece = this.createPiece(tempType);
+    }
+    this.canHold = false;
+    return true;
+  }
+
+  getGhostY() {
+    if (!this.currentPiece) return 0;
+    let ghostY = this.currentPiece.y;
+    while (!this.checkCollision(this.currentPiece.x, ghostY + 1, this.currentPiece.matrix)) {
+      ghostY++;
+    }
+    return ghostY;
+  }
+
+  lockPiece() {
+    const piece = this.currentPiece;
+    for (let r = 0; r < piece.matrix.length; r++) {
+      for (let c = 0; c < piece.matrix[r].length; c++) {
+        if (piece.matrix[r][c]) {
+          const gridX = piece.x + c;
+          const gridY = piece.y + r;
+          if (gridY >= 0 && gridY < GRID_ROWS && gridX >= 0 && gridX < GRID_COLS) {
+            this.grid[gridY][gridX] = {
+              flavor: piece.flavor,
+              type: piece.type
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // Clear full horizontal lines
+  clearLines() {
+    const clearedIndices = [];
+
+    for (let r = GRID_ROWS - 1; r >= 0; r--) {
+      if (this.grid[r].every(cell => cell !== null)) {
+        clearedIndices.push(r);
+      }
+    }
+
+    if (clearedIndices.length > 0) {
+      // Remove cleared lines
+      clearedIndices.forEach(index => {
+        this.grid.splice(index, 1);
+        this.grid.unshift(new Array(GRID_COLS).fill(null));
+      });
+
+      const count = clearedIndices.length;
+      this.lines += count;
+
+      // Tetris scoring rules
+      const baseScores = [0, 100, 300, 500, 800];
+      this.score += (baseScores[count] || 0) * this.level;
+
+      // Update Batch Level every 10 lines
+      const newLevel = Math.floor(this.lines / 10) + 1;
+      const leveledUp = newLevel > this.level;
+      this.level = newLevel;
+
+      return { count: count, lines: clearedIndices, leveledUp: leveledUp };
+    }
+
+    return { count: 0, lines: [], leveledUp: false };
+  }
+
+  // Tick gravity step
+  tick() {
+    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
+      this.currentPiece.y++;
+      return true;
+    } else {
+      this.lockPiece();
+      return false; // Piece locked
+    }
+  }
+
+  getDropSpeed() {
+    // Standard Tetris speed curve (ms per drop tick)
+    return Math.max(80, 800 - (this.level - 1) * 65);
+  }
+}

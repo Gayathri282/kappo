@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Kappo Crunch Stack | Mobile Chips Puzzle</title>
+  <meta name="description" content="A Tetris-style falling-block puzzle game featuring Kappo chips, Kerala flavor skins, crunch combos, and high score progression!" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-Dw4Rmrzj.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DqzCKpQJ.css">
+</head>
+<body>
+  <!-- Tropical Background Atmosphere -->
+  <div class="bg-pattern" aria-hidden="true"></div>
+  <div class="bg-gradient-overlay" aria-hidden="true"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Mobile-First App Shell -->
+  <div class="app-container">
+    
+    <!-- Top Header / Branding & Live Score Bar -->
+    <header class="game-header">
+      <div class="brand-badge">
+        <div class="brand-logo-icon">🌿</div>
+        <div class="brand-titles">
+          <h1 class="brand-title">KAPPO</h1>
+          <span class="brand-tagline">CRUNCH STACK</span>
+        </div>
+      </div>
+
+      <!-- Compact Mobile Score Counter -->
+      <div class="header-score-pill">
+        <div class="header-stat">
+          <span class="stat-lbl">SCORE</span>
+          <span id="score-val-header" class="stat-val">0</span>
+        </div>
+        <div class="header-stat divider">
+          <span class="stat-lbl">LVL</span>
+          <span id="level-val-header" class="stat-val">1</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
+          <span class="sound-icon">🔊</span>
+        </button>
+        <button id="btn-pause" class="icon-btn" title="Pause Game" aria-label="Pause Game">
+          <span>⏸️</span>
+        </button>
+        <button id="btn-help" class="icon-btn" title="How to Play" aria-label="How to Play">
+          <span>❓</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Compact Preview Strip (Hold & Next Side-by-Side on Mobile) -->
+    <div class="mobile-preview-strip mobile-only">
+      <div class="mini-card hold-mini">
+        <span class="mini-label">HOLD</span>
+        <canvas id="hold-canvas-mobile" width="70" height="70"></canvas>
+      </div>
+      <div class="mini-score-box">
+        <span class="mini-label">BEST STACK</span>
+        <span id="high-score-val-mobile" class="mini-val">0</span>
+      </div>
+      <div class="mini-card next-mini">
+        <span class="mini-label">NEXT</span>
+        <canvas id="next-canvas-mobile" width="70" height="70"></canvas>
+      </div>
+    </div>
+
+    <!-- Main Layout Grid (Desktop Sidebars + Center Canvas) -->
+    <main class="game-layout">
+
+      <!-- LEFT SIDEBAR (Desktop Only) -->
+      <aside class="sidebar sidebar-left desktop-only">
+        <!-- Hold Box -->
+        <div class="glass-card hold-card">
+          <div class="card-header">
+            <span class="card-icon">📦</span>
+            <span class="card-label">HOLD</span>
+          </div>
+          <div class="canvas-wrapper hold-wrapper">
+            <canvas id="hold-canvas" width="120" height="120"></canvas>
+            <span class="hold-hint">Press C / Shift</span>
+          </div>
+        </div>
+
+        <!-- Kappo Flavor Legend -->
+        <div class="glass-card flavor-card">
+          <div class="card-header">
+            <span class="card-icon">🌶️</span>
+            <span class="card-label">FLAVORS</span>
+          </div>
+          <ul class="flavor-list">
+            <li class="flavor-item dynamite">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Cassava Dynamite</span>
+            </li>
+            <li class="flavor-item tomato">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Tangy Tomato</span>
+            </li>
+            <li class="flavor-item chilli">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Chili Garlic</span>
+            </li>
+            <li class="flavor-item salted">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Classic Salted</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- CENTER: Main Tetris Playfield Section -->
+      <section class="playfield-section">
+        <div id="playfield-container" class="playfield-container">
+          <!-- Canvas layer for pieces & grid -->
+          <canvas id="game-canvas" width="300" height="600"></canvas>
+          <!-- Canvas overlay for line clear particle explosions -->
+          <canvas id="particle-canvas" width="300" height="600"></canvas>
+
+          <!-- Banner Overlay for Events (FULL CRUNCH!, LEVEL UP!, etc.) -->
+          <div id="event-overlay" class="event-overlay hidden">
+            <div id="event-text" class="event-text">FULL CRUNCH!</div>
+          </div>
+
+          <!-- Start Game Overlay Screen -->
+          <div id="start-overlay" class="overlay-screen">
+            <div class="overlay-content">
+              <div class="chips-icon-hero">📦</div>
+              <h2>KAPPO CRUNCH STACK</h2>
+              <p>Stack chip packets, clear lines & build the ultimate Crunch Tower!</p>
+              <button id="btn-start" class="btn-primary btn-large">
+                <span class="btn-text">START CRUNCHING</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT SIDEBAR (Desktop Only) -->
+      <aside class="sidebar sidebar-right desktop-only">
+        <!-- Scoreboard Card -->
+        <div class="glass-card score-card">
+          <div class="score-group">
+            <span class="score-label">CRUNCH SCORE</span>
+            <span id="score-val" class="score-value">0</span>
+          </div>
+
+          <div class="score-grid-two">
+            <div class="score-subgroup">
+              <span class="score-sublabel">BATCH LEVEL</span>
+              <span id="level-val" class="score-subvalue">1</span>
+            </div>
+            <div class="score-subgroup">
+              <span class="score-sublabel">PACKETS CLEARED</span>
+              <span id="lines-val" class="score-subvalue">0</span>
+            </div>
+          </div>
+
+          <div class="score-high-group">
+            <span class="score-high-label">🏆 BEST STACK</span>
+            <span id="high-score-val" class="score-high-value">0</span>
+          </div>
+        </div>
+
+        <!-- Next Pieces Card -->
+        <div class="glass-card next-card">
+          <div class="card-header">
+            <span class="card-icon">👀</span>
+            <span class="card-label">NEXT PACKETS</span>
+          </div>
+          <div class="canvas-wrapper next-wrapper">
+            <canvas id="next-canvas" width="120" height="300"></canvas>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Touch Controls Deck for Mobile Devices -->
+    <div id="touch-controls" class="touch-controls">
+      <div class="touch-row top-row">
+        <button id="touch-hold" class="touch-btn touch-special" aria-label="Hold Piece">HOLD</button>
+        <button id="touch-rot-ccw" class="touch-btn touch-action" aria-label="Rotate Counter-Clockwise">↺</button>
+        <button id="touch-rot-cw" class="touch-btn touch-action" aria-label="Rotate Clockwise">↻</button>
+      </div>
+      <div class="touch-row dpad-row">
+        <button id="touch-left" class="touch-btn touch-arrow" aria-label="Move Left">◄</button>
+        <button id="touch-down" class="touch-btn touch-arrow" aria-label="Soft Drop">▼</button>
+        <button id="touch-right" class="touch-btn touch-arrow" aria-label="Move Right">►</button>
+      </div>
+      <div class="touch-row bottom-row">
+        <button id="touch-drop" class="touch-btn touch-drop-btn" aria-label="Hard Drop">⚡ HARD DROP ⚡</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- Game Over Modal -->
+  <div id="game-over-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-badge-collapsed">STACK COLLAPSED!</div>
+      <h2 class="modal-title">Crunch You Can Trust</h2>
+      <p class="modal-subtitle">Your stack collapsed, but Kerala chips never compromise on crispness!</p>
+
+      <div class="modal-stats">
+        <div class="modal-stat-box">
+          <span class="modal-stat-label">FINAL SCORE</span>
+          <span id="final-score-val" class="modal-stat-value">0</span>
+        </div>
+        <div class="modal-stat-box">
+          <span class="modal-stat-label">BATCH LEVEL</span>
+          <span id="final-level-val" class="modal-stat-value">1</span>
+        </div>
+        <div class="modal-stat-box">
+          <span class="modal-stat-label">PACKETS CLEARED</span>
+          <span id="final-lines-val" class="modal-stat-value">0</span>
+        </div>
+        <div class="modal-stat-box highlight">
+          <span class="modal-stat-label">BEST STACK</span>
+          <span id="final-best-val" class="modal-stat-value">0</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-restart" class="btn-primary">
+          <span>🔄 PLAY AGAIN</span>
+        </button>
+        <a href="https://kappo.in/collections/all" target="_blank" rel="noopener noreferrer" class="btn-secondary">
+          <span>🛍️ SHOP KAPPO CHIPS</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal -->
+  <div id="pause-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h2 class="modal-title">GAME PAUSED</h2>
+      <p class="modal-subtitle">Take a crunch break!</p>
+      <div class="modal-actions vertical">
+        <button id="btn-resume" class="btn-primary">
+          <span>▶️ RESUME CRUNCHING</span>
+        </button>
+        <button id="btn-restart-pause" class="btn-secondary">
+          <span>🔄 RESTART BATCH</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help / Instructions Modal -->
+  <div id="help-modal" class="modal-backdrop hidden">
+    <div class="modal-card modal-wide">
+      <div class="modal-header-row">
+        <h2 class="modal-title">HOW TO PLAY & WIN</h2>
+        <button id="btn-close-help" class="icon-btn-close">&times;</button>
+      </div>
+      <div class="help-content">
+        <div class="help-section">
+          <h3>🎯 Tetris Logic & How to Win</h3>
+          <p>Kappo chip packets drop from the top. Position and rotate pieces to complete solid <strong>horizontal lines</strong> across the 10-column grid without gaps!</p>
+          <ul>
+            <li><strong>Line Clear (Crunch Combo)</strong>: Filled lines crunch and disappear, dropping blocks above down!</li>
+            <li><strong>⚡ FULL CRUNCH (4-Line Clear)</strong>: Clear 4 lines at once with the straight Cassava Dynamite piece for massive jackpot score!</li>
+            <li><strong>Batch Levels</strong>: Speed increases every 10 cleared lines. Win by setting your personal <strong>Best Stack</strong> high score!</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h3>📱 Direct Screen Touch Controls (Mobile)</h3>
+          <div class="help-flavor-grid">
+            <div class="help-flavor-item salted"><strong>Tap Left / Right Screen</strong>: Move Left / Right</div>
+            <div class="help-flavor-item chilli"><strong>Drag Finger Left / Right</strong>: Smooth Column Slide</div>
+            <div class="help-flavor-item tomato"><strong>Tap Center / Top Screen</strong>: Rotate Piece (↻)</div>
+            <div class="help-flavor-item dynamite"><strong>Fast Swipe Down</strong>: ⚡ Hard Drop</div>
+            <div class="help-flavor-item salted"><strong>Swipe Up / Tap Hold Box</strong>: Hold Piece (📦)</div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>🌶️ 4 Kappo Flavor Skins</h3>
+          <div class="help-flavor-grid">
+            <div class="help-flavor-item dynamite"><strong>Cassava Dynamite</strong> (Spicy Red 🔥)</div>
+            <div class="help-flavor-item tomato"><strong>Tangy Tomato</strong> (Tomato Red 🍅)</div>
+            <div class="help-flavor-item chilli"><strong>Banana Chili Garlic</strong> (Green 🧄)</div>
+            <div class="help-flavor-item salted"><strong>Banana Classic Salted</strong> (Golden Yellow 🍌)</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-got-it" class="btn-primary">LET'S CRUNCH!</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
