@@ -133,7 +133,7 @@ function holdAction() {
   if (game.hold()) sound.playHold();
 }
 
-// Touch Controls Engine
+// Touch Controls Engine with Direct Screen Sensitivity & Touch Ripples
 const touchController = new TouchController({
   onLeft: () => moveLeftAction(),
   onRight: () => moveRightAction(),
@@ -142,7 +142,7 @@ const touchController = new TouchController({
   onSoftDrop: () => softDropAction(),
   onHardDrop: () => hardDropAction(),
   onHold: () => holdAction(),
-});
+}, particles);
 
 // Toast Manager
 function showToast(text, icon = '🥔') {

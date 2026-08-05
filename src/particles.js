@@ -106,6 +106,25 @@ export class ParticleSystem {
     return { x: 0, y: 0 };
   }
 
+  // Spawn visual touch ripple indicator
+  spawnTouchRipple(x, y) {
+    this.particles.push({
+      x: x,
+      y: y,
+      vx: 0,
+      vy: 0,
+      gravity: 0,
+      size: 8,
+      maxSize: 42,
+      color: '#e9c46a',
+      rotation: 0,
+      vRot: 0,
+      life: 1.0,
+      decay: 0.05,
+      shape: 'ripple'
+    });
+  }
+
   updateAndDraw() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -128,7 +147,14 @@ export class ParticleSystem {
       this.ctx.translate(p.x, p.y);
       this.ctx.rotate(p.rotation);
 
-      if (p.shape === 'chip') {
+      if (p.shape === 'ripple') {
+        p.size += (p.maxSize - p.size) * 0.25;
+        this.ctx.strokeStyle = p.color;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+        this.ctx.stroke();
+      } else if (p.shape === 'chip') {
         // Draw crisp chip fragment shape (triangle/quad)
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
