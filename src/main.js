@@ -399,7 +399,17 @@ window.addEventListener('keyup', (e) => {
   delete keysState[e.code];
 });
 
-// UI Buttons
+// Tap anywhere on Start Overlay or Playfield to start game instantly
+startOverlay.addEventListener('click', () => {
+  if (!gameStarted) startGame();
+});
+startOverlay.addEventListener('touchstart', (e) => {
+  if (!gameStarted) {
+    if (e.cancelable) e.preventDefault();
+    startGame();
+  }
+}, { passive: false });
+
 btnStart.addEventListener('click', startGame);
 
 btnSound.addEventListener('click', () => {
@@ -424,6 +434,9 @@ btnHelp.addEventListener('click', () => {
 
 btnCloseHelp.addEventListener('click', () => helpModal.classList.add('hidden'));
 btnGotIt.addEventListener('click', () => helpModal.classList.add('hidden'));
+
+// Auto-start game immediately on page load so game is active right away
+startGame();
 
 // Run Loop
 requestAnimationFrame(update);
