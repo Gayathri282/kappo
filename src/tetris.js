@@ -344,13 +344,22 @@ export class TetrisGame {
     }
   }
 
-  // Clear full horizontal lines
+  // Clear full horizontal lines with Mono-Flavor ("Full Batch Clear") detection
   clearLines() {
     const clearedIndices = [];
+    const clearedDetails = [];
 
     for (let r = GRID_ROWS - 1; r >= 0; r--) {
-      if (this.grid[r].every(cell => cell !== null)) {
+      const isFull = this.grid[r].every(cell => cell !== null);
+      if (isFull) {
         clearedIndices.push(r);
+        const firstFlavorId = this.grid[r][0].flavor ? this.grid[r][0].flavor.id : null;
+        const isMono = this.grid[r].every(cell => cell.flavor && cell.flavor.id === firstFlavorId);
+        clearedDetails.push({
+          lineIndex: r,
+          isMono: isMono,
+          flavor: this.grid[r][0].flavor
+        });
       }
     }
 
@@ -364,19 +373,39 @@ export class TetrisGame {
       const count = clearedIndices.length;
       this.lines += count;
 
-      // Tetris scoring rules
+      const monoDetails = clearedDetails.filter(d => d.isMono);
+      const monoCount = monoDetails.length;
+
+      // Base Tetris scoring rules
       const baseScores = [0, 100, 300, 500, 800];
-      this.score += (baseScores[count] || 0) * this.level;
+      const basePoints = (baseScores[count] || 0) * this.level;
+
+      // Mono-Flavor Multiplier (3x bonus multiplier for mono-flavor clears, escalating for multi-mono)
+      let earnedScore = basePoints;
+      if (monoCount > 0) {
+        const bonusMultiplier = 2.5 + (monoCount - 1) * 0.5; // 1 mono = 2.5x, 2 mono = 3.0x, 3 mono = 3.5x
+        earnedScore = Math.floor(basePoints * bonusMultiplier);
+      }
+
+      this.score += earnedScore;
 
       // Update Batch Level every 10 lines
       const newLevel = Math.floor(this.lines / 10) + 1;
       const leveledUp = newLevel > this.level;
       this.level = newLevel;
 
-      return { count: count, lines: clearedIndices, leveledUp: leveledUp };
+      return {
+        count: count,
+        lines: clearedIndices,
+        clearedDetails: clearedDetails,
+        monoCount: monoCount,
+        monoFlavor: monoCount > 0 ? monoDetails[0].flavor : null,
+        earnedScore: earnedScore,
+        leveledUp: leveledUp
+      };
     }
 
-    return { count: 0, lines: [], leveledUp: false };
+    return { count: 0, lines: [], clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
   }
 
   // Tick gravity step

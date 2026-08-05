@@ -75,11 +75,11 @@ let lastFactScoreMilestone = 0;
 
 // Kappo Facts
 const BRAND_FACTS = [
-  "Fried in 100% pure rice bran oil for a cleaner finish.",
+  "Fried in rice bran oil for a cleaner finish.",
+  "A Kerala classic.",
+  "From farm to crunch.",
   "Authentic Kerala Cassava & Sun-Ripened Banana Chips.",
-  "Crunch You Can Trust — Zero Trans Fat, Zero Cholesterol.",
-  "Sourced directly from local Kerala smallholder farms.",
-  "Packed fresh for maximum crispness in every bite!"
+  "Crunch You Can Trust — Zero Trans Fat, Zero Cholesterol."
 ];
 
 // Initialize UI
@@ -177,7 +177,24 @@ function processLineClears() {
     particles.spawnLineClearFX(result.lines, renderer.cellSize, renderer.cellSize, flavorColors);
     touchController.vibrate(25 + result.count * 10);
 
-    if (result.count === 4) {
+    if (result.monoCount > 0) {
+      // Enhanced Mono-Flavor ("Full Batch Clear") special effect
+      sound.playMonoCrunch(result.monoCount, result.monoFlavor);
+      particles.spawnMonoFlavorFX(result.clearedDetails, renderer.cellSize);
+
+      let bannerText = "";
+      if (result.monoCount === 1) {
+        const flavorName = result.monoFlavor ? result.monoFlavor.name : "Full Batch";
+        bannerText = `Full Batch Clear: ${flavorName}!`;
+      } else if (result.monoCount === 2) {
+        bannerText = "Double Batch Clear! ⚡⚡";
+      } else if (result.monoCount === 3) {
+        bannerText = "Triple Batch Clear! 🔥⚡";
+      } else {
+        bannerText = "Full Batch Jackpot! 🏆🔥";
+      }
+      triggerEventBanner(bannerText);
+    } else if (result.count === 4) {
       sound.playFullCrunch();
       particles.spawnFullCrunchFX();
       triggerEventBanner("⚡ FULL CRUNCH! ⚡");
