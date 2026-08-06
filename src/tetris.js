@@ -6,12 +6,12 @@
 export const GRID_COLS = 10;
 export const GRID_ROWS = 20;
 
-// 4 Kappo Flavors
+// 4 Kappo Flavors (Light & Cheerful Kids-Oriented Pop Palette)
 export const FLAVORS = [
-  { id: 'dynamite', name: 'Cassava Dynamite', mainColor: '#e63946', accentColor: '#f4a261', badge: '🔥' },
-  { id: 'tomato', name: 'Tangy Tomato', mainColor: '#d62828', accentColor: '#ff70a6', badge: '🍅' },
-  { id: 'chilli', name: 'Banana Chili Garlic', mainColor: '#2a9d8f', accentColor: '#80b918', badge: '🧄' },
-  { id: 'salted', name: 'Banana Classic Salted', mainColor: '#e9c46a', accentColor: '#f4a261', badge: '🍌' },
+  { id: 'dynamite', name: 'Cassava Dynamite', mainColor: '#FF4757', accentColor: '#FF7F50', badge: '🔥' },
+  { id: 'tomato', name: 'Tangy Tomato', mainColor: '#FF6B4A', accentColor: '#FFA07A', badge: '🍅' },
+  { id: 'chilli', name: 'Banana Chili Garlic', mainColor: '#2ED573', accentColor: '#7BED9F', badge: '🧄' },
+  { id: 'salted', name: 'Banana Classic Salted', mainColor: '#FFA502', accentColor: '#FFEAA7', badge: '🍌' },
 ];
 
 // 7 Tetromino Definitions

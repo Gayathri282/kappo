@@ -43,10 +43,11 @@ export class CanvasRenderer {
   }
 
   drawGrid(width, height) {
-    this.ctx.fillStyle = 'rgba(5, 15, 11, 0.95)';
+    // Translucent light packaging cream grid overlay so brand background shines through!
+    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.72)';
     this.ctx.fillRect(0, 0, width, height);
 
-    this.ctx.strokeStyle = 'rgba(233, 196, 106, 0.08)';
+    this.ctx.strokeStyle = 'rgba(255, 165, 0, 0.12)';
     this.ctx.lineWidth = 1;
 
     for (let c = 0; c <= GRID_COLS; c++) {
@@ -81,59 +82,69 @@ export class CanvasRenderer {
     }
   }
 
+  // Squishy, Glossy, Kids-Oriented Block Renderer
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const px = x * cellSize;
     const py = y * cellSize;
-    const padding = 1.2;
+    const padding = 1.5;
     const size = cellSize - padding * 2;
-    const radius = Math.max(3, cellSize * 0.15);
+    const radius = Math.max(5, cellSize * 0.28); // Extra soft rounded squishy corners!
 
     if (isGhost) {
       ctx.strokeStyle = flavor.mainColor;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 2]);
-      ctx.strokeRect(px + padding, py + padding, size, size);
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
+      ctx.stroke();
       ctx.fillStyle = flavor.mainColor;
-      ctx.globalAlpha = 0.15;
-      ctx.fillRect(px + padding, py + padding, size, size);
+      ctx.globalAlpha = 0.18;
+      ctx.fill();
       ctx.restore();
       return;
     }
 
-    // Base Gradient
-    const grad = ctx.createLinearGradient(px, py, px + size, py + size);
+    // 1. Bottom 3D Drop Shadow / Rim (Squishy toy feel)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    ctx.beginPath();
+    this.drawRoundRectPath(ctx, px + padding + 1, py + padding + 2, size, size, radius);
+    ctx.fill();
+
+    // 2. Base Bright Pop Gradient
+    const grad = ctx.createLinearGradient(px, py, px, py + size);
     grad.addColorStop(0, flavor.accentColor);
-    grad.addColorStop(0.5, flavor.mainColor);
-    grad.addColorStop(1, '#111');
+    grad.addColorStop(1, flavor.mainColor);
 
     ctx.fillStyle = grad;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.fill();
 
-    // Metallic Sheen
-    const shineGrad = ctx.createLinearGradient(px, py, px + size / 2, py + size / 2);
-    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    // 3. Cute Glossy White Pill Sheen (Top-left candy highlight)
+    const shineGrad = ctx.createLinearGradient(px, py, px, py + size * 0.45);
+    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
+    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
     ctx.fillStyle = shineGrad;
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding, py + padding, size, size / 2, radius);
+    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + 2, size - 4, size * 0.42, Math.max(3, radius * 0.7));
     ctx.fill();
 
-    // Bevel Shadow
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    // 4. White Crisp Outline Highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.stroke();
 
-    // Center Badge
-    ctx.font = `${Math.floor(cellSize * 0.45)}px sans-serif`;
+    // 5. Playful Center Emoji Badge
+    ctx.font = `${Math.floor(cellSize * 0.46)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    ctx.shadowBlur = 4;
     ctx.fillText(flavor.badge, px + cellSize / 2, py + cellSize / 2 + 1);
 
     ctx.restore();

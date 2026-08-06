@@ -308,10 +308,10 @@ export class ParticleSystem {
       this.ctx.save();
       this.ctx.globalAlpha = Math.max(0, ft.life);
       this.ctx.font = `900 ${1.2 * ft.scale}rem 'Outfit', sans-serif`;
-      this.ctx.fillStyle = ft.color;
+      this.ctx.fillStyle = ft.color || '#D97706';
       this.ctx.textAlign = 'center';
-      this.ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+      this.ctx.shadowBlur = 8;
       this.ctx.fillText(ft.text, ft.x, ft.y);
       this.ctx.restore();
     }
