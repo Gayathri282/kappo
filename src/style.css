@@ -333,7 +333,7 @@ html, body {
   background-image: url('/assets/kappo_marketing_bg.png');
   background-size: cover;
   background-position: center top;
-  opacity: 0.35;
+  opacity: 0.85;
   filter: contrast(1.1) saturate(1.15);
   pointer-events: none;
   z-index: 0;
