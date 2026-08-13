@@ -202,14 +202,14 @@ export class ParticleSystem {
   }
 
   // Spawn Candy Crush style pop explosion across filled row and adjacent blasted blocks!
-  spawnCandyCrushBlastFX(blastedCells, cellSize, offsetX = 0, offsetY = 0) {
+  spawnCandyCrushBlastFX(blastedCells, cellWidth, cellHeight = cellWidth * 2, offsetX = 0, offsetY = 0) {
     if (!blastedCells || blastedCells.length === 0) return;
 
     this.shake(14, 18);
 
     blastedCells.forEach((cell, idx) => {
-      const cx = offsetX + (cell.c + 0.5) * cellSize;
-      const cy = offsetY + (cell.r + 0.5) * cellSize;
+      const cx = offsetX + (cell.c + 0.5) * cellWidth;
+      const cy = offsetY + (cell.r + 0.5) * cellHeight;
       const mainColor = cell.flavor ? cell.flavor.mainColor : '#FFA502';
 
       // 1. Candy Crush expanding pop ring
@@ -219,8 +219,8 @@ export class ParticleSystem {
         vx: 0,
         vy: 0,
         gravity: 0,
-        size: cellSize * 0.3,
-        maxSize: cellSize * 1.5,
+        size: cellWidth * 0.3,
+        maxSize: cellWidth * 1.5,
         color: mainColor,
         rotation: 0,
         vRot: 0,

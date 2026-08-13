@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <!-- Dark Cyber Neon Background Atmosphere -->
+  <!-- Full-Page Background Banner with Green Overlay -->
   <div class="bg-pattern" aria-hidden="true"></div>
   <div class="bg-gradient-overlay" aria-hidden="true"></div>
 
@@ -25,9 +25,9 @@
     <!-- Top Header Bar (Inspired by LAY STACKS UI) -->
     <header class="game-header">
       <div class="brand-badge">
-        <div class="brand-logo-icon">🥔</div>
+        <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
         <div class="brand-titles">
-          <h1 class="brand-title">KAPPO <span class="brand-title-accent">STACKS</span></h1>
+          <h1 class="brand-title">STACKS</h1>
           <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
         </div>
       </div>
@@ -62,10 +62,6 @@
 
     <!-- Mobile Compact Preview Strip -->
     <div class="mobile-preview-strip mobile-only">
-      <div class="mini-card hold-mini">
-        <span class="mini-label">HOLD</span>
-        <canvas id="hold-canvas-mobile" width="60" height="60"></canvas>
-      </div>
       <div class="mini-card goal-mini">
         <span class="mini-label">GOAL</span>
         <span id="goal-progress-txt-mobile" class="goal-progress-txt">0/10</span>
@@ -82,7 +78,7 @@
     <!-- Main Layout Grid (Sidebars + Center Playfield Canvas) -->
     <main class="game-layout">
 
-      <!-- LEFT SIDEBAR -->
+      <!-- LEFT SIDEBAR (Identical layout to LAY STACKS UI reference) -->
       <aside class="sidebar sidebar-left desktop-only">
         <!-- Level Box -->
         <div class="glass-card stat-card level-card">
@@ -111,15 +107,14 @@
           </div>
         </div>
 
-        <!-- Hold Box -->
-        <div class="glass-card hold-card">
+        <!-- Next Piece Queue Box (Vertical stack like LAY STACKS) -->
+        <div class="glass-card next-card">
           <div class="card-header">
-            <span class="card-icon">📦</span>
-            <span class="card-label">HOLD</span>
+            <span class="card-icon">🔮</span>
+            <span class="card-label">NEXT</span>
           </div>
-          <div class="canvas-wrapper hold-wrapper">
-            <canvas id="hold-canvas" width="120" height="120"></canvas>
-            <span class="hold-hint">Press C / Shift</span>
+          <div class="canvas-wrapper next-wrapper">
+            <canvas id="next-canvas" width="120" height="240"></canvas>
           </div>
         </div>
       </aside>
@@ -140,9 +135,9 @@
           <!-- Start Game Overlay Screen -->
           <div id="start-overlay" class="overlay-screen">
             <div class="overlay-content">
-              <div class="chips-icon-hero">🥔</div>
-              <h2>KAPPO STACKS</h2>
-              <p>Stack 3D chip packets, clear lines & trigger full crunch combos!</p>
+              <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="overlay-logo-img" />
+              <h2 class="overlay-subtitle-stacks">STACKS</h2>
+              <p>Stack 3D air-filled chip packets, clear lines & trigger full crunch combos!</p>
               <button id="btn-start" class="btn-primary btn-large">
                 <span class="btn-text">START PLAYING</span>
               </button>
@@ -153,18 +148,6 @@
 
       <!-- RIGHT SIDEBAR -->
       <aside class="sidebar sidebar-right desktop-only">
-        <!-- Scoreboard Card -->
-        <div class="glass-card score-card">
-          <div class="score-group">
-            <span class="score-label">SCORE</span>
-            <span id="score-val" class="score-value glow-yellow">0</span>
-          </div>
-          <div class="score-high-group">
-            <span class="score-high-label">BEST</span>
-            <span id="high-score-val" class="score-high-value glow-cyan">0</span>
-          </div>
-        </div>
-
         <!-- Large Kappo Product Showcase Image Card -->
         <div class="glass-card product-showcase-card">
           <div class="card-header">
@@ -178,39 +161,6 @@
             <span id="product-flavor-title" class="product-flavor-name">Classic Salted</span>
             <span class="product-tagline-sm">100% Real Kerala Crunch</span>
           </div>
-        </div>
-
-        <!-- Speed Boost Box -->
-        <div class="glass-card boost-card">
-          <button id="btn-speed-boost-desktop" class="btn-primary btn-boost-hero">
-            <span>⚡ HOLD FOR TURBO</span>
-          </button>
-        </div>
-
-        <!-- Kappo Flavor Legend -->
-        <div class="glass-card flavor-card">
-          <div class="card-header">
-            <span class="card-icon">🌶️</span>
-            <span class="card-label">FLAVORS</span>
-          </div>
-          <ul class="flavor-list">
-            <li class="flavor-item salted">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Classic Salted</span>
-            </li>
-            <li class="flavor-item dynamite">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Cassava Dynamite</span>
-            </li>
-            <li class="flavor-item chilli">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Chili Garlic</span>
-            </li>
-            <li class="flavor-item tomato">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Tangy Tomato</span>
-            </li>
-          </ul>
         </div>
       </aside>
 

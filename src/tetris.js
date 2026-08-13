@@ -3,18 +3,18 @@
    10x20 Grid, SRS Rotation System, Wall Kicks, 7-Bag Randomizer, Flavor Mapping
    ========================================================================== */
 
-export const GRID_COLS = 8;
-export const GRID_ROWS = 15;
+export const GRID_COLS = 10;
+export const GRID_ROWS = 16;
 
-// 4 Kappo Flavors (Light & Cheerful Kids-Oriented Pop Palette)
+// 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
-  { id: 'dynamite', name: 'Cassava Dynamite', mainColor: '#FF4757', accentColor: '#FF7F50', badge: '🔥' },
-  { id: 'tomato', name: 'Tangy Tomato', mainColor: '#FF6B4A', accentColor: '#FFA07A', badge: '🍅' },
-  { id: 'chilli', name: 'Banana Chili Garlic', mainColor: '#2ED573', accentColor: '#7BED9F', badge: '🧄' },
-  { id: 'salted', name: 'Banana Classic Salted', mainColor: '#FFA502', accentColor: '#FFEAA7', badge: '🍌' },
+  { id: 'salted', name: 'Classic Salted', mainColor: '#FACC15', accentColor: '#FEF08A', badge: '🍌', sub: 'Classic Salted' },
+  { id: 'chilli', name: 'Chilli Garlic', mainColor: '#22C55E', accentColor: '#86EFAC', badge: '🌶️', sub: 'Chilli Garlic' },
+  { id: 'tomato', name: 'Tangy Tomato', mainColor: '#EF4444', accentColor: '#FCA5A5', badge: '🍅', sub: 'Tangy Tomato' },
+  { id: 'dynamite', name: 'Cassava Dynamite', mainColor: '#F97316', accentColor: '#FDBA74', badge: '🔥', sub: 'Dynamite' },
 ];
 
-// 7 Tetromino Definitions
+// 7 Tetromino Definitions mapped strictly to 4 user Kappo packet images
 export const SHAPES = {
   I: {
     matrix: [
@@ -23,7 +23,7 @@ export const SHAPES = {
       [0, 0, 0, 0],
       [0, 0, 0, 0]
     ],
-    flavorIndex: 0 // Dynamite
+    flavorIndex: 1 // Chilli Garlic
   },
   J: {
     matrix: [
@@ -31,7 +31,7 @@ export const SHAPES = {
       [1, 1, 1],
       [0, 0, 0]
     ],
-    flavorIndex: 1 // Tomato
+    flavorIndex: 2 // Tangy Tomato
   },
   L: {
     matrix: [
@@ -39,14 +39,14 @@ export const SHAPES = {
       [1, 1, 1],
       [0, 0, 0]
     ],
-    flavorIndex: 3 // Salted
+    flavorIndex: 3 // Cassava Dynamite
   },
   O: {
     matrix: [
       [1, 1],
       [1, 1]
     ],
-    flavorIndex: 3 // Salted
+    flavorIndex: 0 // Classic Salted
   },
   S: {
     matrix: [
@@ -54,7 +54,7 @@ export const SHAPES = {
       [1, 1, 0],
       [0, 0, 0]
     ],
-    flavorIndex: 2 // Chili Garlic
+    flavorIndex: 1 // Chilli Garlic
   },
   T: {
     matrix: [
@@ -62,7 +62,7 @@ export const SHAPES = {
       [1, 1, 1],
       [0, 0, 0]
     ],
-    flavorIndex: 1 // Tomato
+    flavorIndex: 2 // Tangy Tomato
   },
   Z: {
     matrix: [
@@ -70,7 +70,7 @@ export const SHAPES = {
       [0, 1, 1],
       [0, 0, 0]
     ],
-    flavorIndex: 0 // Dynamite
+    flavorIndex: 3 // Cassava Dynamite
   }
 };
 

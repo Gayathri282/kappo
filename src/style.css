@@ -20,9 +20,11 @@
 
   /* Flavor Accent Colors */
   --flavor-salted: #FFA502;
-  --flavor-dynamite: #FF4757;
-  --flavor-chilli: #2ED573;
-  --flavor-tomato: #8E44AD;
+  --flavor-herb: #2ED573;
+  --flavor-masala: #0984E3;
+  --flavor-fiery: #8E44AD;
+  --flavor-tomato: #FF4757;
+  --flavor-dynamite: #FF7F50;
 
   /* Typography */
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -64,29 +66,176 @@ html, body {
   position: fixed;
   inset: 0;
   overscroll-behavior: none;
-  background-color: var(--bg-dark);
+  background-color: #fff9ed;
   color: var(--text-main);
   font-family: var(--font-body);
 }
 
-/* Light Background Atmosphere - Cheerful Tropical Leaf Pattern */
+/* Kappo Red Wavy Background & Low-Opacity Decorative Chips */
 .bg-pattern {
   position: fixed;
   inset: 0;
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(255, 234, 167, 0.5) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(123, 237, 159, 0.4) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(255, 107, 129, 0.2) 0%, transparent 60%),
-    url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232ED573' fill-opacity='0.08'%3E%3Cpath d='M60 10 C40 30 30 60 60 110 C90 60 80 30 60 10 Z' /%3E%3Cpath d='M10 60 C30 40 60 30 110 60 C60 90 30 80 10 60 Z' /%3E%3C/g%3E%3Cg fill='%23FFA502' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='6' /%3E%3Ccircle cx='90' cy='90' r='6' /%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: repeat;
   z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
 }
 
+/* Base Full-Page Background: Crave the Crunch Kappo Banner */
+.bg-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/kappo_crave_crunch_bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.65;
+}
+
+/* Kappo Kathakali Packet Green Color Overlay */
 .bg-gradient-overlay {
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 253, 245, 0.6) 0%, rgba(255, 248, 230, 0.8) 100%);
   z-index: -1;
+  background: linear-gradient(135deg, rgba(15, 81, 50, 0.45), rgba(34, 197, 94, 0.28));
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* Floating Decorative Low-Opacity Kappo Chip Packets & Chips */
+.bg-decor-item {
+  position: absolute;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.28;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+/* Left Top: Chilli Garlic Packet */
+.bg-decor-left-top {
+  top: 6%;
+  left: 2%;
+  width: 220px;
+  height: 280px;
+  transform: rotate(-12deg);
+  animation: floatDecor1 7s ease-in-out infinite alternate;
+}
+
+/* Left Bottom: Authentic Flavors Banner / Cassava Chips */
+.bg-decor-left-bottom {
+  bottom: 4%;
+  left: 1%;
+  width: 280px;
+  height: 240px;
+  border-radius: 16px;
+  transform: rotate(6deg);
+  animation: floatDecor2 9s ease-in-out infinite alternate;
+}
+
+/* Left Mid: Salted Banana Chips Packet */
+.bg-decor-left-mid {
+  top: 45%;
+  left: 3%;
+  width: 190px;
+  height: 250px;
+  transform: rotate(-6deg);
+  opacity: 0.22;
+  animation: floatDecor3 10s ease-in-out infinite alternate;
+}
+
+/* Right Top: Classic Salted Packet */
+.bg-decor-right-top {
+  top: 8%;
+  right: 2%;
+  width: 200px;
+  height: 260px;
+  transform: rotate(14deg);
+  animation: floatDecor3 8s ease-in-out infinite alternate;
+}
+
+/* Right Mid: Dynamite Cassava Packet */
+.bg-decor-right-mid {
+  top: 48%;
+  right: 3%;
+  width: 195px;
+  height: 255px;
+  transform: rotate(10deg);
+  opacity: 0.22;
+  animation: floatDecor1 9s ease-in-out infinite alternate;
+}
+
+/* Right Bottom: Dynamite Cassava Packet */
+.bg-decor-right-bottom {
+  bottom: 6%;
+  right: 2%;
+  width: 210px;
+  height: 270px;
+  transform: rotate(-8deg);
+  animation: floatDecor1 10s ease-in-out infinite alternate;
+}
+
+/* Center Background: Low-Opacity Product Packet behind Playfield Grid */
+.bg-decor-center-bg {
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%) rotate(4deg);
+  width: 320px;
+  height: 400px;
+  opacity: 0.20;
+  animation: floatDecor2 12s ease-in-out infinite alternate;
+}
+
+/* Mobile responsive scaling for floating decor elements */
+@media (max-width: 768px) {
+  .bg-decor-item {
+    opacity: 0.20;
+  }
+  .bg-decor-left-top {
+    width: 130px;
+    height: 170px;
+    left: -20px;
+    top: 5%;
+  }
+  .bg-decor-left-bottom {
+    width: 150px;
+    height: 130px;
+    left: -30px;
+    bottom: 8%;
+  }
+  .bg-decor-right-top {
+    width: 120px;
+    height: 160px;
+    right: -20px;
+    top: 7%;
+  }
+  .bg-decor-right-bottom {
+    width: 130px;
+    height: 170px;
+    right: -25px;
+    bottom: 9%;
+  }
+}
+
+@keyframes floatDecor1 {
+  0% { transform: translateY(0px) rotate(-12deg); }
+  50% { transform: translateY(-12px) rotate(-8deg); }
+  100% { transform: translateY(0px) rotate(-12deg); }
+}
+
+@keyframes floatDecor2 {
+  0% { transform: translateY(0px) rotate(6deg); }
+  50% { transform: translateY(-15px) rotate(10deg); }
+  100% { transform: translateY(0px) rotate(6deg); }
+}
+
+@keyframes floatDecor3 {
+  0% { transform: translateY(0px) rotate(14deg); }
+  50% { transform: translateY(-10px) rotate(18deg); }
+  100% { transform: translateY(0px) rotate(14deg); }
 }
 
 /* Main App Shell */
@@ -95,9 +244,9 @@ html, body {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  max-width: 1180px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 4px 8px;
+  padding: 2px 6px;
   justify-content: space-between;
   align-items: center;
 }
@@ -108,26 +257,26 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 14px;
-  background: var(--bg-card);
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
   border: 2px solid var(--bg-card-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 6px 20px rgba(220, 150, 50, 0.12);
+  box-shadow: 0 6px 20px rgba(220, 150, 50, 0.15);
   flex-shrink: 0;
 }
 
 .brand-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.brand-logo-icon {
-  font-size: 1.5rem;
-  background: #FFF5D6;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #FFEAA7;
+.brand-logo-img {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .brand-titles {
@@ -137,23 +286,19 @@ html, body {
 
 .brand-title {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 900;
-  letter-spacing: 1.5px;
-  color: #2D1F17;
+  letter-spacing: 2px;
+  color: #D97706;
   line-height: 1;
 }
 
-.brand-title-accent {
-  color: #D97706;
-}
-
 .brand-tagline {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 800;
   letter-spacing: 1px;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* Header Score & Best Counter */
@@ -307,16 +452,17 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 175px;
+  width: 145px;
 }
 
-/* Light Cards */
+/* Light Cards with Glassmorphism Overlay */
 .glass-card {
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
   border: 2px solid var(--bg-card-border);
   border-radius: var(--radius-md);
   padding: 12px;
-  box-shadow: 0 6px 20px rgba(200, 140, 40, 0.1);
+  box-shadow: 0 6px 20px rgba(200, 140, 40, 0.12);
 }
 
 .card-header {
@@ -430,19 +576,19 @@ html, body {
 
 .product-image-container {
   width: 100%;
-  height: 170px;
+  height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 4px 0;
+  margin: 6px 0;
   overflow: hidden;
 }
 
 .product-showcase-img {
   max-width: 100%;
-  max-height: 165px;
+  max-height: 250px;
   object-fit: contain;
-  filter: drop-shadow(0 6px 14px rgba(220, 150, 50, 0.25));
+  filter: drop-shadow(0 8px 20px rgba(220, 150, 50, 0.35));
   transition: transform 0.4s ease, filter 0.4s ease;
   animation: floatPacket 3.5s ease-in-out infinite alternate;
 }
@@ -494,10 +640,11 @@ html, body {
   position: relative;
   max-height: 100%;
   max-width: 100%;
-  background: #FFFDF7;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
   border: 4px solid #FFA502;
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 35px rgba(255, 165, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 35px rgba(255, 165, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   touch-action: none;
   margin: 0 auto;
@@ -566,23 +713,20 @@ html, body {
   cursor: pointer;
 }
 
-.overlay-content h2 {
+.overlay-logo-img {
+  max-width: 180px;
+  height: auto;
+  margin: 0 auto 4px;
+  filter: drop-shadow(0 4px 12px rgba(217, 119, 6, 0.25));
+}
+
+.overlay-subtitle-stacks {
   font-family: var(--font-heading);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 900;
+  letter-spacing: 3px;
   color: #D97706;
-  margin: 8px 0 6px;
-}
-
-.overlay-content p {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-bottom: 18px;
-  line-height: 1.4;
-}
-
-.chips-icon-hero {
-  font-size: 2.8rem;
+  margin: 0 0 10px;
 }
 
 /* Desktop Scoreboard */
@@ -650,9 +794,11 @@ html, body {
 }
 
 .flavor-item.salted { border-left-color: var(--flavor-salted); }
-.flavor-item.dynamite { border-left-color: var(--flavor-dynamite); }
-.flavor-item.chilli { border-left-color: var(--flavor-chilli); }
+.flavor-item.herb { border-left-color: var(--flavor-herb); }
+.flavor-item.masala { border-left-color: var(--flavor-masala); }
+.flavor-item.fiery { border-left-color: var(--flavor-fiery); }
 .flavor-item.tomato { border-left-color: var(--flavor-tomato); }
+.flavor-item.dynamite { border-left-color: var(--flavor-dynamite); }
 
 .flavor-dot {
   width: 8px;
@@ -661,9 +807,11 @@ html, body {
 }
 
 .salted .flavor-dot { background: var(--flavor-salted); }
-.dynamite .flavor-dot { background: var(--flavor-dynamite); }
-.chilli .flavor-dot { background: var(--flavor-chilli); }
+.herb .flavor-dot { background: var(--flavor-herb); }
+.masala .flavor-dot { background: var(--flavor-masala); }
+.fiery .flavor-dot { background: var(--flavor-fiery); }
 .tomato .flavor-dot { background: var(--flavor-tomato); }
+.dynamite .flavor-dot { background: var(--flavor-dynamite); }
 
 /* Buttons */
 .btn-primary {
@@ -807,12 +955,21 @@ html, body {
   margin-top: 2px;
 }
 
+.btn-caption {
+  font-family: var(--font-heading);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 /* Modals */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(45, 31, 23, 0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -821,22 +978,24 @@ html, body {
 }
 
 .modal-card {
-  background: #FFFFFF;
-  border: 3px solid #F0E6D2;
+  background: rgba(8, 20, 48, 0.95);
+  border: 3px solid #0066FF;
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 100%;
   max-width: 390px;
-  box-shadow: 0 20px 50px rgba(45, 31, 23, 0.2);
+  box-shadow: 0 0 35px rgba(0, 136, 255, 0.4);
   text-align: center;
+  color: #F8FAFC;
 }
 
 .modal-title {
   font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 900;
-  color: #D97706;
+  color: #FACC15;
   margin-bottom: 4px;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
 }
 
 .modal-subtitle {
@@ -853,8 +1012,8 @@ html, body {
 }
 
 .modal-stat-box {
-  background: #FFF9E6;
-  border: 1.5px solid #FFEAA7;
+  background: rgba(0, 30, 80, 0.6);
+  border: 1.5px solid rgba(0, 136, 255, 0.3);
   border-radius: var(--radius-sm);
   padding: 8px;
   display: flex;
@@ -871,7 +1030,7 @@ html, body {
   font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 900;
-  color: var(--text-main);
+  color: #FACC15;
 }
 
 .modal-actions {
@@ -894,9 +1053,9 @@ html, body {
 }
 
 .icon-btn-close {
-  background: #FFF5D6;
-  border: 1px solid #FFEAA7;
-  color: #D97706;
+  background: rgba(0, 82, 204, 0.4);
+  border: 1px solid #0088FF;
+  color: #FACC15;
   font-size: 1.4rem;
   width: 30px;
   height: 30px;
@@ -913,8 +1072,8 @@ html, body {
   overflow: hidden;
   position: relative;
   border-radius: var(--radius-md);
-  background: #FFFDF5;
-  border: 2px solid #F0E6D2;
+  background: rgba(6, 15, 38, 0.9);
+  border: 2px solid #0052CC;
   margin: 10px 0;
   box-sizing: border-box;
 }
@@ -940,26 +1099,27 @@ html, body {
   font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 1px;
-  color: #D97706;
-  background: #FFF5D6;
+  color: #FACC15;
+  background: rgba(0, 82, 204, 0.4);
   padding: 2px 10px;
   border-radius: 12px;
   margin-bottom: 6px;
+  border: 1px solid rgba(0, 136, 255, 0.3);
 }
 
 .carousel-slide h3 {
   font-family: var(--font-heading);
   font-size: 1.05rem;
   font-weight: 900;
-  color: #2D1F17;
+  color: #FFFFFF;
   margin-bottom: 8px;
 }
 
 .slide-illustration {
   width: 100%;
   height: 90px;
-  background: #FFFFFF;
-  border: 2px dashed #FFEAA7;
+  background: rgba(0, 20, 60, 0.8);
+  border: 2px dashed #0088FF;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -973,8 +1133,8 @@ html, body {
 .zone-box {
   flex: 1;
   height: 100%;
-  background: #FFF9E6;
-  border: 1px solid #FFEAA7;
+  background: rgba(0, 30, 80, 0.6);
+  border: 1px solid rgba(0, 136, 255, 0.3);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -982,7 +1142,7 @@ html, body {
   justify-content: center;
   font-size: 0.58rem;
   font-weight: 800;
-  color: #D97706;
+  color: #FACC15;
 }
 
 .zone-icon {
@@ -991,8 +1151,8 @@ html, body {
 }
 
 .boost-hero-pill {
-  background: #FFF3D6;
-  border: 2px solid #FFA502;
+  background: rgba(0, 82, 204, 0.5);
+  border: 2px solid #0088FF;
   border-radius: 20px;
   padding: 6px 16px;
   display: flex;
@@ -1000,7 +1160,7 @@ html, body {
   gap: 8px;
   font-family: var(--font-heading);
   font-weight: 900;
-  color: #D97706;
+  color: #FACC15;
 }
 
 .bolt-anim {
@@ -1022,7 +1182,7 @@ html, body {
   font-family: var(--font-heading);
   font-size: 0.7rem;
   font-weight: 900;
-  background: #FFA502;
+  background: #0088FF;
   color: #FFFFFF;
   padding: 3px 8px;
   border-radius: 10px;
@@ -1117,30 +1277,86 @@ html, body {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .bg-pattern::before {
+    background-position: center top;
+    background-size: cover;
+  }
+
   .app-container {
-    padding: 4px 6px;
+    padding: 2px 4px;
+    height: 100vh;
+    height: 100dvh;
+    justify-content: space-between;
   }
+  
   .game-header {
-    padding: 6px 10px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
   }
+
+  .brand-logo-img {
+    height: 22px;
+  }
+
   .brand-title {
+    font-size: 0.95rem;
+  }
+
+  .header-score-pill {
+    padding: 2px 10px;
+    gap: 8px;
+  }
+
+  .stat-val {
+    font-size: 0.95rem;
+  }
+
+  .mobile-preview-strip {
+    margin-top: 2px;
+    gap: 4px;
+  }
+
+  .mini-card {
+    padding: 2px 4px;
+  }
+
+  .game-layout {
+    margin: 2px 0;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .playfield-section {
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .playfield-container {
+    border-width: 3px;
+    border-radius: var(--radius-md);
+  }
+
+  .touch-controls-deck {
+    padding: 4px 6px;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .touch-action-btn {
+    height: 44px;
+  }
+
+  .btn-arrow {
     font-size: 1.1rem;
   }
-  .brand-tagline {
-    font-size: 0.55rem;
-  }
-  .touch-controls-deck {
-    padding: 6px 8px;
-    gap: 6px;
-  }
-  .touch-action-btn {
-    height: 48px;
-  }
-  .btn-arrow {
-    font-size: 1.15rem;
-  }
+
   .btn-caption {
-    font-size: 0.52rem;
+    font-size: 0.5rem;
   }
 }

@@ -3,7 +3,7 @@
    Mobile-first game loop, resize listeners, score sync, & touch events
    ========================================================================== */
 
-import { TetrisGame, FLAVORS } from './tetris.js';
+import { TetrisGame, FLAVORS, GRID_COLS } from './tetris.js';
 import { CanvasRenderer } from './render.js';
 import { ParticleSystem } from './particles.js';
 import { sound } from './audio.js';
@@ -217,13 +217,15 @@ function processLineClears() {
   if (result.count > 0) {
     const flavorColors = FLAVORS.map(f => f.mainColor);
     
-    // 1. Sequential plastic packet pop SFX & particles across 8 columns
-    sound.playSequentialPacketPops(8, 40);
-    particles.spawnLineClearFX(result.lines, renderer.cellSize, renderer.cellSize, flavorColors);
+    // 1. Sequential plastic packet pop SFX & particles across columns
+    sound.playSequentialPacketPops(GRID_COLS, 35);
+    const cellW = renderer.cellWidth || renderer.cellSize;
+    const cellH = renderer.cellHeight || Math.round(cellW * 1.55);
+    particles.spawnLineClearFX(result.lines, cellH, cellW, flavorColors);
     
     // 2. Candy Crush chain reaction explosion on filled row and nearby row blocks!
     if (result.blastedCells && result.blastedCells.length > 0) {
-      particles.spawnCandyCrushBlastFX(result.blastedCells, renderer.cellSize);
+      particles.spawnCandyCrushBlastFX(result.blastedCells, cellW, cellH);
     }
 
     touchController.vibrate(30 + result.count * 15);

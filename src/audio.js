@@ -249,8 +249,8 @@ class SoundEngine {
     this.playBagLanding();
   }
 
-  // 3c. Sequential Plastic Crinkle/Pop Sequence across Row
-  playSequentialPacketPops(totalItems = 10, stepMs = 35) {
+  // 3c. Subtle Plastic Packet Crinkle — sounds like crisp bag being crumpled/broken
+  playSequentialPacketPops(totalItems = 10, stepMs = 30) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
@@ -259,44 +259,61 @@ class SoundEngine {
       setTimeout(() => {
         if (this.muted || !this.ctx) return;
         const now = this.ctx.currentTime;
-        const pitchMultiplier = 1.0 + (i / totalItems) * 0.5;
 
-        // Plastic pop frequency
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400 * pitchMultiplier, now);
-        osc.frequency.exponentialRampToValueAtTime(150 * pitchMultiplier, now + 0.04);
-
-        gain.gain.setValueAtTime(0.22, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.04);
-
-        // Crinkle click burst
-        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * 0.03), this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let k = 0; k < data.length; k++) {
-          data[k] = (Math.random() * 2 - 1) * Math.exp(-k / (data.length * 0.2));
+        // === A: Plastic foil crinkle burst (very short filtered noise) ===
+        const crinkleDur = 0.022 + Math.random() * 0.012; // 22-34ms
+        const bufSz = Math.floor(this.ctx.sampleRate * crinkleDur);
+        const buf = this.ctx.createBuffer(1, bufSz, this.ctx.sampleRate);
+        const dat = buf.getChannelData(0);
+        for (let k = 0; k < bufSz; k++) {
+          // Sparse crackle: random impulses with exponential decay
+          const t = k / bufSz;
+          const env = Math.exp(-t * 14);
+          // Mix of smooth noise + occasional sharper crackle spike
+          dat[k] = (Math.random() * 2 - 1) * env * (Math.random() > 0.85 ? 2.2 : 0.7);
         }
 
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-        const nFilter = this.ctx.createBiquadFilter();
-        nFilter.type = 'bandpass';
-        nFilter.frequency.setValueAtTime(3500 * pitchMultiplier, now);
-        const nGain = this.ctx.createGain();
-        nGain.gain.setValueAtTime(0.25, now);
-        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        const crinkleNoise = this.ctx.createBufferSource();
+        crinkleNoise.buffer = buf;
 
-        noise.connect(nFilter);
-        nFilter.connect(nGain);
-        nGain.connect(this.ctx.destination);
-        noise.start(now);
+        // High-pass to cut muddiness, bandpass to shape "plastic foil" timbre
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(1800, now);
+
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        // Slightly randomise centre freq per cell for natural variation
+        bp.frequency.setValueAtTime(4200 + Math.random() * 1800, now);
+        bp.Q.setValueAtTime(0.9, now);
+
+        const crinkleGain = this.ctx.createGain();
+        crinkleGain.gain.setValueAtTime(0.10, now);
+        crinkleGain.gain.exponentialRampToValueAtTime(0.001, now + crinkleDur);
+
+        crinkleNoise.connect(hp);
+        hp.connect(bp);
+        bp.connect(crinkleGain);
+        crinkleGain.connect(this.ctx.destination);
+        crinkleNoise.start(now);
+
+        // === B: Tiny snap transient (like a single micro-crack in the foil) ===
+        const snapDur = 0.006;
+        const snapSz = Math.floor(this.ctx.sampleRate * snapDur);
+        const snapBuf = this.ctx.createBuffer(1, snapSz, this.ctx.sampleRate);
+        const snapDat = snapBuf.getChannelData(0);
+        for (let k = 0; k < snapSz; k++) {
+          snapDat[k] = (Math.random() * 2 - 1) * Math.exp(-k / (snapSz * 0.15));
+        }
+        const snap = this.ctx.createBufferSource();
+        snap.buffer = snapBuf;
+        const snapGain = this.ctx.createGain();
+        snapGain.gain.setValueAtTime(0.08, now);
+        snapGain.gain.exponentialRampToValueAtTime(0.001, now + snapDur);
+        snap.connect(snapGain);
+        snapGain.connect(this.ctx.destination);
+        snap.start(now);
+
       }, i * stepMs);
     }
   }
