@@ -1,11 +1,10 @@
 /* ==========================================================================
-   MOBILE DIRECT SCREEN TOUCH ENGINE
-   Full touch sensitivity for small/medium devices:
-   - Tap Left/Right area of screen: Move piece Left/Right
-   - Tap Upper Center: Rotate Piece Clockwise
-   - Drag Finger Left/Right: Smooth continuous column shift
-   - Swipe Down: Soft Drop | Fast Flick Down: Hard Drop
-   - Swipe Up / Tap Hold Box: Hold Piece
+   MOBILE DIRECT SCREEN TOUCH & CONTROLS ENGINE
+   - Left 50% outer side of screen: Tap or Drag Left
+   - Right 50% outer side of screen: Tap or Drag Right
+   - Top 25% upper zone: Tap to Rotate Piece (↻)
+   - Swipe Up / Tap Hold: Hold Piece (📦)
+   - Dedicated ⚡ SPEED BOOST button for accelerated fall gravity
    ========================================================================== */
 
 export class TouchController {
@@ -45,7 +44,7 @@ export class TouchController {
       }, { passive: false });
     }
 
-    // Touch Start on Playfield
+    // Touch Start on Playfield Container
     container.addEventListener('touchstart', (e) => {
       if (e.touches.length > 0) {
         if (e.cancelable) e.preventDefault();
@@ -57,17 +56,14 @@ export class TouchController {
       }
     }, { passive: false });
 
-    // Drag Finger across screen
+    // Touch Dragging Finger across Left / Right Zones
     container.addEventListener('touchmove', (e) => {
       if (e.touches.length > 0) {
         if (e.cancelable) e.preventDefault();
         const currentX = e.touches[0].clientX;
-        const currentY = e.touches[0].clientY;
-
         const deltaXFromLast = currentX - this.lastColumnStep;
-        const stepThreshold = 26; // pixels per column move
+        const stepThreshold = 22; // pixels per column step
 
-        // Horizontal Dragting
         if (Math.abs(deltaXFromLast) >= stepThreshold) {
           this.vibrate(6);
           if (deltaXFromLast > 0) {
@@ -77,16 +73,10 @@ export class TouchController {
           }
           this.lastColumnStep = currentX;
         }
-
-        // Dragging Downward for Soft Drop
-        const deltaY = currentY - this.touchStartY;
-        if (deltaY > 45 && Math.abs(deltaY) > Math.abs(currentX - this.touchStartX)) {
-          this.handlers.onSoftDrop();
-        }
       }
     }, { passive: false });
 
-    // Touch End (Taps & Swipes)
+    // Touch End (Left Zone / Right Zone Taps & Swipe Up for Hold)
     container.addEventListener('touchend', (e) => {
       if (e.changedTouches.length > 0) {
         if (e.cancelable) e.preventDefault();
@@ -106,47 +96,37 @@ export class TouchController {
         const canvasRelativeX = endX - rect.left;
         const canvasRelativeY = endY - rect.top;
 
-        // 1. DIRECT TAP ALLOCATION (< 15px movement within 240ms)
-        if (absX < 15 && absY < 15 && duration < 240) {
+        // 1. Swipe Up -> Hold Piece (📦)
+        if (deltaY < -40 && absY > absX) {
+          this.vibrate(12);
+          this.handlers.onHold();
+          return;
+        }
+
+        // 2. DIRECT TOUCH ZONES (< 18px movement within 240ms)
+        if (absX < 18 && absY < 18 && duration < 240) {
           const normX = canvasRelativeX / rect.width;
           const normY = canvasRelativeY / rect.height;
 
-          // Trigger visual touch ripple feedback
+          // Visual touch ripple feedback
           if (this.particles) {
             this.particles.spawnTouchRipple(canvasRelativeX, canvasRelativeY);
           }
 
           this.vibrate(10);
 
-          // Top 35% area -> Rotate Clockwise
-          if (normY < 0.35) {
+          // Top 25% zone -> Rotate Piece Clockwise
+          if (normY < 0.25) {
             this.handlers.onRotateCW();
           }
-          // Left 45% of screen -> Move Left
-          else if (normX < 0.45) {
+          // Left 50% zone -> Move Left
+          else if (normX < 0.50) {
             this.handlers.onLeft();
           }
-          // Right 45% of screen -> Move Right
-          else if (normX > 0.55) {
+          // Right 50% zone -> Move Right
+          else {
             this.handlers.onRight();
           }
-          // Center 10% -> Rotate Clockwise
-          else {
-            this.handlers.onRotateCW();
-          }
-          return;
-        }
-
-        // 2. SWIPE GESTURES
-        // Swipe Up -> Hold Piece
-        if (deltaY < -40 && absY > absX) {
-          this.vibrate(12);
-          this.handlers.onHold();
-        }
-        // Fast Downward Flick (< 200ms & > 45px) -> Hard Drop
-        else if (deltaY > 45 && absY > absX && duration < 220) {
-          this.vibrate(22);
-          this.handlers.onHardDrop();
         }
       }
     }, { passive: false });

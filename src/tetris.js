@@ -112,6 +112,7 @@ export class TetrisGame {
     this.level = 1;
     this.gameOver = false;
     this.paused = false;
+    this.isSpeedBoosted = false;
 
     this.initQueue();
     this.spawnPiece();
@@ -137,6 +138,7 @@ export class TetrisGame {
     this.level = 1;
     this.gameOver = false;
     this.paused = false;
+    this.isSpeedBoosted = false;
 
     this.initQueue();
     this.spawnPiece();
@@ -421,7 +423,11 @@ export class TetrisGame {
   }
 
   getDropSpeed() {
-    // Standard Tetris speed curve (ms per drop tick)
-    return Math.max(80, 800 - (this.level - 1) * 65);
+    // Arcade smooth initial gravity (low initial gravity ~750ms per tick)
+    const baseSpeed = Math.max(120, 750 - (this.level - 1) * 55);
+    if (this.isSpeedBoosted) {
+      return 95; // Accelerated speed-boost gravity tick (ms)
+    }
+    return baseSpeed;
   }
 }

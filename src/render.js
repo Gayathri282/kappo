@@ -55,26 +55,9 @@ export class CanvasRenderer {
   }
 
   drawGrid(width, height) {
-    // Candy Crush translucent board background overlay
-    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.76)';
+    // Translucent seamless playfield atmosphere overlay — Grid lines are completely INVISIBLE!
+    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.72)';
     this.ctx.fillRect(0, 0, width, height);
-
-    this.ctx.strokeStyle = 'rgba(255, 165, 0, 0.16)';
-    this.ctx.lineWidth = 1;
-
-    for (let c = 0; c <= GRID_COLS; c++) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(c * this.cellSize, 0);
-      this.ctx.lineTo(c * this.cellSize, height);
-      this.ctx.stroke();
-    }
-
-    for (let r = 0; r <= GRID_ROWS; r++) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, r * this.cellSize);
-      this.ctx.lineTo(width, r * this.cellSize);
-      this.ctx.stroke();
-    }
   }
 
   drawRoundRectPath(ctx, x, y, width, height, radius) {
@@ -94,16 +77,16 @@ export class CanvasRenderer {
     }
   }
 
-  // Squishy, Glossy, Kids-Oriented Block Renderer
+  // 3D Puffed Toon Kappo Chip Packet Renderer
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const px = offsetX + x * cellSize;
     const py = offsetY + y * cellSize;
-    const padding = 1.5;
+    const padding = 1.2;
     const size = cellSize - padding * 2;
-    const radius = Math.max(5, cellSize * 0.28); // Extra soft rounded squishy corners!
+    const radius = Math.max(4, cellSize * 0.22); // Rounded puffed packet pillow
 
     if (isGhost) {
       ctx.strokeStyle = flavor.mainColor;
@@ -113,51 +96,95 @@ export class CanvasRenderer {
       this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
       ctx.stroke();
       ctx.fillStyle = flavor.mainColor;
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.16;
       ctx.fill();
       ctx.restore();
       return;
     }
 
-    // 1. Bottom 3D Drop Shadow / Rim (Squishy toy feel)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    // 1. Soft 3D Drop Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding + 1, py + padding + 2, size, size, radius);
+    this.drawRoundRectPath(ctx, px + padding + 1.5, py + padding + 2.5, size, size, radius);
     ctx.fill();
 
-    // 2. Base Bright Pop Gradient
-    const grad = ctx.createLinearGradient(px, py, px, py + size);
-    grad.addColorStop(0, flavor.accentColor);
-    grad.addColorStop(1, flavor.mainColor);
+    // 2. Main 3D Puffed Bag Body (Radial bulge for inflated snack bag volume)
+    const centerX = px + cellSize / 2;
+    const centerY = py + cellSize / 2;
+    const bgGrad = ctx.createRadialGradient(
+      centerX - size * 0.15, centerY - size * 0.15, size * 0.05,
+      centerX, centerY, size * 0.75
+    );
+    bgGrad.addColorStop(0, flavor.accentColor);
+    bgGrad.addColorStop(0.7, flavor.mainColor);
+    bgGrad.addColorStop(1, flavor.mainColor);
 
-    ctx.fillStyle = grad;
+    ctx.fillStyle = bgGrad;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.fill();
 
-    // 3. Cute Glossy White Pill Sheen (Top-left candy highlight)
-    const shineGrad = ctx.createLinearGradient(px, py, px, py + size * 0.45);
-    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
-    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
-    ctx.fillStyle = shineGrad;
+    // 3. Top & Bottom Metallic Foil Crimp Seals (Snack Bag Seam Ridges)
+    const crimpHeight = Math.max(3, size * 0.12);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+
+    // Top crimp seal
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + 2, size - 4, size * 0.42, Math.max(3, radius * 0.7));
+    ctx.rect(px + padding + 2, py + padding + 1, size - 4, crimpHeight);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Bottom crimp seal
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.beginPath();
+    ctx.rect(px + padding + 2, py + padding + size - crimpHeight - 1, size - 4, crimpHeight);
     ctx.fill();
 
-    // 4. White Crisp Outline Highlight
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.lineWidth = 1.2;
+    // 4. Glossy Foil Sheen Reflection (Top-Left Candy Crush Style Curved Pill)
+    const sheenGrad = ctx.createLinearGradient(px, py, px + size, py + size);
+    sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
+    sheenGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.25)');
+    sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+    ctx.fillStyle = sheenGrad;
+    ctx.beginPath();
+    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + crimpHeight + 1, size - 4, size * 0.42, Math.max(3, radius * 0.6));
+    ctx.fill();
+
+    // 5. White Crisp Outer Foil Border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.stroke();
 
-    // 5. Playful Center Emoji Badge
-    ctx.font = `${Math.floor(cellSize * 0.46)}px sans-serif`;
+    // 6. Mini "KAPPO" Brand Title Pill
+    const brandW = size * 0.72;
+    const brandH = size * 0.22;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 3;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(centerX - brandW / 2, py + padding + crimpHeight + 2, brandW, brandH, 4);
+    } else {
+      ctx.rect(centerX - brandW / 2, py + padding + crimpHeight + 2, brandW, brandH);
+    }
+    ctx.fill();
+
+    ctx.font = `900 ${Math.floor(size * 0.18)}px 'Outfit', sans-serif`;
+    ctx.fillStyle = flavor.mainColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillText('KAPPO', centerX, py + padding + crimpHeight + 2 + brandH / 2 + 0.5);
+
+    // 7. Flavor Badge / Kerala Kathakali Emblem
+    ctx.font = `${Math.floor(size * 0.38)}px sans-serif`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
     ctx.shadowBlur = 4;
-    ctx.fillText(flavor.badge, px + cellSize / 2, py + cellSize / 2 + 1);
+    ctx.fillText(flavor.badge, centerX, centerY + size * 0.14);
 
     ctx.restore();
   }

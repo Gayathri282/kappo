@@ -55,6 +55,23 @@ const btnRestartPause = document.getElementById('btn-restart-pause');
 const btnCloseHelp = document.getElementById('btn-close-help');
 const btnGotIt = document.getElementById('btn-got-it');
 
+// Speed Boost Buttons
+const btnSpeedBoost = document.getElementById('btn-speed-boost');
+const btnSpeedBoostMobile = document.getElementById('btn-speed-boost-mobile');
+const btnSpeedBoostDesktop = document.getElementById('btn-speed-boost-desktop');
+
+// Tutorial Carousel Elements
+const tutorialModal = document.getElementById('tutorial-modal');
+const btnCloseTutorial = document.getElementById('btn-close-tutorial');
+const btnTutorialStart = document.getElementById('btn-tutorial-start');
+const carouselTrack = document.getElementById('carousel-track');
+const btnCarouselPrev = document.getElementById('btn-carousel-prev');
+const btnCarouselNext = document.getElementById('btn-carousel-next');
+const carouselDotsContainer = document.getElementById('carousel-dots');
+
+let currentSlide = 0;
+const totalSlides = 3;
+
 // Instantiate Engines
 const game = new TetrisGame();
 const renderer = new CanvasRenderer(
@@ -116,31 +133,46 @@ function rotateCCWAction() {
   if (game.rotate(-1)) sound.playRotate();
 }
 
-function softDropAction() {
-  if (game.softDrop()) sound.playDrop();
-}
-
-function hardDropAction() {
-  const dropDist = game.hardDrop();
-  if (dropDist > 0) {
-    sound.playDrop();
-    particles.shake(6, 6);
-    processLineClears();
-  }
-}
-
 function holdAction() {
   if (game.hold()) sound.playHold();
 }
 
-// Touch Controls Engine with Direct Screen Sensitivity & Touch Ripples
+function setSpeedBoost(active) {
+  game.isSpeedBoosted = active;
+  [btnSpeedBoost, btnSpeedBoostMobile, btnSpeedBoostDesktop].forEach(btn => {
+    if (btn) {
+      if (active) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+  });
+}
+
+// Attach Speed Boost Listeners (Hold & Toggle Support)
+[btnSpeedBoost, btnSpeedBoostMobile, btnSpeedBoostDesktop].forEach(btn => {
+  if (!btn) return;
+
+  btn.addEventListener('mousedown', () => setSpeedBoost(true));
+  window.addEventListener('mouseup', () => setSpeedBoost(false));
+
+  btn.addEventListener('touchstart', (e) => {
+    if (e.cancelable) e.preventDefault();
+    setSpeedBoost(true);
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => setSpeedBoost(false));
+
+  btn.addEventListener('click', () => {
+    // Toggle backup for quick clicks
+    setSpeedBoost(!game.isSpeedBoosted);
+  });
+});
+
+// Touch Controls Engine with Direct Screen Touch Zones
 const touchController = new TouchController({
   onLeft: () => moveLeftAction(),
   onRight: () => moveRightAction(),
   onRotateCW: () => rotateCWAction(),
   onRotateCCW: () => rotateCCWAction(),
-  onSoftDrop: () => softDropAction(),
-  onHardDrop: () => hardDropAction(),
   onHold: () => holdAction(),
 }, particles);
 
@@ -174,11 +206,13 @@ function processLineClears() {
   const result = game.clearLines();
   if (result.count > 0) {
     const flavorColors = FLAVORS.map(f => f.mainColor);
+    
+    // 1. Sequential plastic packet pop SFX & particles across columns
+    sound.playSequentialPacketPops(10, 35);
     particles.spawnLineClearFX(result.lines, renderer.cellSize, renderer.cellSize, flavorColors);
-    touchController.vibrate(25 + result.count * 10);
+    touchController.vibrate(30 + result.count * 15);
 
     if (result.monoCount > 0) {
-      // Enhanced Mono-Flavor ("Full Batch Clear") special effect
       sound.playMonoCrunch(result.monoCount, result.monoFlavor);
       particles.spawnMonoFlavorFX(result.clearedDetails, renderer.cellSize, renderer.cellSize);
 
@@ -264,7 +298,8 @@ function update(time = 0) {
     if (dropCounter > game.getDropSpeed()) {
       const moved = game.tick();
       if (!moved) {
-        sound.playDrop();
+        // Realistic plastic chip bag landing impact sound!
+        sound.playBagLanding();
         processLineClears();
         if (!game.gameOver) {
           game.spawnPiece();
@@ -306,13 +341,6 @@ function handleKeyHolding(currentTime) {
       }
     }
   });
-
-  ['ArrowDown', 'KeyS'].forEach(key => {
-    if (keysState[key] && currentTime - keysState[key].lastRepeat > 50) {
-      softDropAction();
-      keysState[key].lastRepeat = currentTime;
-    }
-  });
 }
 
 function startGame() {
@@ -351,6 +379,55 @@ function handleGameOver() {
   gameOverModal.classList.remove('hidden');
 }
 
+// Carousel Navigation Logic
+function updateCarouselSlide(slideIndex) {
+  currentSlide = (slideIndex + totalSlides) % totalSlides;
+  carouselTrack.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+  const slides = carouselTrack.querySelectorAll('.carousel-slide');
+  slides.forEach((s, idx) => {
+    if (idx === currentSlide) s.classList.add('active');
+    else s.classList.remove('active');
+  });
+
+  const dots = carouselDotsContainer.querySelectorAll('.dot');
+  dots.forEach((d, idx) => {
+    if (idx === currentSlide) d.classList.add('active');
+    else d.classList.remove('active');
+  });
+}
+
+btnCarouselPrev.addEventListener('click', () => updateCarouselSlide(currentSlide - 1));
+btnCarouselNext.addEventListener('click', () => {
+  if (currentSlide === totalSlides - 1) {
+    closeTutorialModal();
+  } else {
+    updateCarouselSlide(currentSlide + 1);
+  }
+});
+
+const dotsList = carouselDotsContainer.querySelectorAll('.dot');
+dotsList.forEach((dot, idx) => {
+  dot.addEventListener('click', () => updateCarouselSlide(idx));
+});
+
+function openTutorialModal() {
+  if (gameStarted && !game.paused) pauseGame();
+  updateCarouselSlide(0);
+  tutorialModal.classList.remove('hidden');
+}
+
+function closeTutorialModal() {
+  tutorialModal.classList.add('hidden');
+  localStorage.setItem('kappo_tutorial_seen', 'true');
+}
+
+btnCloseTutorial.addEventListener('click', closeTutorialModal);
+btnTutorialStart.addEventListener('click', () => {
+  closeTutorialModal();
+  if (!gameStarted) startGame();
+});
+
 // Window Keyboard Controls
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'Space', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
@@ -378,6 +455,11 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  if (e.code === 'Space' || e.code === 'ArrowDown') {
+    setSpeedBoost(true);
+    return;
+  }
+
   if (game.paused) return;
 
   switch (e.code) {
@@ -397,13 +479,6 @@ window.addEventListener('keydown', (e) => {
     case 'KeyZ':
       rotateCCWAction();
       break;
-    case 'ArrowDown':
-    case 'KeyS':
-      softDropAction();
-      break;
-    case 'Space':
-      hardDropAction();
-      break;
     case 'KeyC':
     case 'ShiftLeft':
     case 'ShiftRight':
@@ -414,9 +489,12 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   delete keysState[e.code];
+  if (e.code === 'Space' || e.code === 'ArrowDown') {
+    setSpeedBoost(false);
+  }
 });
 
-// Tap anywhere on Start Overlay or Playfield to start game instantly
+// Tap anywhere on Start Overlay to start game instantly
 startOverlay.addEventListener('click', () => {
   if (!gameStarted) startGame();
 });
@@ -444,16 +522,15 @@ btnResume.addEventListener('click', resumeGame);
 btnRestart.addEventListener('click', startGame);
 btnRestartPause.addEventListener('click', startGame);
 
-btnHelp.addEventListener('click', () => {
-  if (gameStarted && !game.paused) pauseGame();
-  helpModal.classList.remove('hidden');
-});
+btnHelp.addEventListener('click', openTutorialModal);
 
-btnCloseHelp.addEventListener('click', () => helpModal.classList.add('hidden'));
-btnGotIt.addEventListener('click', () => helpModal.classList.add('hidden'));
-
-// Auto-start game immediately on page load so game is active right away
-startGame();
+// First-Time Player Experience Tutorial Auto-Check
+const tutorialSeen = localStorage.getItem('kappo_tutorial_seen') === 'true';
+if (!tutorialSeen) {
+  openTutorialModal();
+} else {
+  startGame();
+}
 
 // Run Loop
 requestAnimationFrame(update);

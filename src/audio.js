@@ -167,28 +167,114 @@ class SoundEngine {
     });
   }
 
-  // 3. Piece Drop Thud
-  playDrop() {
+  // 3. Realistic Plastic Chip Bag Landing SFX (Crinkle + Thud)
+  playBagLanding() {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
+    const duration = 0.12;
+
+    // A. Plastic Foil Crinkle Noise Burst
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      const crackle = Math.random() < 0.4 ? (Math.random() * 2 - 1) : (Math.random() * 0.2 - 0.1);
+      output[i] = crackle * Math.exp(-i / (bufferSize * 0.3));
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(3200, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.35, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(now);
+
+    // B. Puffed Bag Cushion Thud
     const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const oscGain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(160, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + duration);
 
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    oscGain.gain.setValueAtTime(0.28, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.08);
+    osc.stop(now + duration);
+  }
+
+  // 3b. Legacy playDrop wrapper
+  playDrop() {
+    this.playBagLanding();
+  }
+
+  // 3c. Sequential Plastic Crinkle/Pop Sequence across Row
+  playSequentialPacketPops(totalItems = 10, stepMs = 35) {
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    for (let i = 0; i < totalItems; i++) {
+      setTimeout(() => {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const pitchMultiplier = 1.0 + (i / totalItems) * 0.5;
+
+        // Plastic pop frequency
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400 * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(150 * pitchMultiplier, now + 0.04);
+
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+
+        // Crinkle click burst
+        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * 0.03), this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let k = 0; k < data.length; k++) {
+          data[k] = (Math.random() * 2 - 1) * Math.exp(-k / (data.length * 0.2));
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const nFilter = this.ctx.createBiquadFilter();
+        nFilter.type = 'bandpass';
+        nFilter.frequency.setValueAtTime(3500 * pitchMultiplier, now);
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.25, now);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+        noise.connect(nFilter);
+        nFilter.connect(nGain);
+        nGain.connect(this.ctx.destination);
+        noise.start(now);
+      }, i * stepMs);
+    }
   }
 
   // 4. Piece Rotate Tick
