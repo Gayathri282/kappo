@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-BcemoUQ7.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-COtmC4mu.css">
+  <script type="module" crossorigin src="/assets/index-CK6hNgTJ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BJNGfzbp.css">
 </head>
 <body>
   <!-- Tropical Background Atmosphere -->
@@ -46,6 +46,9 @@
       </div>
 
       <div class="header-actions">
+        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Hold for Speed Boost" aria-label="Speed Boost">
+          <span class="speed-icon">⚡</span>
+        </button>
         <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
           <span class="sound-icon">🔊</span>
         </button>
@@ -64,10 +67,10 @@
         <span class="mini-label">HOLD</span>
         <canvas id="hold-canvas-mobile" width="70" height="70"></canvas>
       </div>
-      <div class="mini-score-box">
-        <span class="mini-label">BEST STACK</span>
-        <span id="high-score-val-mobile" class="mini-val">0</span>
-      </div>
+      <button id="btn-speed-boost-mobile" class="btn-speed-boost-card" aria-label="Speed Boost">
+        <span class="boost-bolt">⚡</span>
+        <span class="boost-txt">TURBO BOOST</span>
+      </button>
       <div class="mini-card next-mini">
         <span class="mini-label">NEXT</span>
         <canvas id="next-canvas-mobile" width="70" height="70"></canvas>
@@ -89,6 +92,17 @@
             <canvas id="hold-canvas" width="120" height="120"></canvas>
             <span class="hold-hint">Press C / Shift</span>
           </div>
+        </div>
+
+        <!-- Speed Boost Control Box -->
+        <div class="glass-card boost-card">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <span class="card-label">FALL SPEED</span>
+          </div>
+          <button id="btn-speed-boost-desktop" class="btn-primary btn-boost-hero">
+            <span>⚡ HOLD FOR SPEED BOOST</span>
+          </button>
         </div>
 
         <!-- Kappo Flavor Legend -->
@@ -134,7 +148,7 @@
             <div id="event-text" class="event-text">FULL CRUNCH!</div>
           </div>
 
-          <!-- Start Game Overlay Screen (Hidden for Instant Auto-Start) -->
+          <!-- Start Game Overlay Screen -->
           <div id="start-overlay" class="overlay-screen hidden">
             <div class="overlay-content">
               <div class="chips-icon-hero">📦</div>
@@ -187,23 +201,6 @@
       </aside>
 
     </main>
-
-    <!-- Touch Controls Deck for Mobile Devices -->
-    <div id="touch-controls" class="touch-controls">
-      <div class="touch-row top-row">
-        <button id="touch-hold" class="touch-btn touch-special" aria-label="Hold Piece">HOLD</button>
-        <button id="touch-rot-ccw" class="touch-btn touch-action" aria-label="Rotate Counter-Clockwise">↺</button>
-        <button id="touch-rot-cw" class="touch-btn touch-action" aria-label="Rotate Clockwise">↻</button>
-      </div>
-      <div class="touch-row dpad-row">
-        <button id="touch-left" class="touch-btn touch-arrow" aria-label="Move Left">◄</button>
-        <button id="touch-down" class="touch-btn touch-arrow" aria-label="Soft Drop">▼</button>
-        <button id="touch-right" class="touch-btn touch-arrow" aria-label="Move Right">►</button>
-      </div>
-      <div class="touch-row bottom-row">
-        <button id="touch-drop" class="touch-btn touch-drop-btn" aria-label="Hard Drop">⚡ HARD DROP ⚡</button>
-      </div>
-    </div>
 
   </div>
 
@@ -262,48 +259,84 @@
     </div>
   </div>
 
-  <!-- Help / Instructions Modal -->
-  <div id="help-modal" class="modal-backdrop hidden">
-    <div class="modal-card modal-wide">
+  <!-- Interactive First-Time Player Tutorial Carousel Modal -->
+  <div id="tutorial-modal" class="modal-backdrop hidden">
+    <div class="modal-card modal-wide tutorial-card">
       <div class="modal-header-row">
-        <h2 class="modal-title">HOW TO PLAY & WIN</h2>
-        <button id="btn-close-help" class="icon-btn-close">&times;</button>
+        <h2 class="modal-title">HOW TO PLAY KAPPO CRUNCH</h2>
+        <button id="btn-close-tutorial" class="icon-btn-close">&times;</button>
       </div>
-      <div class="help-content">
-        <div class="help-section">
-          <h3>🎯 Tetris Logic & How to Win</h3>
-          <p>Kappo chip packets drop from the top. Position and rotate pieces to complete solid <strong>horizontal lines</strong> across the 10-column grid without gaps!</p>
-          <ul>
-            <li><strong>✨ Full Batch Clear (Mono-Flavor)</strong>: Fill a row where every block is the same flavor to trigger a signature color flash, Kappo logo stamp, packet confetti burst & 3x score multiplier! Stack multiple mono-flavor rows for Double or Triple Batch bonuses!</li>
-            <li><strong>Line Clear (Crunch Combo)</strong>: Filled rows clear normally with base points. Mixed flavor rows are never penalized!</li>
-            <li><strong>⚡ FULL CRUNCH (4-Line Clear)</strong>: Clear 4 lines at once with the straight Cassava Dynamite piece for massive jackpot score!</li>
-            <li><strong>Batch Levels</strong>: Speed increases every 10 cleared lines. Win by setting your personal <strong>Best Stack</strong> high score!</li>
-          </ul>
-        </div>
 
-        <div class="help-section">
-          <h3>📱 Direct Screen Touch Controls (Mobile)</h3>
-          <div class="help-flavor-grid">
-            <div class="help-flavor-item salted"><strong>Tap Left / Right Screen</strong>: Move Left / Right</div>
-            <div class="help-flavor-item chilli"><strong>Drag Finger Left / Right</strong>: Smooth Column Slide</div>
-            <div class="help-flavor-item tomato"><strong>Tap Center / Top Screen</strong>: Rotate Piece (↻)</div>
-            <div class="help-flavor-item dynamite"><strong>Fast Swipe Down</strong>: ⚡ Hard Drop</div>
-            <div class="help-flavor-item salted"><strong>Swipe Up / Tap Hold Box</strong>: Hold Piece (📦)</div>
+      <!-- Carousel Container -->
+      <div class="carousel-wrapper">
+        <div class="carousel-track" id="carousel-track">
+          
+          <!-- Slide 1: Touch Movement Zones -->
+          <div class="carousel-slide active" data-slide="0">
+            <div class="slide-badge">STEP 1 OF 3</div>
+            <h3>👈 Touch & Drag Movement Zones 👉</h3>
+            <div class="slide-illustration zones-illustration">
+              <div class="zone-box zone-left">
+                <span class="zone-icon">👈</span>
+                <span class="zone-label">TAP / DRAG LEFT</span>
+              </div>
+              <div class="zone-box zone-top">
+                <span class="zone-icon">↻</span>
+                <span class="zone-label">TAP TOP TO ROTATE</span>
+              </div>
+              <div class="zone-box zone-right">
+                <span class="zone-icon">👉</span>
+                <span class="zone-label">TAP / DRAG RIGHT</span>
+              </div>
+            </div>
+            <p>Tap or drag on the <strong>Left Half</strong> or <strong>Right Half</strong> of the board to position falling chip packets seamlessly!</p>
           </div>
-        </div>
 
-        <div class="help-section">
-          <h3>🌶️ 4 Kappo Flavor Skins</h3>
-          <div class="help-flavor-grid">
-            <div class="help-flavor-item dynamite"><strong>Cassava Dynamite</strong> (Spicy Red 🔥)</div>
-            <div class="help-flavor-item tomato"><strong>Tangy Tomato</strong> (Tomato Red 🍅)</div>
-            <div class="help-flavor-item chilli"><strong>Banana Chili Garlic</strong> (Green 🧄)</div>
-            <div class="help-flavor-item salted"><strong>Banana Classic Salted</strong> (Golden Yellow 🍌)</div>
+          <!-- Slide 2: Speed Boost Button -->
+          <div class="carousel-slide" data-slide="1">
+            <div class="slide-badge">STEP 2 OF 3</div>
+            <h3>⚡ Speed Boost Control</h3>
+            <div class="slide-illustration boost-illustration">
+              <div class="boost-hero-pill">
+                <span class="bolt-anim">⚡</span>
+                <span class="boost-hero-text">SPEED BOOST</span>
+              </div>
+            </div>
+            <p>Hold the <strong>⚡ Speed Boost</strong> button to temporarily accelerate gravity and drop packets faster!</p>
           </div>
+
+          <!-- Slide 3: Row Matching & Mono-Flavor Combos -->
+          <div class="carousel-slide" data-slide="2">
+            <div class="slide-badge">STEP 3 OF 3</div>
+            <h3>📦 Row Crunch & Mono-Flavor Multiplier</h3>
+            <div class="slide-illustration rows-illustration">
+              <div class="row-pop-preview">
+                <span class="pop-chip dynamite">🔥</span>
+                <span class="pop-chip dynamite">🔥</span>
+                <span class="pop-chip dynamite">🔥</span>
+                <span class="pop-chip dynamite">🔥</span>
+                <span class="pop-stamp">3X MULTIPLIER!</span>
+              </div>
+            </div>
+            <p>Fill complete horizontal rows to trigger a sequential packet crunch burst! Fill rows of the <strong>same flavor</strong> for massive 3x score multipliers!</p>
+          </div>
+
         </div>
       </div>
-      <div class="modal-actions">
-        <button id="btn-got-it" class="btn-primary">LET'S CRUNCH!</button>
+
+      <!-- Carousel Navigation Controls -->
+      <div class="carousel-controls">
+        <button id="btn-carousel-prev" class="btn-secondary btn-nav">&larr; Back</button>
+        <div class="carousel-dots" id="carousel-dots">
+          <span class="dot active" data-dot="0"></span>
+          <span class="dot" data-dot="1"></span>
+          <span class="dot" data-dot="2"></span>
+        </div>
+        <button id="btn-carousel-next" class="btn-primary btn-nav">Next &rarr;</button>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 14px;">
+        <button id="btn-tutorial-start" class="btn-primary btn-large">LET'S CRUNCH!</button>
       </div>
     </div>
   </div>

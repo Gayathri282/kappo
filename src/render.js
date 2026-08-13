@@ -77,16 +77,16 @@ export class CanvasRenderer {
     }
   }
 
-  // 3D Puffed Toon Kappo Chip Packet Renderer
+  // 3D Toon Authentic Kappo Chip Packet Renderer
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const px = offsetX + x * cellSize;
     const py = offsetY + y * cellSize;
-    const padding = 1.2;
+    const padding = 1.0;
     const size = cellSize - padding * 2;
-    const radius = Math.max(4, cellSize * 0.22); // Rounded puffed packet pillow
+    const radius = Math.max(5, size * 0.22); // 3D puffed packet pillow radius
 
     if (isGhost) {
       ctx.strokeStyle = flavor.mainColor;
@@ -102,89 +102,174 @@ export class CanvasRenderer {
       return;
     }
 
+    const centerX = px + cellSize / 2;
+    const centerY = py + cellSize / 2;
+    const flavorId = flavor ? flavor.id : 'salted';
+
     // 1. Soft 3D Drop Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding + 1.5, py + padding + 2.5, size, size, radius);
     ctx.fill();
 
-    // 2. Main 3D Puffed Bag Body (Radial bulge for inflated snack bag volume)
-    const centerX = px + cellSize / 2;
-    const centerY = py + cellSize / 2;
+    // 2. Base 3D Puffed Bag Fill (Inflated Snack Bag Volume)
     const bgGrad = ctx.createRadialGradient(
-      centerX - size * 0.15, centerY - size * 0.15, size * 0.05,
-      centerX, centerY, size * 0.75
+      centerX - size * 0.15, centerY - size * 0.15, size * 0.06,
+      centerX, centerY, size * 0.72
     );
-    bgGrad.addColorStop(0, flavor.accentColor);
-    bgGrad.addColorStop(0.7, flavor.mainColor);
-    bgGrad.addColorStop(1, flavor.mainColor);
+
+    if (flavorId === 'salted') {
+      bgGrad.addColorStop(0, '#FFEAA7');
+      bgGrad.addColorStop(0.65, '#FFA502');
+      bgGrad.addColorStop(1, '#D97706');
+    } else if (flavorId === 'dynamite') {
+      bgGrad.addColorStop(0, '#FF7F50');
+      bgGrad.addColorStop(0.65, '#FF4757');
+      bgGrad.addColorStop(1, '#C0392B');
+    } else if (flavorId === 'tomato') {
+      bgGrad.addColorStop(0, '#FFA07A');
+      bgGrad.addColorStop(0.65, '#FF6B4A');
+      bgGrad.addColorStop(1, '#D35400');
+    } else {
+      bgGrad.addColorStop(0, '#7BED9F');
+      bgGrad.addColorStop(0.65, '#2ED573');
+      bgGrad.addColorStop(1, '#10AC84');
+    }
 
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.fill();
 
-    // 3. Top & Bottom Metallic Foil Crimp Seals (Snack Bag Seam Ridges)
-    const crimpHeight = Math.max(3, size * 0.12);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-
-    // Top crimp seal
+    // 3. Authentic Kathakali Mandala & Pattern Artwork (Matching uploaded images!)
+    ctx.save();
+    // Clip inner bag area so artwork stays inside puffed packet
     ctx.beginPath();
-    ctx.rect(px + padding + 2, py + padding + 1, size - 4, crimpHeight);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
+    this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
+    ctx.clip();
 
-    // Bottom crimp seal
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.beginPath();
-    ctx.rect(px + padding + 2, py + padding + size - crimpHeight - 1, size - 4, crimpHeight);
-    ctx.fill();
+    if (flavorId === 'salted') {
+      // Golden Yellow Bag: Red & Blue Kathakali Mandala Ring + Green Kathakali Face
+      ctx.fillStyle = '#D63031';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - size * 0.05, size * 0.38, 0, Math.PI * 2);
+      ctx.fill();
 
-    // 4. Glossy Foil Sheen Reflection (Top-Left Candy Crush Style Curved Pill)
-    const sheenGrad = ctx.createLinearGradient(px, py, px + size, py + size);
-    sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
-    sheenGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.25)');
+      ctx.fillStyle = '#0984E3';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - size * 0.05, size * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Kathakali Green Face Artwork at lower center
+      ctx.fillStyle = '#2ED573';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY + size * 0.22, size * 0.20, 0, Math.PI);
+      ctx.fill();
+
+      // Kathakali Eyes & Lips
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(centerX - size * 0.08, centerY + size * 0.16, size * 0.04, 0, Math.PI * 2);
+      ctx.arc(centerX + size * 0.08, centerY + size * 0.16, size * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (flavorId === 'dynamite') {
+      // Cassava Dynamite: Dual Split Green & Red Bag
+      ctx.fillStyle = '#2ED573';
+      ctx.fillRect(px + padding, py + padding, size * 0.5, size);
+
+      // Red Kathakali Wave
+      ctx.fillStyle = '#FF4757';
+      ctx.beginPath();
+      ctx.arc(centerX + size * 0.1, centerY, size * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (flavorId === 'tomato') {
+      // Tangy Tomato: Sunburst Rays Mandala
+      ctx.fillStyle = 'rgba(255, 234, 167, 0.35)';
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, size * 0.45, angle, angle + Math.PI / 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      // Chili Garlic: Deep Emerald Green Mandala Rings
+      ctx.fillStyle = 'rgba(255, 165, 0, 0.35)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, size * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // 4. Top & Bottom Metallic Foil Crimp Seals (Snack Bag Serrated Seams)
+    const crimpH = Math.max(3, size * 0.13);
+    const crimpGrad = ctx.createLinearGradient(px, py, px + size, py);
+    crimpGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+    crimpGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+    crimpGrad.addColorStop(1, 'rgba(255, 255, 255, 0.7)');
+
+    ctx.fillStyle = crimpGrad;
+    // Top foil crimp
+    ctx.fillRect(px + padding + 1, py + padding + 0.5, size - 2, crimpH);
+    // Bottom foil crimp
+    ctx.fillRect(px + padding + 1, py + padding + size - crimpH - 0.5, size - 2, crimpH);
+
+    // Crimp ridges lines
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.lineWidth = 0.6;
+    for (let rx = px + padding + 3; rx < px + padding + size - 3; rx += 3) {
+      ctx.beginPath();
+      ctx.moveTo(rx, py + padding + 0.5);
+      ctx.lineTo(rx, py + padding + crimpH);
+      ctx.moveTo(rx, py + padding + size - crimpH);
+      ctx.lineTo(rx, py + padding + size - 0.5);
+      ctx.stroke();
+    }
+
+    // 5. Candy Crush Glossy Foil Sheen Reflection (Top-Left Curved Pill)
+    const sheenGrad = ctx.createLinearGradient(px, py, px + size * 0.8, py + size * 0.8);
+    sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.70)');
+    sheenGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.22)');
     sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
 
     ctx.fillStyle = sheenGrad;
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + crimpHeight + 1, size - 4, size * 0.42, Math.max(3, radius * 0.6));
+    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + crimpH + 1, size - 4, size * 0.42, Math.max(3, radius * 0.6));
     ctx.fill();
 
-    // 5. White Crisp Outer Foil Border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    // 6. Crisp White Outer Foil Outline
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
     ctx.stroke();
 
-    // 6. Mini "KAPPO" Brand Title Pill
+    // 7. Mini "KAPPO" Toon Brand Logo Banner
     const brandW = size * 0.72;
     const brandH = size * 0.22;
     ctx.fillStyle = '#FFFFFF';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-    ctx.shadowBlur = 3;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 4;
     ctx.beginPath();
     if (typeof ctx.roundRect === 'function') {
-      ctx.roundRect(centerX - brandW / 2, py + padding + crimpHeight + 2, brandW, brandH, 4);
+      ctx.roundRect(centerX - brandW / 2, py + padding + crimpH + 2, brandW, brandH, 4);
     } else {
-      ctx.rect(centerX - brandW / 2, py + padding + crimpHeight + 2, brandW, brandH);
+      ctx.rect(centerX - brandW / 2, py + padding + crimpH + 2, brandW, brandH);
     }
     ctx.fill();
 
-    ctx.font = `900 ${Math.floor(size * 0.18)}px 'Outfit', sans-serif`;
-    ctx.fillStyle = flavor.mainColor;
+    ctx.font = `900 ${Math.floor(size * 0.17)}px 'Outfit', sans-serif`;
+    ctx.fillStyle = flavor ? flavor.mainColor : '#D97706';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('KAPPO', centerX, py + padding + crimpHeight + 2 + brandH / 2 + 0.5);
+    ctx.fillText('kappo', centerX, py + padding + crimpH + 2 + brandH / 2 + 0.5);
 
-    // 7. Flavor Badge / Kerala Kathakali Emblem
-    ctx.font = `${Math.floor(size * 0.38)}px sans-serif`;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    // 8. Flavor Emoji & Kathakali Badge Icon
+    ctx.font = `${Math.floor(size * 0.35)}px sans-serif`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
     ctx.shadowBlur = 4;
-    ctx.fillText(flavor.badge, centerX, centerY + size * 0.14);
+    ctx.fillText(flavor ? flavor.badge : '🍌', centerX, centerY + size * 0.16);
 
     ctx.restore();
   }

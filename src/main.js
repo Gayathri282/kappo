@@ -297,8 +297,11 @@ function update(time = 0) {
 
     if (dropCounter > game.getDropSpeed()) {
       const moved = game.tick();
-      if (!moved) {
-        // Realistic plastic chip bag landing impact sound!
+      if (moved) {
+        // Soothing plastic micro-crinkle & air glide step down sound
+        sound.playMoveDown();
+      } else {
+        // Soothing plastic Lay's chip packet floor touch & cushion thud SFX
         sound.playBagLanding();
         processLineClears();
         if (!game.gameOver) {

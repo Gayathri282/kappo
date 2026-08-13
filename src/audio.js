@@ -167,34 +167,39 @@ class SoundEngine {
     });
   }
 
-  // 3. Realistic Plastic Chip Bag Landing SFX (Crinkle + Thud)
+  // 3. Realistic Soothing Plastic Lay's Packet Landing SFX (Soft Foil Crinkle + Air Cushion Thud)
   playBagLanding() {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.12;
+    const duration = 0.16;
 
-    // A. Plastic Foil Crinkle Noise Burst
+    // A. Soft Foil Plastic Crinkle Layer (Staggered micro-bursts for realistic packet rustle)
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
 
     for (let i = 0; i < bufferSize; i++) {
-      const crackle = Math.random() < 0.4 ? (Math.random() * 2 - 1) : (Math.random() * 0.2 - 0.1);
-      output[i] = crackle * Math.exp(-i / (bufferSize * 0.3));
+      const t = i / bufferSize;
+      const envelope = Math.exp(-t * 8) + 0.4 * Math.exp(-Math.pow(t - 0.25, 2) * 50) + 0.2 * Math.exp(-Math.pow(t - 0.5, 2) * 80);
+      const crackle = (Math.random() * 2 - 1);
+      output[i] = crackle * envelope;
     }
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
 
+    // Bandpass filter for a smooth, warm plastic packet sound
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'highpass';
+    filter.type = 'bandpass';
     filter.frequency.setValueAtTime(3200, now);
+    filter.frequency.exponentialRampToValueAtTime(1800, now + duration);
+    filter.Q.setValueAtTime(1.0, now);
 
     const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.35, now);
+    noiseGain.gain.setValueAtTime(0.18, now);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     noise.connect(filter);
@@ -202,22 +207,39 @@ class SoundEngine {
     noiseGain.connect(this.ctx.destination);
     noise.start(now);
 
-    // B. Puffed Bag Cushion Thud
-    const osc = this.ctx.createOscillator();
-    const oscGain = this.ctx.createGain();
+    // B. Puffed Chip Bag Air-Cushion Thud (Warm sub-bass air puff when packet lands)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(45, now + duration);
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(150, now);
+    subOsc.frequency.exponentialRampToValueAtTime(38, now + duration);
 
-    oscGain.gain.setValueAtTime(0.28, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    subGain.gain.setValueAtTime(0.22, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    osc.connect(oscGain);
-    oscGain.connect(this.ctx.destination);
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
 
-    osc.start(now);
-    osc.stop(now + duration);
+    subOsc.start(now);
+    subOsc.stop(now + duration);
+
+    // C. Soft Plastic Pop Accent (Damped warm pop of Lay's bag foil)
+    const popOsc = this.ctx.createOscillator();
+    const popGain = this.ctx.createGain();
+
+    popOsc.type = 'triangle';
+    popOsc.frequency.setValueAtTime(420, now);
+    popOsc.frequency.exponentialRampToValueAtTime(160, now + 0.05);
+
+    popGain.gain.setValueAtTime(0.12, now);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    popOsc.connect(popGain);
+    popGain.connect(this.ctx.destination);
+
+    popOsc.start(now);
+    popOsc.stop(now + 0.05);
   }
 
   // 3b. Legacy playDrop wrapper
@@ -277,7 +299,66 @@ class SoundEngine {
     }
   }
 
-  // 4. Piece Rotate Tick
+  // 3d. Soothing Plastic Block Moving Down SFX (Soft Foil Crinkle + Air Glide)
+  playMoveDown() {
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const duration = 0.04;
+
+    if (this.lastMoveDownTime && (now - this.lastMoveDownTime) < 0.035) {
+      return;
+    }
+    this.lastMoveDownTime = now;
+
+    // A. Soft Plastic Foil Micro-Crinkle
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      const noiseVal = (Math.random() * 2 - 1) * 0.35;
+      output[i] = noiseVal * Math.exp(-i / (bufferSize * 0.4));
+    }
+
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(3600, now);
+    filter.Q.setValueAtTime(1.1, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.08, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noiseSource.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noiseSource.start(now);
+
+    // B. Subtle Pitched Air Glide
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + duration);
+
+    oscGain.gain.setValueAtTime(0.05, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  // 4. Piece Rotate Tick (Soothing Plastic Flick)
   playRotate() {
     if (this.muted) return;
     this.initContext();
@@ -287,18 +368,38 @@ class SoundEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.setValueAtTime(1200, now + 0.02);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(280, now + 0.035);
 
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.04);
+    osc.stop(now + 0.035);
+
+    // Micro plastic crinkle click
+    const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * 0.025), this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let k = 0; k < data.length; k++) {
+      data[k] = (Math.random() * 2 - 1) * Math.exp(-k / (data.length * 0.2));
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const nFilter = this.ctx.createBiquadFilter();
+    nFilter.type = 'bandpass';
+    nFilter.frequency.setValueAtTime(4000, now);
+    const nGain = this.ctx.createGain();
+    nGain.gain.setValueAtTime(0.1, now);
+    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+    noise.connect(nFilter);
+    nFilter.connect(nGain);
+    nGain.connect(this.ctx.destination);
+    noise.start(now);
   }
 
   // 5. Hold Piece Swoosh
