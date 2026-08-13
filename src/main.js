@@ -167,13 +167,16 @@ function setSpeedBoost(active) {
   });
 });
 
-// Touch Controls Engine with Direct Screen Touch Zones
+// Touch Controls Engine with Direct Screen Touch Zones & Bottom Deck Buttons
 const touchController = new TouchController({
   onLeft: () => moveLeftAction(),
   onRight: () => moveRightAction(),
   onRotateCW: () => rotateCWAction(),
   onRotateCCW: () => rotateCCWAction(),
   onHold: () => holdAction(),
+  onSoftDrop: () => {
+    if (game.softDrop()) sound.playMoveDown();
+  }
 }, particles);
 
 // Toast Manager
@@ -207,9 +210,15 @@ function processLineClears() {
   if (result.count > 0) {
     const flavorColors = FLAVORS.map(f => f.mainColor);
     
-    // 1. Sequential plastic packet pop SFX & particles across columns
-    sound.playSequentialPacketPops(10, 35);
+    // 1. Sequential plastic packet pop SFX & particles across 8 columns
+    sound.playSequentialPacketPops(8, 40);
     particles.spawnLineClearFX(result.lines, renderer.cellSize, renderer.cellSize, flavorColors);
+    
+    // 2. Candy Crush chain reaction explosion on filled row and nearby row blocks!
+    if (result.blastedCells && result.blastedCells.length > 0) {
+      particles.spawnCandyCrushBlastFX(result.blastedCells, renderer.cellSize);
+    }
+
     touchController.vibrate(30 + result.count * 15);
 
     if (result.monoCount > 0) {
@@ -228,14 +237,14 @@ function processLineClears() {
         bannerText = "Full Batch Jackpot! 🏆🔥";
       }
       triggerEventBanner(bannerText);
-    } else if (result.count === 4) {
+    } else if (result.count >= 4) {
       sound.playFullCrunch();
       particles.spawnFullCrunchFX();
       triggerEventBanner("⚡ FULL CRUNCH! ⚡");
     } else {
       sound.playCrunch(result.count);
-      const labels = ["", "CRUNCH COMBO!", "DOUBLE CRUNCH!", "TRIPLE CRUNCH!"];
-      triggerEventBanner(labels[result.count]);
+      const labels = ["", "CANDY CRUNCH POP!", "DOUBLE CANDY POP!", "TRIPLE CANDY POP!"];
+      triggerEventBanner(labels[result.count] || "CANDY CRUNCH BLAST!");
     }
 
     if (result.leveledUp) {
@@ -271,14 +280,32 @@ function updateHUD() {
   if (scoreValEl) scoreValEl.textContent = scoreStr;
   if (scoreHeaderEl) scoreHeaderEl.textContent = scoreStr;
 
-  if (levelValEl) levelValEl.textContent = game.level;
+  const levelStr = String(game.level).padStart(2, '0');
+  if (levelValEl) levelValEl.textContent = levelStr;
   if (levelHeaderEl) levelHeaderEl.textContent = game.level;
 
   if (linesValEl) linesValEl.textContent = game.lines;
 
   const bestStr = bestScore.toLocaleString();
   if (highScoreValEl) highScoreValEl.textContent = bestStr;
-  if (highScoreMobileEl) highScoreMobileEl.textContent = bestStr;
+
+  const headerBestEl = document.getElementById('high-score-val-header');
+  if (headerBestEl) headerBestEl.textContent = bestStr;
+
+  // Goal Progress (Inspired by LAY STACKS UI - Image 5)
+  const goalTarget = 10;
+  const currentGoalLines = game.lines % goalTarget;
+  const goalPercent = Math.min(100, Math.floor((currentGoalLines / goalTarget) * 100));
+
+  const goalBarDesktop = document.getElementById('goal-bar-fill-desktop');
+  const goalTxtDesktop = document.getElementById('goal-progress-txt-desktop');
+  const goalBarMobile = document.getElementById('goal-bar-fill-mobile');
+  const goalTxtMobile = document.getElementById('goal-progress-txt-mobile');
+
+  if (goalBarDesktop) goalBarDesktop.style.width = `${goalPercent}%`;
+  if (goalTxtDesktop) goalTxtDesktop.textContent = `${currentGoalLines}/${goalTarget}`;
+  if (goalBarMobile) goalBarMobile.style.width = `${goalPercent}%`;
+  if (goalTxtMobile) goalTxtMobile.textContent = `${currentGoalLines}/${goalTarget}`;
 }
 
 function updateSoundButtonUI() {

@@ -17,6 +17,7 @@ export class TouchController {
     this.touchStartTime = 0;
 
     this.initDirectTouchAllocation();
+    this.initTouchControlDeck();
   }
 
   vibrate(duration = 12) {
@@ -27,6 +28,35 @@ export class TouchController {
         // Ignored if restricted
       }
     }
+  }
+
+  // Attach Touch Controls Deck Action Buttons (LAY STACKS Style UI)
+  initTouchControlDeck() {
+    const btnLeft = document.getElementById('btn-touch-left');
+    const btnRight = document.getElementById('btn-touch-right');
+    const btnSoftDrop = document.getElementById('btn-touch-soft-drop');
+    const btnRotate = document.getElementById('btn-touch-rotate');
+
+    const bindButton = (btn, action) => {
+      if (!btn) return;
+
+      const triggerAction = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        this.vibrate(10);
+        action();
+      };
+
+      btn.addEventListener('touchstart', triggerAction, { passive: false });
+      btn.addEventListener('click', (e) => {
+        // Prevent duplicate trigger if touchstart fired
+        if (e.detail !== 0) triggerAction(e);
+      });
+    };
+
+    bindButton(btnLeft, () => this.handlers.onLeft());
+    bindButton(btnRight, () => this.handlers.onRight());
+    bindButton(btnSoftDrop, () => this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null);
+    bindButton(btnRotate, () => this.handlers.onRotateCW());
   }
 
   // Full Screen Direct Touch Allocation & Gestures

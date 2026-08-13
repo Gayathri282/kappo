@@ -1,10 +1,37 @@
 /* ==========================================================================
    CANVAS RENDER ENGINE - KAPPO CHIP PACKETS
+   Dark Arcade Cyber Theme (Inspired by LAY STACKS UI)
    Supports dynamic responsive sizing, retina DPR scaling, desktop & mobile
-   Hold & Next preview canvases.
+   Hold & Next preview canvases, authentic packet images & toon vector rendering.
    ========================================================================== */
 
 import { GRID_COLS, GRID_ROWS } from './tetris.js';
+
+// Preload 3D Kappo packet block images from /assets/
+const PACKET_IMAGES = {};
+const FLAVOR_IMAGE_MAP = {
+  salted: '/assets/kappo_salted_block.png',
+  dynamite: '/assets/kappo_dynamite_block.png',
+  chilli: '/assets/kappo_chilli_block.png',
+  tomato: '/assets/kappo_tomato_block.png'
+};
+
+// Fallback to original packet images if generated block PNGs are loading
+const FALLBACK_IMAGE_MAP = {
+  salted: '/assets/packet_salted.png',
+  dynamite: '/assets/packet_dynamite.png',
+  chilli: '/assets/packet_chilli.png',
+  tomato: '/assets/packet_tomato.png'
+};
+
+Object.keys(FLAVOR_IMAGE_MAP).forEach(flavorId => {
+  const img = new Image();
+  img.src = FLAVOR_IMAGE_MAP[flavorId];
+  img.onerror = () => {
+    img.src = FALLBACK_IMAGE_MAP[flavorId];
+  };
+  PACKET_IMAGES[flavorId] = img;
+});
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -35,7 +62,7 @@ export class CanvasRenderer {
     this.boardWidth = Math.floor(GRID_COLS * this.cellSize);
     this.boardHeight = Math.floor(GRID_ROWS * this.cellSize);
 
-    // Apply exact board dimensions to container element so background image & grid wrap 1:1
+    // Apply exact board dimensions to container element
     container.style.width = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
 
@@ -54,10 +81,31 @@ export class CanvasRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
   }
 
+  // Clean Light Warm Playfield Grid
   drawGrid(width, height) {
-    // Translucent seamless playfield atmosphere overlay — Grid lines are completely INVISIBLE!
-    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.72)';
+    // Warm Light Background
+    this.ctx.fillStyle = '#FFFDF7';
     this.ctx.fillRect(0, 0, width, height);
+
+    // Subtle Soft Warm Grid Lines
+    this.ctx.strokeStyle = 'rgba(235, 220, 195, 0.65)';
+    this.ctx.lineWidth = 1.0;
+
+    for (let c = 0; c <= GRID_COLS; c++) {
+      const x = c * this.cellSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, 0);
+      this.ctx.lineTo(x, height);
+      this.ctx.stroke();
+    }
+
+    for (let r = 0; r <= GRID_ROWS; r++) {
+      const y = r * this.cellSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      this.ctx.lineTo(width, y);
+      this.ctx.stroke();
+    }
   }
 
   drawRoundRectPath(ctx, x, y, width, height, radius) {
@@ -77,124 +125,94 @@ export class CanvasRenderer {
     }
   }
 
-  // 3D Toon Authentic Kappo Chip Packet Renderer
+  // Pure Tile Renderer: One block is an entire single Kappo chips packet filling the 1x1 grid cell
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const px = offsetX + x * cellSize;
     const py = offsetY + y * cellSize;
-    const padding = 1.0;
+    const padding = 0.5;
     const size = cellSize - padding * 2;
-    const radius = Math.max(5, size * 0.22); // 3D puffed packet pillow radius
 
     if (isGhost) {
-      ctx.strokeStyle = flavor.mainColor;
-      ctx.lineWidth = 2.0;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
+      ctx.strokeStyle = flavor ? flavor.mainColor : '#00F0FF';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, 4);
       ctx.stroke();
-      ctx.fillStyle = flavor.mainColor;
-      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = flavor ? flavor.mainColor : '#00F0FF';
+      ctx.globalAlpha = 0.15;
       ctx.fill();
       ctx.restore();
       return;
     }
 
-    const centerX = px + cellSize / 2;
-    const centerY = py + cellSize / 2;
     const flavorId = flavor ? flavor.id : 'salted';
+    const packetImg = PACKET_IMAGES[flavorId];
 
-    // 1. Soft 3D Drop Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
-    ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding + 1.5, py + padding + 2.5, size, size, radius);
-    ctx.fill();
-
-    // 2. Base 3D Puffed Bag Fill (Inflated Snack Bag Volume)
-    const bgGrad = ctx.createRadialGradient(
-      centerX - size * 0.15, centerY - size * 0.15, size * 0.06,
-      centerX, centerY, size * 0.72
-    );
-
-    if (flavorId === 'salted') {
-      bgGrad.addColorStop(0, '#FFEAA7');
-      bgGrad.addColorStop(0.65, '#FFA502');
-      bgGrad.addColorStop(1, '#D97706');
-    } else if (flavorId === 'dynamite') {
-      bgGrad.addColorStop(0, '#FF7F50');
-      bgGrad.addColorStop(0.65, '#FF4757');
-      bgGrad.addColorStop(1, '#C0392B');
-    } else if (flavorId === 'tomato') {
-      bgGrad.addColorStop(0, '#FFA07A');
-      bgGrad.addColorStop(0.65, '#FF6B4A');
-      bgGrad.addColorStop(1, '#D35400');
+    if (packetImg && packetImg.complete && packetImg.naturalWidth !== 0) {
+      // Draw the ENTIRE Kappo chips packet filling the single grid cell directly with no background or extra div!
+      ctx.drawImage(packetImg, px + padding, py + padding, size, size);
     } else {
-      bgGrad.addColorStop(0, '#7BED9F');
-      bgGrad.addColorStop(0.65, '#2ED573');
-      bgGrad.addColorStop(1, '#10AC84');
+      // Toon packet fallback filling the cell
+      this.drawToonPacketFallback(ctx, px + padding, py + padding, size, flavorId, flavor);
     }
 
-    ctx.fillStyle = bgGrad;
+    ctx.restore();
+  }
+
+  // Toon packet vector fallback filling the single cell tile
+  drawToonPacketFallback(ctx, px, py, size, flavorId, flavor) {
+    const radius = Math.max(3, size * 0.15);
+    ctx.save();
+
+    // Fill packet background color
+    ctx.fillStyle = flavor ? flavor.mainColor : '#FFA502';
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
+    this.drawRoundRectPath(ctx, px, py, size, size, radius);
     ctx.fill();
 
-    // 3. Authentic Kathakali Mandala & Pattern Artwork (Matching uploaded images!)
+    // Clip inner packet area for artwork
     ctx.save();
-    // Clip inner bag area so artwork stays inside puffed packet
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
+    this.drawRoundRectPath(ctx, px, py, size, size, radius);
     ctx.clip();
 
+    const centerX = px + size / 2;
+    const centerY = py + size / 2;
+
     if (flavorId === 'salted') {
-      // Golden Yellow Bag: Red & Blue Kathakali Mandala Ring + Green Kathakali Face
       ctx.fillStyle = '#D63031';
       ctx.beginPath();
       ctx.arc(centerX, centerY - size * 0.05, size * 0.38, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.fillStyle = '#0984E3';
       ctx.beginPath();
-      ctx.arc(centerX, centerY - size * 0.05, size * 0.28, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY - size * 0.05, size * 0.25, 0, Math.PI * 2);
       ctx.fill();
-
-      // Kathakali Green Face Artwork at lower center
       ctx.fillStyle = '#2ED573';
       ctx.beginPath();
-      ctx.arc(centerX, centerY + size * 0.22, size * 0.20, 0, Math.PI);
-      ctx.fill();
-
-      // Kathakali Eyes & Lips
-      ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath();
-      ctx.arc(centerX - size * 0.08, centerY + size * 0.16, size * 0.04, 0, Math.PI * 2);
-      ctx.arc(centerX + size * 0.08, centerY + size * 0.16, size * 0.04, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY + size * 0.2, size * 0.18, 0, Math.PI);
       ctx.fill();
     } else if (flavorId === 'dynamite') {
-      // Cassava Dynamite: Dual Split Green & Red Bag
       ctx.fillStyle = '#2ED573';
-      ctx.fillRect(px + padding, py + padding, size * 0.5, size);
-
-      // Red Kathakali Wave
+      ctx.fillRect(px, py, size * 0.45, size);
       ctx.fillStyle = '#FF4757';
       ctx.beginPath();
-      ctx.arc(centerX + size * 0.1, centerY, size * 0.42, 0, Math.PI * 2);
+      ctx.arc(centerX + size * 0.15, centerY, size * 0.48, 0, Math.PI * 2);
       ctx.fill();
     } else if (flavorId === 'tomato') {
-      // Tangy Tomato: Sunburst Rays Mandala
-      ctx.fillStyle = 'rgba(255, 234, 167, 0.35)';
-      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, size * 0.45, angle, angle + Math.PI / 8);
-        ctx.closePath();
-        ctx.fill();
-      }
+      ctx.fillStyle = '#6C5CE7';
+      ctx.fillRect(px, py, size * 0.48, size);
+      ctx.fillStyle = '#FF6B4A';
+      ctx.beginPath();
+      ctx.arc(centerX + size * 0.2, centerY + size * 0.15, size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
     } else {
-      // Chili Garlic: Deep Emerald Green Mandala Rings
-      ctx.fillStyle = 'rgba(255, 165, 0, 0.35)';
+      ctx.fillStyle = '#FF4757';
+      ctx.fillRect(px, py, size, size);
+      ctx.fillStyle = '#2ED573';
       ctx.beginPath();
       ctx.arc(centerX, centerY, size * 0.38, 0, Math.PI * 2);
       ctx.fill();
@@ -202,74 +220,17 @@ export class CanvasRenderer {
 
     ctx.restore();
 
-    // 4. Top & Bottom Metallic Foil Crimp Seals (Snack Bag Serrated Seams)
-    const crimpH = Math.max(3, size * 0.13);
-    const crimpGrad = ctx.createLinearGradient(px, py, px + size, py);
-    crimpGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-    crimpGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
-    crimpGrad.addColorStop(1, 'rgba(255, 255, 255, 0.7)');
+    // Top and bottom foil crimp ridges
+    const crimpH = Math.max(2, size * 0.1);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillRect(px, py, size, crimpH);
+    ctx.fillRect(px, py + size - crimpH, size, crimpH);
 
-    ctx.fillStyle = crimpGrad;
-    // Top foil crimp
-    ctx.fillRect(px + padding + 1, py + padding + 0.5, size - 2, crimpH);
-    // Bottom foil crimp
-    ctx.fillRect(px + padding + 1, py + padding + size - crimpH - 0.5, size - 2, crimpH);
-
-    // Crimp ridges lines
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.lineWidth = 0.6;
-    for (let rx = px + padding + 3; rx < px + padding + size - 3; rx += 3) {
-      ctx.beginPath();
-      ctx.moveTo(rx, py + padding + 0.5);
-      ctx.lineTo(rx, py + padding + crimpH);
-      ctx.moveTo(rx, py + padding + size - crimpH);
-      ctx.lineTo(rx, py + padding + size - 0.5);
-      ctx.stroke();
-    }
-
-    // 5. Candy Crush Glossy Foil Sheen Reflection (Top-Left Curved Pill)
-    const sheenGrad = ctx.createLinearGradient(px, py, px + size * 0.8, py + size * 0.8);
-    sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.70)');
-    sheenGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.22)');
-    sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-
-    ctx.fillStyle = sheenGrad;
+    // Subtle foil sheen
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding + 2, py + padding + crimpH + 1, size - 4, size * 0.42, Math.max(3, radius * 0.6));
+    this.drawRoundRectPath(ctx, px + 1, py + crimpH, size - 2, size * 0.35, radius);
     ctx.fill();
-
-    // 6. Crisp White Outer Foil Outline
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, radius);
-    ctx.stroke();
-
-    // 7. Mini "KAPPO" Toon Brand Logo Banner
-    const brandW = size * 0.72;
-    const brandH = size * 0.22;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 4;
-    ctx.beginPath();
-    if (typeof ctx.roundRect === 'function') {
-      ctx.roundRect(centerX - brandW / 2, py + padding + crimpH + 2, brandW, brandH, 4);
-    } else {
-      ctx.rect(centerX - brandW / 2, py + padding + crimpH + 2, brandW, brandH);
-    }
-    ctx.fill();
-
-    ctx.font = `900 ${Math.floor(size * 0.17)}px 'Outfit', sans-serif`;
-    ctx.fillStyle = flavor ? flavor.mainColor : '#D97706';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('kappo', centerX, py + padding + crimpH + 2 + brandH / 2 + 0.5);
-
-    // 8. Flavor Emoji & Kathakali Badge Icon
-    ctx.font = `${Math.floor(size * 0.35)}px sans-serif`;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(flavor ? flavor.badge : '🍌', centerX, centerY + size * 0.16);
 
     ctx.restore();
   }
@@ -349,8 +310,8 @@ export class CanvasRenderer {
       }
     };
 
-    drawToCanvas(this.holdCanvasDesktop, 24);
-    drawToCanvas(this.holdCanvasMobile, 14);
+    drawToCanvas(this.holdCanvasDesktop, 28);
+    drawToCanvas(this.holdCanvasMobile, 16);
   }
 
   renderNextQueue(nextQueueTypes, createPieceFn) {
@@ -358,14 +319,14 @@ export class CanvasRenderer {
     if (this.nextCanvasDesktop) {
       const ctx = this.nextCanvasDesktop.getContext('2d');
       ctx.clearRect(0, 0, this.nextCanvasDesktop.width, this.nextCanvasDesktop.height);
-      const miniCell = 22;
+      const miniCell = 26;
 
       for (let i = 0; i < Math.min(3, nextQueueTypes.length); i++) {
         const piece = createPieceFn(nextQueueTypes[i]);
         const matrix = piece.matrix;
         const N = matrix.length;
         const offsetX = (this.nextCanvasDesktop.width - N * miniCell) / 2 / miniCell;
-        const offsetY = (i * 90 + 20) / miniCell;
+        const offsetY = (i * 85 + 15) / miniCell;
 
         for (let r = 0; r < N; r++) {
           for (let c = 0; c < N; c++) {
@@ -381,7 +342,7 @@ export class CanvasRenderer {
     if (this.nextCanvasMobile && nextQueueTypes.length > 0) {
       const ctx = this.nextCanvasMobile.getContext('2d');
       ctx.clearRect(0, 0, this.nextCanvasMobile.width, this.nextCanvasMobile.height);
-      const miniCell = 14;
+      const miniCell = 16;
       const piece = createPieceFn(nextQueueTypes[0]);
       const matrix = piece.matrix;
       const N = matrix.length;
@@ -398,3 +359,4 @@ export class CanvasRenderer {
     }
   }
 }
+

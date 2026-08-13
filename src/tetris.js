@@ -3,8 +3,8 @@
    10x20 Grid, SRS Rotation System, Wall Kicks, 7-Bag Randomizer, Flavor Mapping
    ========================================================================== */
 
-export const GRID_COLS = 10;
-export const GRID_ROWS = 20;
+export const GRID_COLS = 8;
+export const GRID_ROWS = 15;
 
 // 4 Kappo Flavors (Light & Cheerful Kids-Oriented Pop Palette)
 export const FLAVORS = [
@@ -346,7 +346,7 @@ export class TetrisGame {
     }
   }
 
-  // Clear full horizontal lines with Mono-Flavor ("Full Batch Clear") detection
+  // Clear full horizontal lines + Candy Crush Chain Blast on nearby row blocks
   clearLines() {
     const clearedIndices = [];
     const clearedDetails = [];
@@ -366,26 +366,63 @@ export class TetrisGame {
     }
 
     if (clearedIndices.length > 0) {
-      // Remove cleared lines
-      clearedIndices.forEach(index => {
+      const blastedCells = [];
+      const blastedCoordsSet = new Set();
+
+      // 1. Collect all blocks in filled rows
+      clearedIndices.forEach(r => {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const key = `${r},${c}`;
+          if (!blastedCoordsSet.has(key) && this.grid[r][c]) {
+            blastedCoordsSet.add(key);
+            blastedCells.push({ r, c, flavor: this.grid[r][c].flavor, isDirectLine: true });
+          }
+        }
+      });
+
+      // 2. Candy Crush Blast: Collect non-empty nearby blocks in row above (r - 1) and row beneath (r + 1)
+      clearedIndices.forEach(r => {
+        const adjacentRows = [r - 1, r + 1];
+        adjacentRows.forEach(adjR => {
+          if (adjR >= 0 && adjR < GRID_ROWS && !clearedIndices.includes(adjR)) {
+            // Randomly / systematically blast adjacent blocks in nearby row to create splash pop
+            for (let c = 0; c < GRID_COLS; c++) {
+              const key = `${adjR},${c}`;
+              if (!blastedCoordsSet.has(key) && this.grid[adjR][c] !== null && Math.random() < 0.75) {
+                blastedCoordsSet.add(key);
+                blastedCells.push({ r: adjR, c, flavor: this.grid[adjR][c].flavor, isDirectLine: false });
+              }
+            }
+          }
+        });
+      });
+
+      // Clear blasted non-full-line cells first
+      blastedCells.filter(b => !b.isDirectLine).forEach(b => {
+        this.grid[b.r][b.c] = null;
+      });
+
+      // Remove cleared full lines (shifting remaining down)
+      clearedIndices.sort((a, b) => a - b).forEach(index => {
         this.grid.splice(index, 1);
         this.grid.unshift(new Array(GRID_COLS).fill(null));
       });
 
       const count = clearedIndices.length;
+      const extraBlastCount = blastedCells.filter(b => !b.isDirectLine).length;
       this.lines += count;
 
       const monoDetails = clearedDetails.filter(d => d.isMono);
       const monoCount = monoDetails.length;
 
-      // Base Tetris scoring rules
+      // Base Tetris scoring + Candy Crush extra blast bonus points
       const baseScores = [0, 100, 300, 500, 800];
-      const basePoints = (baseScores[count] || 0) * this.level;
+      const basePoints = ((baseScores[count] || 0) + extraBlastCount * 60) * this.level;
 
       // Mono-Flavor Multiplier (3x bonus multiplier for mono-flavor clears, escalating for multi-mono)
       let earnedScore = basePoints;
       if (monoCount > 0) {
-        const bonusMultiplier = 2.5 + (monoCount - 1) * 0.5; // 1 mono = 2.5x, 2 mono = 3.0x, 3 mono = 3.5x
+        const bonusMultiplier = 2.5 + (monoCount - 1) * 0.5;
         earnedScore = Math.floor(basePoints * bonusMultiplier);
       }
 
@@ -399,6 +436,8 @@ export class TetrisGame {
       return {
         count: count,
         lines: clearedIndices,
+        blastedCells: blastedCells,
+        extraBlastCount: extraBlastCount,
         clearedDetails: clearedDetails,
         monoCount: monoCount,
         monoFlavor: monoCount > 0 ? monoDetails[0].flavor : null,
@@ -407,7 +446,7 @@ export class TetrisGame {
       };
     }
 
-    return { count: 0, lines: [], clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
+    return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
   }
 
   // Tick gravity step

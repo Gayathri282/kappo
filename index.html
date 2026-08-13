@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Kappo Crunch Stack | Mobile Chips Puzzle</title>
+  <title>Kappo Stacks | Mobile Chips Block Puzzle</title>
   <meta name="description" content="A Tetris-style falling-block puzzle game featuring Kappo chips, Kerala flavor skins, crunch combos, and high score progression!" />
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <!-- Tropical Background Atmosphere -->
+  <!-- Dark Cyber Neon Background Atmosphere -->
   <div class="bg-pattern" aria-hidden="true"></div>
   <div class="bg-gradient-overlay" aria-hidden="true"></div>
 
@@ -22,30 +22,30 @@
   <!-- Main Mobile-First App Shell -->
   <div class="app-container">
     
-    <!-- Top Header / Branding & Live Score Bar -->
+    <!-- Top Header Bar (Inspired by LAY STACKS UI) -->
     <header class="game-header">
       <div class="brand-badge">
-        <div class="brand-logo-icon">🌿</div>
+        <div class="brand-logo-icon">🥔</div>
         <div class="brand-titles">
-          <h1 class="brand-title">KAPPO</h1>
-          <span class="brand-tagline">CRUNCH STACK</span>
+          <h1 class="brand-title">KAPPO <span class="brand-title-accent">STACKS</span></h1>
+          <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
         </div>
       </div>
 
-      <!-- Compact Mobile Score Counter -->
+      <!-- Score & Best Pill (Desktop & Mobile Header) -->
       <div class="header-score-pill">
         <div class="header-stat">
           <span class="stat-lbl">SCORE</span>
           <span id="score-val-header" class="stat-val">0</span>
         </div>
         <div class="header-stat divider">
-          <span class="stat-lbl">LVL</span>
-          <span id="level-val-header" class="stat-val">1</span>
+          <span class="stat-lbl">BEST</span>
+          <span id="high-score-val-header" class="stat-val best-val">0</span>
         </div>
       </div>
 
       <div class="header-actions">
-        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Hold for Speed Boost" aria-label="Speed Boost">
+        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Hold for Turbo Speed" aria-label="Speed Boost">
           <span class="speed-icon">⚡</span>
         </button>
         <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
@@ -60,27 +60,61 @@
       </div>
     </header>
 
-    <!-- Mobile Compact Preview Strip (Hold & Next Side-by-Side on Mobile) -->
+    <!-- Mobile Compact Preview Strip (Hold & Next Side-by-Side) -->
     <div class="mobile-preview-strip mobile-only">
       <div class="mini-card hold-mini">
         <span class="mini-label">HOLD</span>
-        <canvas id="hold-canvas-mobile" width="70" height="70"></canvas>
+        <canvas id="hold-canvas-mobile" width="60" height="60"></canvas>
+      </div>
+      <div class="mini-card goal-mini">
+        <span class="mini-label">GOAL</span>
+        <span id="goal-progress-txt-mobile" class="goal-progress-txt">0/10</span>
+        <div class="goal-bar-bg">
+          <div id="goal-bar-fill-mobile" class="goal-bar-fill" style="width: 0%;"></div>
+        </div>
       </div>
       <button id="btn-speed-boost-mobile" class="btn-speed-boost-card" aria-label="Speed Boost">
         <span class="boost-bolt">⚡</span>
-        <span class="boost-txt">TURBO BOOST</span>
+        <span class="boost-txt">TURBO</span>
       </button>
       <div class="mini-card next-mini">
         <span class="mini-label">NEXT</span>
-        <canvas id="next-canvas-mobile" width="70" height="70"></canvas>
+        <canvas id="next-canvas-mobile" width="60" height="60"></canvas>
       </div>
     </div>
 
-    <!-- Main Layout Grid (Desktop Sidebars + Center Canvas) -->
+    <!-- Main Layout Grid (Sidebars + Center Playfield Canvas) -->
     <main class="game-layout">
 
-      <!-- LEFT SIDEBAR (Desktop Only) -->
+      <!-- LEFT SIDEBAR -->
       <aside class="sidebar sidebar-left desktop-only">
+        <!-- Level Box -->
+        <div class="glass-card stat-card level-card">
+          <span class="card-label">LEVEL</span>
+          <span id="level-val" class="stat-number glow-yellow">01</span>
+        </div>
+
+        <!-- Lines Box -->
+        <div class="glass-card stat-card lines-card">
+          <span class="card-label">LINES</span>
+          <span id="lines-val" class="stat-number glow-green">0</span>
+        </div>
+
+        <!-- Goal Box (Inspired by LAY STACKS UI) -->
+        <div class="glass-card goal-card">
+          <div class="card-header">
+            <span class="card-icon">🎯</span>
+            <span class="card-label">GOAL</span>
+          </div>
+          <div class="goal-text">CLEAR <span id="goal-target-lines">10</span> LINES</div>
+          <div class="goal-progress-container">
+            <div class="goal-progress-bar">
+              <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
+            </div>
+            <span id="goal-progress-txt-desktop" class="goal-val">0/10</span>
+          </div>
+        </div>
+
         <!-- Hold Box -->
         <div class="glass-card hold-card">
           <div class="card-header">
@@ -92,52 +126,12 @@
             <span class="hold-hint">Press C / Shift</span>
           </div>
         </div>
-
-        <!-- Speed Boost Control Box -->
-        <div class="glass-card boost-card">
-          <div class="card-header">
-            <span class="card-icon">⚡</span>
-            <span class="card-label">FALL SPEED</span>
-          </div>
-          <button id="btn-speed-boost-desktop" class="btn-primary btn-boost-hero">
-            <span>⚡ HOLD FOR SPEED BOOST</span>
-          </button>
-        </div>
-
-        <!-- Kappo Flavor Legend -->
-        <div class="glass-card flavor-card">
-          <div class="card-header">
-            <span class="card-icon">🌶️</span>
-            <span class="card-label">FLAVORS</span>
-          </div>
-          <ul class="flavor-list">
-            <li class="flavor-item dynamite">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Cassava Dynamite</span>
-            </li>
-            <li class="flavor-item tomato">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Tangy Tomato</span>
-            </li>
-            <li class="flavor-item chilli">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Chili Garlic</span>
-            </li>
-            <li class="flavor-item salted">
-              <span class="flavor-dot"></span>
-              <span class="flavor-name">Classic Salted</span>
-            </li>
-          </ul>
-        </div>
       </aside>
 
-      <!-- CENTER: Main Tetris Playfield Section -->
+      <!-- CENTER: Main Playfield Section -->
       <section class="playfield-section">
         <div id="playfield-container" class="playfield-container">
-          <!-- Brand Marketing Background Image -->
-          <div class="playfield-brand-bg" aria-hidden="true"></div>
-
-          <!-- Canvas layer for pieces & grid -->
+          <!-- Canvas layer for pieces & dark playfield grid -->
           <canvas id="game-canvas" width="300" height="600"></canvas>
           <!-- Canvas overlay for line clear particle explosions -->
           <canvas id="particle-canvas" width="300" height="600"></canvas>
@@ -148,58 +142,99 @@
           </div>
 
           <!-- Start Game Overlay Screen -->
-          <div id="start-overlay" class="overlay-screen hidden">
+          <div id="start-overlay" class="overlay-screen">
             <div class="overlay-content">
-              <div class="chips-icon-hero">📦</div>
-              <h2>KAPPO CRUNCH STACK</h2>
-              <p>Stack chip packets, clear lines & build the ultimate Crunch Tower!</p>
+              <div class="chips-icon-hero">🥔</div>
+              <h2>KAPPO STACKS</h2>
+              <p>Stack 3D chip packets, clear lines & trigger full crunch combos!</p>
               <button id="btn-start" class="btn-primary btn-large">
-                <span class="btn-text">START CRUNCHING</span>
+                <span class="btn-text">START PLAYING</span>
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- RIGHT SIDEBAR (Desktop Only) -->
+      <!-- RIGHT SIDEBAR -->
       <aside class="sidebar sidebar-right desktop-only">
         <!-- Scoreboard Card -->
         <div class="glass-card score-card">
           <div class="score-group">
-            <span class="score-label">CRUNCH SCORE</span>
-            <span id="score-val" class="score-value">0</span>
+            <span class="score-label">SCORE</span>
+            <span id="score-val" class="score-value glow-yellow">0</span>
           </div>
-
-          <div class="score-grid-two">
-            <div class="score-subgroup">
-              <span class="score-sublabel">BATCH LEVEL</span>
-              <span id="level-val" class="score-subvalue">1</span>
-            </div>
-            <div class="score-subgroup">
-              <span class="score-sublabel">PACKETS CLEARED</span>
-              <span id="lines-val" class="score-subvalue">0</span>
-            </div>
-          </div>
-
           <div class="score-high-group">
-            <span class="score-high-label">🏆 BEST STACK</span>
-            <span id="high-score-val" class="score-high-value">0</span>
+            <span class="score-high-label">BEST</span>
+            <span id="high-score-val" class="score-high-value glow-cyan">0</span>
           </div>
         </div>
 
-        <!-- Next Pieces Card -->
+        <!-- Next Pieces Card (LAY STACKS Style Vertical Queue) -->
         <div class="glass-card next-card">
           <div class="card-header">
             <span class="card-icon">👀</span>
-            <span class="card-label">NEXT PACKETS</span>
+            <span class="card-label">NEXT</span>
           </div>
           <div class="canvas-wrapper next-wrapper">
-            <canvas id="next-canvas" width="120" height="300"></canvas>
+            <canvas id="next-canvas" width="120" height="280"></canvas>
           </div>
+        </div>
+
+        <!-- Speed Boost Box -->
+        <div class="glass-card boost-card">
+          <button id="btn-speed-boost-desktop" class="btn-primary btn-boost-hero">
+            <span>⚡ HOLD FOR TURBO</span>
+          </button>
+        </div>
+
+        <!-- Kappo Flavor Legend -->
+        <div class="glass-card flavor-card">
+          <div class="card-header">
+            <span class="card-icon">🌶️</span>
+            <span class="card-label">FLAVORS</span>
+          </div>
+          <ul class="flavor-list">
+            <li class="flavor-item salted">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Classic Salted</span>
+            </li>
+            <li class="flavor-item dynamite">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Cassava Dynamite</span>
+            </li>
+            <li class="flavor-item chilli">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Chili Garlic</span>
+            </li>
+            <li class="flavor-item tomato">
+              <span class="flavor-dot"></span>
+              <span class="flavor-name">Tangy Tomato</span>
+            </li>
+          </ul>
         </div>
       </aside>
 
     </main>
+
+    <!-- BOTTOM TOUCH CONTROLS DECK (Exact LAY STACKS UI layout inspired by Image 5) -->
+    <div id="touch-controls-deck" class="touch-controls-deck">
+      <button id="btn-touch-left" class="touch-action-btn" aria-label="Move Left">
+        <span class="btn-arrow">←</span>
+        <span class="btn-caption">MOVE LEFT</span>
+      </button>
+      <button id="btn-touch-right" class="touch-action-btn" aria-label="Move Right">
+        <span class="btn-arrow">→</span>
+        <span class="btn-caption">MOVE RIGHT</span>
+      </button>
+      <button id="btn-touch-soft-drop" class="touch-action-btn" aria-label="Soft Drop">
+        <span class="btn-arrow">↓</span>
+        <span class="btn-caption">SOFT DROP</span>
+      </button>
+      <button id="btn-touch-rotate" class="touch-action-btn rotate-btn" aria-label="Rotate">
+        <span class="btn-arrow">↻</span>
+        <span class="btn-caption">ROTATE</span>
+      </button>
+    </div>
 
   </div>
 

@@ -20,7 +20,7 @@ export class ParticleSystem {
 
   // Spawn chip flake particle explosion on line clear
   spawnLineClearFX(lines, cellHeight, cellWidth, flavorColors, offsetX = 0, offsetY = 0) {
-    const boardW = cellWidth * 10;
+    const boardW = this.canvas.width;
     lines.forEach((lineIndex) => {
       const y = offsetY + (lineIndex + 0.5) * cellHeight;
 
@@ -201,6 +201,67 @@ export class ParticleSystem {
     });
   }
 
+  // Spawn Candy Crush style pop explosion across filled row and adjacent blasted blocks!
+  spawnCandyCrushBlastFX(blastedCells, cellSize, offsetX = 0, offsetY = 0) {
+    if (!blastedCells || blastedCells.length === 0) return;
+
+    this.shake(14, 18);
+
+    blastedCells.forEach((cell, idx) => {
+      const cx = offsetX + (cell.c + 0.5) * cellSize;
+      const cy = offsetY + (cell.r + 0.5) * cellSize;
+      const mainColor = cell.flavor ? cell.flavor.mainColor : '#FFA502';
+
+      // 1. Candy Crush expanding pop ring
+      this.particles.push({
+        x: cx,
+        y: cy,
+        vx: 0,
+        vy: 0,
+        gravity: 0,
+        size: cellSize * 0.3,
+        maxSize: cellSize * 1.5,
+        color: mainColor,
+        rotation: 0,
+        vRot: 0,
+        life: 1.0,
+        decay: 0.055,
+        shape: 'candyRing'
+      });
+
+      // 2. Starburst chip flakes popping outward from cell center
+      const particleCount = cell.isDirectLine ? 10 : 6;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 2 + Math.random() * 0.4;
+        const speed = Math.random() * 6 + 3;
+        const colors = [mainColor, '#FFD700', '#FFFFFF', '#FF4757', '#00FF88'];
+        const pColor = colors[Math.floor(Math.random() * colors.length)];
+
+        this.particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 0.2,
+          size: Math.random() * 6 + 3,
+          color: pColor,
+          rotation: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.3,
+          life: 1.0,
+          decay: Math.random() * 0.03 + 0.02,
+          shape: Math.random() < 0.5 ? 'chip' : 'candyStar'
+        });
+      }
+
+      // 3. Floating points pop on extra blasted cells
+      if (!cell.isDirectLine && idx % 3 === 0) {
+        this.spawnFloatingText('+60', cx, cy, '#FFA502', 0.95);
+      }
+    });
+
+    this.spawnFloatingText('CANDY CRUNCH BLAST! 💥', this.canvas.width / 2, this.canvas.height / 3, '#FFD700', 1.8);
+  }
+
   updateAndDraw() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -269,7 +330,33 @@ export class ParticleSystem {
         this.ctx.translate(p.x, p.y);
         this.ctx.rotate(p.rotation);
 
-        if (p.shape === 'ripple') {
+        if (p.shape === 'candyRing') {
+          p.size += (p.maxSize - p.size) * 0.28;
+          this.ctx.strokeStyle = p.color;
+          this.ctx.lineWidth = 3.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.strokeStyle = '#FFFFFF';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, p.size * 0.75, 0, Math.PI * 2);
+          this.ctx.stroke();
+        } else if (p.shape === 'candyStar') {
+          // 4-point star burst
+          this.ctx.fillStyle = p.color;
+          this.ctx.beginPath();
+          for (let s = 0; s < 4; s++) {
+            const rot = (s * Math.PI) / 2;
+            const rOuter = p.size;
+            const rInner = p.size * 0.35;
+            this.ctx.lineTo(Math.cos(rot) * rOuter, Math.sin(rot) * rOuter);
+            this.ctx.lineTo(Math.cos(rot + Math.PI / 4) * rInner, Math.sin(rot + Math.PI / 4) * rInner);
+          }
+          this.ctx.closePath();
+          this.ctx.fill();
+        } else if (p.shape === 'ripple') {
           p.size += (p.maxSize - p.size) * 0.25;
           this.ctx.strokeStyle = p.color;
           this.ctx.lineWidth = 2.5;

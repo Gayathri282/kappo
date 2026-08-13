@@ -33,38 +33,40 @@ class SoundEngine {
 
   /* --- SOUND EFFECTS --- */
 
-  // 1. Line Clear / Crunch Sound (Procedural white-noise bursts)
+  // 1. Line Clear / Row Break Sound (Gentle plastic packet crinkle & pop)
   playCrunch(linesCleared = 1) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.15 + linesCleared * 0.05;
+    const duration = 0.12 + linesCleared * 0.04;
 
-    // Create noise buffer for crunch feel
-    const bufferSize = this.ctx.sampleRate * duration;
+    // Create gentle plastic foil crinkle noise buffer
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
 
     for (let i = 0; i < bufferSize; i++) {
-      // Crackle bursts pattern
-      const crackle = Math.random() < 0.3 ? (Math.random() * 2 - 1) : (Math.random() * 0.4 - 0.2);
-      output[i] = crackle * Math.exp(-i / (bufferSize * 0.4));
+      const t = i / bufferSize;
+      // Staggered micro-rustle envelope for soft plastic feel
+      const env = Math.exp(-t * 6) + 0.3 * Math.exp(-Math.pow(t - 0.3, 2) * 40);
+      const crackle = (Math.random() * 2 - 1) * env;
+      output[i] = crackle;
     }
 
     const whiteNoise = this.ctx.createBufferSource();
     whiteNoise.buffer = buffer;
 
-    // Highpass & Bandpass filtering to sound like crispy potato/banana chips
+    // Smooth plastic foil bandpass filter
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(2500 + linesCleared * 500, now);
-    filter.Q.setValueAtTime(1.5, now);
+    filter.frequency.setValueAtTime(3000 + linesCleared * 250, now);
+    filter.Q.setValueAtTime(1.2, now);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     whiteNoise.connect(filter);
     filter.connect(gain);
@@ -72,14 +74,14 @@ class SoundEngine {
 
     whiteNoise.start(now);
 
-    // Add tone pop accent
+    // Soft gentle plastic pop tone
     const osc = this.ctx.createOscillator();
     const oscGain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(300 + linesCleared * 120, now);
-    osc.frequency.exponentialRampToValueAtTime(100, now + duration);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320 + linesCleared * 60, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + duration);
 
-    oscGain.gain.setValueAtTime(0.2, now);
+    oscGain.gain.setValueAtTime(0.12, now);
     oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     osc.connect(oscGain);
@@ -89,7 +91,7 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
-  // 2. Full Crunch (4-line Tetris Jackpot Fanfare)
+  // 2. Full Crunch (4-line Tetris Jackpot Fanfare with Gentle Harmonies)
   playFullCrunch() {
     if (this.muted) return;
     this.initContext();
@@ -98,24 +100,24 @@ class SoundEngine {
     this.playCrunch(4);
 
     const now = this.ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // Soft C Major arpeggio
 
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      const noteTime = now + idx * 0.08;
+      const noteTime = now + idx * 0.07;
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, noteTime);
 
-      gain.gain.setValueAtTime(0.3, noteTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.3);
+      gain.gain.setValueAtTime(0.15, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.25);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(noteTime);
-      osc.stop(noteTime + 0.3);
+      osc.stop(noteTime + 0.25);
     });
   }
 
