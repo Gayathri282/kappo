@@ -60,7 +60,7 @@
       </div>
     </header>
 
-    <!-- Mobile Compact Preview Strip (Hold & Next Side-by-Side) -->
+    <!-- Mobile Compact Preview Strip -->
     <div class="mobile-preview-strip mobile-only">
       <div class="mini-card hold-mini">
         <span class="mini-label">HOLD</span>
@@ -77,10 +77,6 @@
         <span class="boost-bolt">⚡</span>
         <span class="boost-txt">TURBO</span>
       </button>
-      <div class="mini-card next-mini">
-        <span class="mini-label">NEXT</span>
-        <canvas id="next-canvas-mobile" width="60" height="60"></canvas>
-      </div>
     </div>
 
     <!-- Main Layout Grid (Sidebars + Center Playfield Canvas) -->
@@ -169,14 +165,18 @@
           </div>
         </div>
 
-        <!-- Next Pieces Card (LAY STACKS Style Vertical Queue) -->
-        <div class="glass-card next-card">
+        <!-- Large Kappo Product Showcase Image Card -->
+        <div class="glass-card product-showcase-card">
           <div class="card-header">
-            <span class="card-icon">👀</span>
-            <span class="card-label">NEXT</span>
+            <span class="card-icon">🍌</span>
+            <span class="card-label">KAPPO CHIPS</span>
           </div>
-          <div class="canvas-wrapper next-wrapper">
-            <canvas id="next-canvas" width="120" height="280"></canvas>
+          <div class="product-image-container">
+            <img id="product-showcase-img" src="/assets/packet_salted.png" alt="Kappo Chips Packet" class="product-showcase-img" />
+          </div>
+          <div class="product-badge-info">
+            <span id="product-flavor-title" class="product-flavor-name">Classic Salted</span>
+            <span class="product-tagline-sm">100% Real Kerala Crunch</span>
           </div>
         </div>
 

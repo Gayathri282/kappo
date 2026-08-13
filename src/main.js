@@ -126,11 +126,17 @@ function moveRightAction() {
 }
 
 function rotateCWAction() {
-  if (game.rotate(1)) sound.playRotate();
+  if (game.rotate(1)) {
+    sound.playRotate();
+    dropCounter = 0; // Refresh lock delay so rotation works all the way down to the last grid row
+  }
 }
 
 function rotateCCWAction() {
-  if (game.rotate(-1)) sound.playRotate();
+  if (game.rotate(-1)) {
+    sound.playRotate();
+    dropCounter = 0; // Refresh lock delay so rotation works all the way down to the last grid row
+  }
 }
 
 function holdAction() {
@@ -441,6 +447,29 @@ dotsList.forEach((dot, idx) => {
   dot.addEventListener('click', () => updateCarouselSlide(idx));
 });
 
+// Interactive Kappo Product Showcase Switcher (Desktop Right Sidebar)
+const PRODUCT_SHOWCASE_LIST = [
+  { name: 'Classic Salted', img: '/assets/packet_salted.png', tag: '100% Real Sun-Ripened Banana Chips' },
+  { name: 'Cassava Dynamite', img: '/assets/packet_dynamite.png', tag: 'Spicy Dynamite Cassava Crunch' },
+  { name: 'Chili Garlic', img: '/assets/packet_chilli.png', tag: 'Authentic Kerala Chili Garlic Wave' },
+  { name: 'Tangy Tomato', img: '/assets/packet_tomato.png', tag: 'Zesty Tangy Tomato Cassava Chips' }
+];
+let currentProductIndex = 0;
+
+const productShowcaseCard = document.querySelector('.product-showcase-card');
+const productShowcaseImg = document.getElementById('product-showcase-img');
+const productFlavorTitle = document.getElementById('product-flavor-title');
+
+if (productShowcaseCard) {
+  productShowcaseCard.addEventListener('click', () => {
+    currentProductIndex = (currentProductIndex + 1) % PRODUCT_SHOWCASE_LIST.length;
+    const prod = PRODUCT_SHOWCASE_LIST[currentProductIndex];
+    if (productShowcaseImg) productShowcaseImg.src = prod.img;
+    if (productFlavorTitle) productFlavorTitle.textContent = prod.name;
+    showToast(`Kappo ${prod.name}`, '🍌');
+  });
+}
+
 function openTutorialModal() {
   if (gameStarted && !game.paused) pauseGame();
   updateCarouselSlide(0);
@@ -450,13 +479,15 @@ function openTutorialModal() {
 function closeTutorialModal() {
   tutorialModal.classList.add('hidden');
   localStorage.setItem('kappo_tutorial_seen', 'true');
+  if (!gameStarted) {
+    startGame();
+  } else if (game.paused) {
+    resumeGame();
+  }
 }
 
 btnCloseTutorial.addEventListener('click', closeTutorialModal);
-btnTutorialStart.addEventListener('click', () => {
-  closeTutorialModal();
-  if (!gameStarted) startGame();
-});
+btnTutorialStart.addEventListener('click', closeTutorialModal);
 
 // Window Keyboard Controls
 window.addEventListener('keydown', (e) => {
@@ -552,15 +583,11 @@ btnResume.addEventListener('click', resumeGame);
 btnRestart.addEventListener('click', startGame);
 btnRestartPause.addEventListener('click', startGame);
 
+// Question Mark Icon Button (❓) -> Shows Instructions Modal
 btnHelp.addEventListener('click', openTutorialModal);
 
-// First-Time Player Experience Tutorial Auto-Check
-const tutorialSeen = localStorage.getItem('kappo_tutorial_seen') === 'true';
-if (!tutorialSeen) {
-  openTutorialModal();
-} else {
-  startGame();
-}
+// SHOW INSTRUCTIONS MODAL FIRST ON LOAD
+openTutorialModal();
 
 // Run Loop
 requestAnimationFrame(update);

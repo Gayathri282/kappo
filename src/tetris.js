@@ -259,13 +259,20 @@ export class TetrisGame {
     const oldRotation = piece.rotation;
     const newRotation = (oldRotation + dir + 4) % 4;
 
-    // SRS Wall kick test
+    // SRS Wall kick test + Extended Floor Kick offsets so rotation works all the way down to the last grid!
     const kickIndex = dir > 0 ? oldRotation : newRotation;
     const kickTable = piece.type === 'I' ? KICK_OFFSETS_I : KICK_OFFSETS_JLSTZ;
-    const offsets = kickTable[kickIndex] || [[0, 0]];
+    const baseOffsets = kickTable[kickIndex] || [[0, 0]];
 
-    for (let i = 0; i < offsets.length; i++) {
-      const [dx, dy] = offsets[i];
+    const extendedOffsets = [
+      ...baseOffsets,
+      [0, -1], [-1, 0], [1, 0], [0, -2],
+      [-1, -1], [1, -1], [-1, -2], [1, -2],
+      [-2, 0], [2, 0], [0, -3], [-2, -1], [2, -1]
+    ];
+
+    for (let i = 0; i < extendedOffsets.length; i++) {
+      const [dx, dy] = extendedOffsets[i];
       const testX = piece.x + (dir > 0 ? dx : -dx);
       const testY = piece.y + (dir > 0 ? -dy : dy);
 
