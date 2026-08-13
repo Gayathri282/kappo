@@ -353,7 +353,7 @@ export class TetrisGame {
     }
   }
 
-  // Clear full horizontal lines + Candy Crush Chain Blast on nearby row blocks
+  // Clear full horizontal lines (Only break the completed row(s))
   clearLines() {
     const clearedIndices = [];
     const clearedDetails = [];
@@ -374,39 +374,14 @@ export class TetrisGame {
 
     if (clearedIndices.length > 0) {
       const blastedCells = [];
-      const blastedCoordsSet = new Set();
 
-      // 1. Collect all blocks in filled rows
+      // Collect all blocks in the filled rows only
       clearedIndices.forEach(r => {
         for (let c = 0; c < GRID_COLS; c++) {
-          const key = `${r},${c}`;
-          if (!blastedCoordsSet.has(key) && this.grid[r][c]) {
-            blastedCoordsSet.add(key);
+          if (this.grid[r][c]) {
             blastedCells.push({ r, c, flavor: this.grid[r][c].flavor, isDirectLine: true });
           }
         }
-      });
-
-      // 2. Candy Crush Blast: Collect non-empty nearby blocks in row above (r - 1) and row beneath (r + 1)
-      clearedIndices.forEach(r => {
-        const adjacentRows = [r - 1, r + 1];
-        adjacentRows.forEach(adjR => {
-          if (adjR >= 0 && adjR < GRID_ROWS && !clearedIndices.includes(adjR)) {
-            // Randomly / systematically blast adjacent blocks in nearby row to create splash pop
-            for (let c = 0; c < GRID_COLS; c++) {
-              const key = `${adjR},${c}`;
-              if (!blastedCoordsSet.has(key) && this.grid[adjR][c] !== null && Math.random() < 0.75) {
-                blastedCoordsSet.add(key);
-                blastedCells.push({ r: adjR, c, flavor: this.grid[adjR][c].flavor, isDirectLine: false });
-              }
-            }
-          }
-        });
-      });
-
-      // Clear blasted non-full-line cells first
-      blastedCells.filter(b => !b.isDirectLine).forEach(b => {
-        this.grid[b.r][b.c] = null;
       });
 
       // Remove cleared full lines (shifting remaining down)
@@ -416,15 +391,14 @@ export class TetrisGame {
       });
 
       const count = clearedIndices.length;
-      const extraBlastCount = blastedCells.filter(b => !b.isDirectLine).length;
       this.lines += count;
 
       const monoDetails = clearedDetails.filter(d => d.isMono);
       const monoCount = monoDetails.length;
 
-      // Base Tetris scoring + Candy Crush extra blast bonus points
+      // Base Tetris scoring rules
       const baseScores = [0, 100, 300, 500, 800];
-      const basePoints = ((baseScores[count] || 0) + extraBlastCount * 60) * this.level;
+      const basePoints = (baseScores[count] || 0) * this.level;
 
       // Mono-Flavor Multiplier (3x bonus multiplier for mono-flavor clears, escalating for multi-mono)
       let earnedScore = basePoints;
@@ -444,7 +418,7 @@ export class TetrisGame {
         count: count,
         lines: clearedIndices,
         blastedCells: blastedCells,
-        extraBlastCount: extraBlastCount,
+        extraBlastCount: 0,
         clearedDetails: clearedDetails,
         monoCount: monoCount,
         monoFlavor: monoCount > 0 ? monoDetails[0].flavor : null,

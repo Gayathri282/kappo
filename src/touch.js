@@ -145,8 +145,11 @@ export class TouchController {
 
           this.vibrate(10);
 
-          // Top 25% zone -> Rotate Piece Clockwise
-          if (normY < 0.25) {
+          const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
+          const allowTouchRotate = pieceY < 4; // Only allow canvas touch rotation on upper rows (row < 4)
+
+          // Top 25% zone -> Rotate Piece Clockwise (Only when above row 4)
+          if (normY < 0.25 && allowTouchRotate) {
             this.handlers.onRotateCW();
           }
           // Left 50% zone -> Move Left

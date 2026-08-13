@@ -182,7 +182,8 @@ const touchController = new TouchController({
   onHold: () => holdAction(),
   onSoftDrop: () => {
     if (game.softDrop()) sound.playMoveDown();
-  }
+  },
+  getPieceY: () => (game.currentPiece ? game.currentPiece.y : 0)
 }, particles);
 
 // Toast Manager
