@@ -199,7 +199,9 @@ html, body {
 
 .header-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .icon-btn {
@@ -216,6 +218,14 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+#btn-help {
+  background: #FFF3D6;
+  border: 2px solid #FFA502;
+  color: #D97706;
+  font-weight: 900;
 }
 
 .icon-btn:hover {
@@ -868,6 +878,192 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Tutorial Carousel Modal Styles */
+.modal-wide {
+  max-width: 440px;
+}
+
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.icon-btn-close {
+  background: #FFF5D6;
+  border: 1px solid #FFEAA7;
+  color: #D97706;
+  font-size: 1.4rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.carousel-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  border-radius: var(--radius-md);
+  background: #FFFDF5;
+  border: 2px solid #F0E6D2;
+  margin: 10px 0;
+  box-sizing: border-box;
+}
+
+.carousel-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 12px;
+}
+
+.slide-badge {
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #D97706;
+  background: #FFF5D6;
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.carousel-slide h3 {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #2D1F17;
+  margin-bottom: 8px;
+}
+
+.slide-illustration {
+  width: 100%;
+  height: 90px;
+  background: #FFFFFF;
+  border: 2px dashed #FFEAA7;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.zone-box {
+  flex: 1;
+  height: 100%;
+  background: #FFF9E6;
+  border: 1px solid #FFEAA7;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #D97706;
+}
+
+.zone-icon {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+
+.boost-hero-pill {
+  background: #FFF3D6;
+  border: 2px solid #FFA502;
+  border-radius: 20px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-weight: 900;
+  color: #D97706;
+}
+
+.bolt-anim {
+  font-size: 1.3rem;
+  animation: pulse 1s infinite alternate;
+}
+
+.row-pop-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pop-chip {
+  font-size: 1.2rem;
+}
+
+.pop-stamp {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 900;
+  background: #FFA502;
+  color: #FFFFFF;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.carousel-slide p {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-main);
+}
+
+.carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-nav {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #F0E6D2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dot.active {
+  background: #FFA502;
+  transform: scale(1.25);
 }
 
 /* Toast Notifications */
