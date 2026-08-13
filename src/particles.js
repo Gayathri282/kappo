@@ -19,13 +19,14 @@ export class ParticleSystem {
   }
 
   // Spawn chip flake particle explosion on line clear
-  spawnLineClearFX(lines, cellHeight, cellWidth, flavorColors) {
+  spawnLineClearFX(lines, cellHeight, cellWidth, flavorColors, offsetX = 0, offsetY = 0) {
+    const boardW = cellWidth * 10;
     lines.forEach((lineIndex) => {
-      const y = (lineIndex + 0.5) * cellHeight;
+      const y = offsetY + (lineIndex + 0.5) * cellHeight;
 
       // Spawn 25 particles per cleared line
       for (let i = 0; i < 25; i++) {
-        const x = (Math.random() * 0.9 + 0.05) * this.canvas.width;
+        const x = offsetX + (Math.random() * 0.9 + 0.05) * boardW;
         const color = flavorColors[Math.floor(Math.random() * flavorColors.length)];
 
         this.particles.push({
@@ -126,19 +127,22 @@ export class ParticleSystem {
   }
 
   // Spawn enhanced special effect for Mono-Flavor Full Batch Clears
-  spawnMonoFlavorFX(clearedDetails, cellHeight) {
+  spawnMonoFlavorFX(clearedDetails, cellHeight, cellWidth = cellHeight, offsetX = 0, offsetY = 0) {
     const monoLines = clearedDetails.filter(d => d.isMono);
     if (monoLines.length === 0) return;
+
+    const boardW = cellWidth * 10;
+    const centerX = offsetX + boardW / 2;
 
     this.shake(14 + monoLines.length * 4, 20);
 
     monoLines.forEach(detail => {
-      const y = (detail.lineIndex + 0.5) * cellHeight;
+      const y = offsetY + (detail.lineIndex + 0.5) * cellHeight;
       const flavor = detail.flavor;
 
       // 1. Full Row Flash Beam
       this.particles.push({
-        x: this.canvas.width / 2,
+        x: centerX,
         y: y,
         vx: 0,
         vy: 0,
@@ -150,12 +154,13 @@ export class ParticleSystem {
         vRot: 0,
         life: 1.0,
         decay: 0.035,
-        shape: 'rowFlash'
+        shape: 'rowFlash',
+        flashWidth: boardW
       });
 
       // 2. Full Row Packet Burst / Confetti
       for (let i = 0; i < 45; i++) {
-        const x = Math.random() * this.canvas.width;
+        const x = offsetX + Math.random() * boardW;
         const colors = [flavor ? flavor.mainColor : '#e63946', flavor ? flavor.accentColor : '#e9c46a', '#ffffff', '#f4a261'];
         const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -177,7 +182,8 @@ export class ParticleSystem {
 
       // 3. Kappo Logo Stamp over Row Center
       this.particles.push({
-        x: this.canvas.width / 2,
+        x: centerX,
+        y: y,
         y: y,
         vx: 0,
         vy: -0.4,
@@ -224,8 +230,10 @@ export class ParticleSystem {
         grad.addColorStop(0.7, p.color);
         grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
+        const flashW = p.flashWidth || this.canvas.width;
+        const startX = p.x - flashW / 2;
         this.ctx.fillStyle = grad;
-        this.ctx.fillRect(0, p.y - p.size / 2, this.canvas.width, p.size);
+        this.ctx.fillRect(startX, p.y - p.size / 2, flashW, p.size);
       } else if (p.shape === 'stamp') {
         // Kappo logo stamp over row center
         this.ctx.translate(p.x, p.y);

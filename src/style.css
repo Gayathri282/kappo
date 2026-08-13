@@ -310,21 +310,25 @@ html, body {
   justify-content: center;
   align-items: center;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .playfield-container {
   position: relative;
-  height: 100%;
-  aspect-ratio: 1 / 2;
   max-height: 100%;
+  max-width: 100%;
   background: #FFFDF7;
   border: 4px solid #FFA502;
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 30px rgba(255, 165, 0, 0.18), inset 0 0 15px rgba(245, 230, 200, 0.6);
+  box-shadow: 0 12px 35px rgba(255, 165, 0, 0.25), 0 4px 14px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   touch-action: none;
+  margin: 0 auto;
+  flex-shrink: 0;
 }
 
 .playfield-brand-bg {
@@ -714,5 +718,58 @@ html, body {
   }
   .header-score-pill {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 4px 6px;
+  }
+  .game-header {
+    padding: 4px 8px;
+  }
+  .brand-title {
+    font-size: 1.1rem;
+  }
+  .brand-tagline {
+    font-size: 0.55rem;
+  }
+  .mobile-preview-strip {
+    margin-top: 4px;
+    gap: 4px;
+  }
+  .mini-card {
+    padding: 2px 4px;
+  }
+  .mini-score-box {
+    padding: 4px 8px;
+  }
+  .mini-val {
+    font-size: 0.8rem;
+  }
+  .playfield-container {
+    border-width: 3px;
+    border-radius: var(--radius-md);
+  }
+}
+
+@media (max-width: 360px) {
+  .app-container {
+    padding: 2px 4px;
+  }
+  .game-header {
+    padding: 2px 6px;
+  }
+  .brand-logo-icon {
+    font-size: 1.1rem;
+    padding: 2px 4px;
+  }
+  .brand-title {
+    font-size: 0.95rem;
+  }
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
   }
 }

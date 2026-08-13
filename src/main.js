@@ -180,7 +180,7 @@ function processLineClears() {
     if (result.monoCount > 0) {
       // Enhanced Mono-Flavor ("Full Batch Clear") special effect
       sound.playMonoCrunch(result.monoCount, result.monoFlavor);
-      particles.spawnMonoFlavorFX(result.clearedDetails, renderer.cellSize);
+      particles.spawnMonoFlavorFX(result.clearedDetails, renderer.cellSize, renderer.cellSize);
 
       let bannerText = "";
       if (result.monoCount === 1) {

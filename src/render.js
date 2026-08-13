@@ -23,16 +23,28 @@ export class CanvasRenderer {
   // Handle dynamic container resize with High-DPI devicePixelRatio
   resizeToContainer(container) {
     if (!container) return;
-    const rect = container.getBoundingClientRect();
+    const section = container.parentElement;
+    const rect = section ? section.getBoundingClientRect() : container.getBoundingClientRect();
 
-    const displayWidth = rect.width;
-    const displayHeight = rect.height;
+    const maxW = rect.width;
+    const maxH = rect.height;
 
-    this.cellSize = displayHeight / GRID_ROWS;
+    // Calculate maximum cell size fitting 10 columns x 20 rows into parent container area
+    this.cellSize = Math.min(maxW / GRID_COLS, maxH / GRID_ROWS);
+
+    this.boardWidth = Math.floor(GRID_COLS * this.cellSize);
+    this.boardHeight = Math.floor(GRID_ROWS * this.cellSize);
+
+    // Apply exact board dimensions to container element so background image & grid wrap 1:1
+    container.style.width = `${this.boardWidth}px`;
+    container.style.height = `${this.boardHeight}px`;
+
+    this.offsetX = 0;
+    this.offsetY = 0;
 
     // Apply High-DPI scaling
-    this.canvas.width = Math.floor(displayWidth * this.dpr);
-    this.canvas.height = Math.floor(displayHeight * this.dpr);
+    this.canvas.width = Math.floor(this.boardWidth * this.dpr);
+    this.canvas.height = Math.floor(this.boardHeight * this.dpr);
 
     this.ctx.resetTransform();
     this.ctx.scale(this.dpr, this.dpr);
@@ -43,11 +55,11 @@ export class CanvasRenderer {
   }
 
   drawGrid(width, height) {
-    // Translucent light packaging cream grid overlay so brand background shines through!
-    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.72)';
+    // Candy Crush translucent board background overlay
+    this.ctx.fillStyle = 'rgba(255, 253, 247, 0.76)';
     this.ctx.fillRect(0, 0, width, height);
 
-    this.ctx.strokeStyle = 'rgba(255, 165, 0, 0.12)';
+    this.ctx.strokeStyle = 'rgba(255, 165, 0, 0.16)';
     this.ctx.lineWidth = 1;
 
     for (let c = 0; c <= GRID_COLS; c++) {
@@ -83,12 +95,12 @@ export class CanvasRenderer {
   }
 
   // Squishy, Glossy, Kids-Oriented Block Renderer
-  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0) {
+  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    const px = x * cellSize;
-    const py = y * cellSize;
+    const px = offsetX + x * cellSize;
+    const py = offsetY + y * cellSize;
     const padding = 1.5;
     const size = cellSize - padding * 2;
     const radius = Math.max(5, cellSize * 0.28); // Extra soft rounded squishy corners!
