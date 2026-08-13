@@ -125,23 +125,21 @@ export class CanvasRenderer {
     }
   }
 
-  // Pure Tile Renderer: One block is an entire single Kappo chips packet filling the 1x1 grid cell
+  // Pure Transparent Tile Renderer: One block is an entire single transparent Kappo chips packet filling 100% of the grid cell
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
     const px = offsetX + x * cellSize;
     const py = offsetY + y * cellSize;
-    const padding = 0.5;
-    const size = cellSize - padding * 2;
 
     if (isGhost) {
-      ctx.strokeStyle = flavor ? flavor.mainColor : '#00F0FF';
+      ctx.strokeStyle = flavor ? flavor.mainColor : '#FFA502';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
-      this.drawRoundRectPath(ctx, px + padding, py + padding, size, size, 4);
+      this.drawRoundRectPath(ctx, px + 1, py + 1, cellSize - 2, cellSize - 2, 4);
       ctx.stroke();
-      ctx.fillStyle = flavor ? flavor.mainColor : '#00F0FF';
+      ctx.fillStyle = flavor ? flavor.mainColor : '#FFA502';
       ctx.globalAlpha = 0.15;
       ctx.fill();
       ctx.restore();
@@ -151,12 +149,11 @@ export class CanvasRenderer {
     const flavorId = flavor ? flavor.id : 'salted';
     const packetImg = PACKET_IMAGES[flavorId];
 
+    // Draw ONLY the pure transparent PNG packet filling 100% of the grid cell! No white or colored background!
     if (packetImg && packetImg.complete && packetImg.naturalWidth !== 0) {
-      // Draw the ENTIRE Kappo chips packet filling the single grid cell directly with no background or extra div!
-      ctx.drawImage(packetImg, px + padding, py + padding, size, size);
+      ctx.drawImage(packetImg, px, py, cellSize, cellSize);
     } else {
-      // Toon packet fallback filling the cell
-      this.drawToonPacketFallback(ctx, px + padding, py + padding, size, flavorId, flavor);
+      this.drawToonPacketFallback(ctx, px, py, cellSize, flavorId, flavor);
     }
 
     ctx.restore();
@@ -217,6 +214,20 @@ export class CanvasRenderer {
       ctx.arc(centerX, centerY, size * 0.38, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Prominent KAPPO Oval Logo Pill Badge in Center
+    const badgeW = size * 0.72;
+    const badgeH = size * 0.32;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    this.drawRoundRectPath(ctx, centerX - badgeW / 2, centerY - badgeH / 2, badgeW, badgeH, badgeH / 2);
+    ctx.fill();
+
+    ctx.fillStyle = flavor ? flavor.mainColor : '#D97706';
+    ctx.font = `900 ${Math.max(9, Math.floor(size * 0.22))}px 'Outfit', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('KAPPO', centerX, centerY);
 
     ctx.restore();
 
