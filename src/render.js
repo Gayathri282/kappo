@@ -21,8 +21,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 1:1 Square Grid Cells
-const PACKET_RATIO = 1.0;
+// Chip packet aspect ratio: 1:2 vertical rectangle proportions (cell height is 2x cell width)
+const PACKET_RATIO = 2.0;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -34,25 +34,25 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 55;
-    this.cellHeight = 55;
-    this.cellSize   = 55; // backward compat alias
+    this.cellWidth  = 45;
+    this.cellHeight = 90;
+    this.cellSize   = 45; // backward compat alias
     this.dpr = window.devicePixelRatio || 1;
   }
 
-  // ─── Resize to fit parent container (7x14 grid, 1:1 Square Cells) ───────────────
+  // ─── Resize to fit parent container (10 cols, cell height is 2x width) ───────────────
   resizeToContainer(container) {
     if (!container) return;
     const section = container.parentElement;
     const availW = section ? section.getBoundingClientRect().width : container.getBoundingClientRect().width;
     const availH = section ? section.getBoundingClientRect().height : container.getBoundingClientRect().height;
 
-    // Fit grid cells cleanly within available width (10 cols) and height (16 rows matching left HUD sidebar)
+    // Fit grid cells cleanly within available width (10 cols) and height
     const maxCellWFromWidth  = availW / GRID_COLS;
-    const maxCellWFromHeight = availH > 0 ? availH / GRID_ROWS : maxCellWFromWidth;
+    const maxCellWFromHeight = availH > 0 ? availH / (GRID_ROWS * PACKET_RATIO) : maxCellWFromWidth;
 
-    const cellW = Math.max(16, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
-    const cellH = cellW; // 1:1 Square cells matching edge-to-edge block rendering
+    const cellW = Math.max(14, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
+    const cellH = Math.round(cellW * 2.0); // CELL HEIGHT IS 2 TIMES CELL WIDTH!
 
     this.cellWidth  = cellW;
     this.cellHeight = cellH;

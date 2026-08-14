@@ -4,7 +4,7 @@
    ========================================================================== */
 
 export const GRID_COLS = 10;
-export const GRID_ROWS = 16;
+export const GRID_ROWS = 10;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
