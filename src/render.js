@@ -21,8 +21,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 1:2 vertical rectangle proportions (cell height is 2x cell width)
-const PACKET_RATIO = 2.0;
+// Chip packet aspect ratio: 1:1.35 proportion (slightly wider cell width)
+const PACKET_RATIO = 1.35;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -34,13 +34,13 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 45;
-    this.cellHeight = 90;
-    this.cellSize   = 45; // backward compat alias
+    this.cellWidth  = 50;
+    this.cellHeight = 67;
+    this.cellSize   = 50; // backward compat alias
     this.dpr = window.devicePixelRatio || 1;
   }
 
-  // ─── Resize to fit parent container (10 cols, cell height is 2x width) ───────────────
+  // ─── Resize to fit parent container (10 cols, 1.35 cell ratio) ───────────────
   resizeToContainer(container) {
     if (!container) return;
     const section = container.parentElement;
@@ -51,8 +51,8 @@ export class CanvasRenderer {
     const maxCellWFromWidth  = availW / GRID_COLS;
     const maxCellWFromHeight = availH > 0 ? availH / (GRID_ROWS * PACKET_RATIO) : maxCellWFromWidth;
 
-    const cellW = Math.max(14, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
-    const cellH = Math.round(cellW * 2.0); // CELL HEIGHT IS 2 TIMES CELL WIDTH!
+    const cellW = Math.max(16, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
+    const cellH = Math.round(cellW * PACKET_RATIO); // SLIGHTLY WIDER CELL PROPORTION!
 
     this.cellWidth  = cellW;
     this.cellHeight = cellH;

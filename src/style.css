@@ -682,9 +682,9 @@ html, body {
   grid-template-columns: repeat(10, 1fr) !important;
 }
 
-/* 2. Force Edge-to-Edge Cell Fill & 1:2 Cell Aspect Ratio (Cell Height is 2x Cell Width) */
+/* 2. Force Edge-to-Edge Cell Fill & 1:1.35 Cell Aspect Ratio (Slightly Wider Cell Width) */
 .grid-cell {
-  aspect-ratio: 1 / 2 !important; /* Cell Height is 2x Cell Width */
+  aspect-ratio: 1 / 1.35 !important; /* Slightly wider cell width proportion */
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box;
@@ -709,14 +709,14 @@ html, body {
   display: block;
 }
 
-/* 3. Matrix Container (10 Cols x 10 Rows, 1:2 Tall Cells, 2x Cell Height) */
+/* 3. Matrix Container (10 Cols x 13 Rows, 1:1.35 Cell Ratio) */
 .game-matrix-container,
 .playfield-container {
   position: relative;
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  aspect-ratio: 10 / 20; /* 10 cols x (10 rows * 2) = 10 / 20 */
+  aspect-ratio: 10 / 17.5; /* 10 cols x (13 rows * 1.35) */
   background: #03050e !important;
   opacity: 1.0 !important;
   border: 3px solid #00C3FF;
