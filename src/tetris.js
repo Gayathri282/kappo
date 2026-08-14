@@ -136,12 +136,25 @@ export class TetrisGame {
     this.score = 0;
     this.lines = 0;
     this.level = 1;
+    this.survivalTime = 0; // Survival time counter in seconds
     this.gameOver = false;
     this.paused = false;
     this.isSpeedBoosted = false;
 
     this.initQueue();
     this.spawnPiece();
+  }
+
+  // Update survival timer & time-based gravity acceleration (speed of fall increases every 15s)
+  updateTime(deltaSeconds) {
+    if (this.gameOver || this.paused) return false;
+    this.survivalTime += deltaSeconds;
+
+    // Every 15 seconds, level increases & fall speed accelerates!
+    const newLevel = Math.floor(this.survivalTime / 15) + 1;
+    const leveledUp = newLevel > this.level;
+    this.level = newLevel;
+    return leveledUp;
   }
 
   // 7-Bag Randomizer
@@ -443,11 +456,20 @@ export class TetrisGame {
   }
 
   getDropSpeed() {
-    // Arcade smooth initial gravity (low initial gravity ~750ms per tick)
-    const baseSpeed = Math.max(120, 750 - (this.level - 1) * 55);
+    // Time-accelerated fall speed: starts smooth (~700ms) and speeds up every 15s level
+    const baseSpeed = Math.max(100, 700 - (this.level - 1) * 65);
     if (this.isSpeedBoosted) {
-      return 95; // Accelerated speed-boost gravity tick (ms)
+      return 75; // Accelerated speed boost gravity
     }
     return baseSpeed;
+  }
+
+  // True free-fall speed in rows per second (smooth gravity acceleration per frame)
+  getFallSpeedRowsPerSec() {
+    const baseRowsPerSec = 1.4 + (this.level - 1) * 0.35;
+    if (this.isSpeedBoosted) {
+      return baseRowsPerSec * 3.8; // Smooth 3.8x acceleration during turbo / soft drop
+    }
+    return baseRowsPerSec;
   }
 }

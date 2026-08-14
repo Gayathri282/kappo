@@ -86,6 +86,8 @@ const particles = new ParticleSystem(particleCanvas);
 // Game Loop Timing & High Score State
 let lastTime = 0;
 let dropCounter = 0;
+let pieceVisualRow = 0;
+let lastPieceKey = null;
 let gameStarted = false;
 let bestScore = parseInt(localStorage.getItem('kappo_best_stack') || '0', 10);
 let lastFactScoreMilestone = 0;
@@ -117,25 +119,52 @@ const dasDelay = 150;
 const arrRate = 40;
 
 // Action Helpers
+function checkLandingClamp() {
+  if (!game.currentPiece || game.gameOver) return;
+  const landingRow = game.getGhostY();
+  if (pieceVisualRow >= landingRow) {
+    pieceVisualRow = landingRow;
+    game.currentPiece.y = landingRow;
+    sound.playBagLanding();
+    game.lockPiece();
+    processLineClears();
+    if (!game.gameOver) {
+      game.spawnPiece();
+      if (game.currentPiece) {
+        lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}`;
+        pieceVisualRow = game.currentPiece.y;
+      }
+    }
+  }
+}
+
 function moveLeftAction() {
-  if (game.moveLeft()) sound.playRotate();
+  if (game.moveLeft()) {
+    sound.playRotate();
+    checkLandingClamp();
+  }
 }
 
 function moveRightAction() {
-  if (game.moveRight()) sound.playRotate();
+  if (game.moveRight()) {
+    sound.playRotate();
+    checkLandingClamp();
+  }
 }
 
 function rotateCWAction() {
   if (game.rotate(1)) {
     sound.playRotate();
-    dropCounter = 0; // Refresh lock delay so rotation works all the way down to the last grid row
+    dropCounter = 0;
+    checkLandingClamp();
   }
 }
 
 function rotateCCWAction() {
   if (game.rotate(-1)) {
     sound.playRotate();
-    dropCounter = 0; // Refresh lock delay so rotation works all the way down to the last grid row
+    dropCounter = 0;
+    checkLandingClamp();
   }
 }
 
@@ -293,7 +322,12 @@ function updateHUD() {
   if (levelValEl) levelValEl.textContent = levelStr;
   if (levelHeaderEl) levelHeaderEl.textContent = game.level;
 
-  if (linesValEl) linesValEl.textContent = game.lines;
+  // Survival Timer Format (MM:SS)
+  const minutes = Math.floor(game.survivalTime / 60);
+  const seconds = Math.floor(game.survivalTime % 60);
+  const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const timeValEl = document.getElementById('time-val');
+  if (timeValEl) timeValEl.textContent = timeStr;
 
   const bestStr = bestScore.toLocaleString();
   if (highScoreValEl) highScoreValEl.textContent = bestStr;
@@ -327,28 +361,59 @@ function updateSoundButtonUI() {
 
 // Render Update Loop
 function update(time = 0) {
+  if (!lastTime) lastTime = time;
   const deltaTime = time - lastTime;
   lastTime = time;
+  const deltaSeconds = Math.min(0.1, Math.max(0.001, deltaTime / 1000));
 
   if (gameStarted && !game.paused && !game.gameOver) {
-    dropCounter += deltaTime;
+    // 1. Real-time master survival clock updates continuously every single frame
+    const leveledUp = game.updateTime(deltaSeconds);
+    if (leveledUp) {
+      sound.playLevelUp();
+      showToast(`FALL SPEED INCREASED! (LEVEL ${game.level})`, '⚡');
+    }
 
     handleKeyHolding(time);
 
-    if (dropCounter > game.getDropSpeed()) {
-      const moved = game.tick();
-      if (moved) {
-        // Soothing plastic micro-crinkle & air glide step down sound
-        sound.playMoveDown();
-      } else {
-        // Soothing plastic Lay's chip packet floor touch & cushion thud SFX
+    // 2. Per-frame continuous true free-fall physics with pre-render boundary & stack clamping
+    if (game.currentPiece) {
+      const piece = game.currentPiece;
+      const pieceId = `${piece.type}_${piece.flavor ? piece.flavor.id : 'salted'}`;
+
+      if (lastPieceKey !== pieceId) {
+        lastPieceKey = pieceId;
+        pieceVisualRow = piece.y;
+      }
+
+      // Calculate exact maximum allowed landing row for current column(s) & multi-cell shape
+      const landingRow = game.getGhostY();
+
+      const rowsPerSec = game.getFallSpeedRowsPerSec();
+      const nextVisualRow = pieceVisualRow + rowsPerSec * deltaSeconds;
+
+      // Pre-frame collision & boundary check
+      if (nextVisualRow >= landingRow) {
+        // CLAMP TO EXACT LANDING ROW BEFORE RENDERING (0px clipping, 0px gap!)
+        pieceVisualRow = landingRow;
+        piece.y = landingRow;
+
         sound.playBagLanding();
+        game.lockPiece();
         processLineClears();
+
         if (!game.gameOver) {
           game.spawnPiece();
+          if (game.currentPiece) {
+            lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}`;
+            pieceVisualRow = game.currentPiece.y;
+          }
         }
+      } else {
+        // Continuous smooth descent (strictly capped below landingRow)
+        pieceVisualRow = nextVisualRow;
+        piece.y = Math.floor(pieceVisualRow);
       }
-      dropCounter = 0;
     }
 
     if (game.gameOver) {
@@ -356,8 +421,10 @@ function update(time = 0) {
     }
   }
 
+  updateHUD();
+
   const shakeOffset = particles.getShakeOffset();
-  renderer.renderPlayfield(game, shakeOffset);
+  renderer.renderPlayfield(game, shakeOffset, pieceVisualRow);
   renderer.renderHold(game.holdPiece);
   renderer.renderNextQueue(game.nextQueue, (type) => game.createPiece(type));
 

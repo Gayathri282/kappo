@@ -34,10 +34,13 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 50;
-    this.cellHeight = 67;
-    this.cellSize   = 50; // backward compat alias
+    this.cellWidth  = 55;
+    this.cellHeight = Math.round(55 * PACKET_RATIO);
+    this.cellSize   = 55; // backward compat alias
     this.dpr = window.devicePixelRatio || 1;
+
+    this.visualPieceY = 0;
+    this.lastPieceKey = null;
   }
 
   // ─── Resize to fit parent container (10 cols, 1.35 cell ratio) ───────────────
@@ -133,7 +136,7 @@ export class CanvasRenderer {
   }
 
   // ─── Draw one 3D neon packet block tile (100% cell slot fill, 0px horizontal gaps) ─────
-  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null) {
+  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : Math.round(cellSize * PACKET_RATIO);
 
@@ -142,7 +145,7 @@ export class CanvasRenderer {
     const blockH = cH + 1.2;
 
     const px = offsetX + x * cW;
-    const py = offsetY + y * cH;
+    const py = customPy != null ? customPy : (offsetY + y * cH);
 
     const flavorId = flavor ? flavor.id : 'salted';
     const img = PACKET_IMAGES[flavorId];
@@ -173,8 +176,8 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Render main playfield with vertical light trail animation ───────────
-  renderPlayfield(game, shakeOffset = { x: 0, y: 0 }) {
+  // ─── Render main playfield with continuous free-fall smooth Y motion ───────────
+  renderPlayfield(game, shakeOffset = { x: 0, y: 0 }, continuousRow = null) {
     const width  = this.canvas.width  / this.dpr;
     const height = this.canvas.height / this.dpr;
 
@@ -198,7 +201,7 @@ export class CanvasRenderer {
       const piece = game.currentPiece;
       const flavorId = piece.flavor ? piece.flavor.id : 'salted';
 
-      // Dynamic Laser Beam Gradient matching exact packet flavor (Yellow -> Yellow, Green -> Green, Red -> Red, Purple -> Purple)
+      // Dynamic Laser Beam Gradient matching exact packet flavor
       const FLAVOR_BEAM_COLORS = {
         salted:   { start: 'rgba(250, 204, 21, 0.65)', mid: 'rgba(234, 179, 8, 0.30)',  end: 'rgba(250, 204, 21, 0)' },
         chilli:   { start: 'rgba(34, 197, 94, 0.65)',  mid: 'rgba(22, 163, 74, 0.30)',  end: 'rgba(34, 197, 94, 0)' },
@@ -207,13 +210,17 @@ export class CanvasRenderer {
       };
       const beamColors = FLAVOR_BEAM_COLORS[flavorId] || FLAVOR_BEAM_COLORS.salted;
 
+      // Real-time continuous free-fall Y pixel coordinate calculation
+      const visualRow = (typeof continuousRow === 'number' && !isNaN(continuousRow)) ? continuousRow : piece.y;
+      const activePieceBaseY = visualRow * this.cellHeight;
+
       // 2a. Dynamic glowing vertical laser beam rising behind active falling piece
       this.ctx.save();
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
           if (piece.matrix[r][c]) {
             const bx = (piece.x + c) * this.cellWidth;
-            const by = (piece.y + r) * this.cellHeight;
+            const by = activePieceBaseY + r * this.cellHeight;
             if (by > 0) {
               const maxBeamH = this.cellHeight * 3;
               const beamH = Math.min(maxBeamH, by);
@@ -231,7 +238,7 @@ export class CanvasRenderer {
       }
       this.ctx.restore();
 
-      // 2b. Ghost piece
+      // 2b. Ghost piece (remains locked to exact discrete grid landing position)
       const ghostY = game.getGhostY();
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
@@ -245,14 +252,14 @@ export class CanvasRenderer {
         }
       }
 
-      // 3. Active falling piece (with glowing neon outline)
+      // 3. Active falling piece (rendered at exact per-frame continuous free-fall Y coordinate)
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
           if (piece.matrix[r][c]) {
             const px = piece.x + c;
-            const py = piece.y + r;
-            if (py >= 0) {
-              this.drawTile(this.ctx, px, py, this.cellWidth, piece.flavor, false, true);
+            const smoothPy = activePieceBaseY + r * this.cellHeight;
+            if (smoothPy + this.cellHeight >= 0) {
+              this.drawTile(this.ctx, px, 0, this.cellWidth, piece.flavor, false, true, 1.0, 0, 0, null, smoothPy);
             }
           }
         }
