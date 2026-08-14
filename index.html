@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <!-- Score & Best Pill (Desktop & Mobile Header) -->
+      <!-- Score, Best & Goal Pill (Condensed Header) -->
       <div class="header-score-pill">
         <div class="header-stat">
           <span class="stat-lbl">SCORE</span>
@@ -44,10 +44,14 @@
           <span class="stat-lbl">BEST</span>
           <span id="high-score-val-header" class="stat-val best-val">0</span>
         </div>
+        <div class="header-stat divider">
+          <span class="stat-lbl">GOAL</span>
+          <span id="goal-progress-txt-mobile" class="stat-val goal-val">0/10</span>
+        </div>
       </div>
 
       <div class="header-actions">
-        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Hold for Turbo Speed" aria-label="Speed Boost">
+        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Turbo Speed" aria-label="Speed Boost">
           <span class="speed-icon">⚡</span>
         </button>
         <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
@@ -62,68 +66,45 @@
       </div>
     </header>
 
-    <!-- Mobile Compact Preview Strip -->
-    <div class="mobile-preview-strip mobile-only">
-      <div class="mini-card goal-mini">
-        <span class="mini-label">GOAL</span>
-        <span id="goal-progress-txt-mobile" class="goal-progress-txt">0/10</span>
-        <div class="goal-bar-bg">
-          <div id="goal-bar-fill-mobile" class="goal-bar-fill" style="width: 0%;"></div>
-        </div>
-      </div>
-      <button id="btn-speed-boost-mobile" class="btn-speed-boost-card" aria-label="Speed Boost">
-        <span class="boost-bolt">⚡</span>
-        <span class="boost-txt">TURBO</span>
-      </button>
-    </div>
+    <!-- Main Layout Grid (Two-Column Split: Left HUD Sidebar + Right Play Matrix) -->
+    <main class="game-layout desktop-layout-wrapper">
 
-    <!-- Main Layout Grid (Sidebars + Center Playfield Canvas) -->
-    <main class="game-layout">
-
-      <!-- LEFT SIDEBAR (Identical layout to LAY STACKS UI reference) -->
-      <aside class="sidebar sidebar-left desktop-only">
-        <!-- Level Box -->
-        <div class="glass-card stat-card level-card">
-          <span class="card-label">LEVEL</span>
-          <span id="level-val" class="stat-number glow-yellow">01</span>
+      <!-- LEFT SIDEBAR HUD (Always visible 28% / 100-120px column) -->
+      <aside class="sidebar sidebar-left">
+        <!-- Module 1: LEVEL -->
+        <div class="hud-module level-module">
+          <span class="hud-label">LEVEL</span>
+          <span id="level-val" class="hud-val val-yellow">01</span>
         </div>
 
-        <!-- Lines Box -->
-        <div class="glass-card stat-card lines-card">
-          <span class="card-label">LINES</span>
-          <span id="lines-val" class="stat-number glow-green">0</span>
+        <!-- Module 2: LINES -->
+        <div class="hud-module lines-module">
+          <span class="hud-label">LINES</span>
+          <span id="lines-val" class="hud-val val-green">0</span>
         </div>
 
-        <!-- Goal Box (Inspired by LAY STACKS UI) -->
-        <div class="glass-card goal-card">
-          <div class="card-header">
-            <span class="card-icon">🎯</span>
-            <span class="card-label">GOAL</span>
+        <!-- Module 3: GOAL -->
+        <div class="hud-module goal-module">
+          <span class="hud-label">GOAL</span>
+          <div class="goal-subtext">CLEAR <span id="goal-target-lines">10</span> LINES</div>
+          <div class="goal-progress-bar">
+            <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
           </div>
-          <div class="goal-text">CLEAR <span id="goal-target-lines">10</span> LINES</div>
-          <div class="goal-progress-container">
-            <div class="goal-progress-bar">
-              <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
-            </div>
-            <span id="goal-progress-txt-desktop" class="goal-val">0/10</span>
-          </div>
+          <span id="goal-progress-txt-desktop" class="goal-counter">0/10</span>
         </div>
 
-        <!-- Next Piece Queue Box (Vertical stack like LAY STACKS) -->
-        <div class="glass-card next-card">
-          <div class="card-header">
-            <span class="card-icon">🔮</span>
-            <span class="card-label">NEXT</span>
-          </div>
+        <!-- Module 4: NEXT Queue -->
+        <div class="hud-module next-module">
+          <span class="hud-label hud-heading">NEXT</span>
           <div class="canvas-wrapper next-wrapper">
-            <canvas id="next-canvas" width="120" height="240"></canvas>
+            <canvas id="next-canvas" width="100" height="200"></canvas>
           </div>
         </div>
       </aside>
 
-      <!-- CENTER: Main Playfield Section -->
+      <!-- RIGHT COLUMN: Main 7x14 Play Matrix Section -->
       <section class="playfield-section">
-        <div id="playfield-container" class="playfield-container">
+        <div id="playfield-container" class="playfield-container game-matrix-container">
           <!-- Canvas layer for pieces & dark playfield grid -->
           <canvas id="game-canvas" width="300" height="600"></canvas>
           <!-- Canvas overlay for line clear particle explosions -->

@@ -4,43 +4,43 @@
    ========================================================================== */
 
 :root {
-  /* Light Theme Palette */
-  --bg-dark: #FFFDF5;
-  --bg-dark-secondary: #FFF5E4;
-  --bg-card: #FFFFFF;
-  --bg-card-border: #F0E6D2;
-  --bg-card-hover: #FFF8EA;
+  /* Dark High-Contrast Neon Arcade Palette (#0a0d1a) */
+  --bg-dark: #0a0d1a;
+  --bg-dark-secondary: #05070e;
+  --bg-card: rgba(10, 13, 26, 0.92);
+  --bg-card-border: rgba(0, 195, 255, 0.35);
+  --bg-card-hover: rgba(0, 195, 255, 0.15);
 
-  --color-primary: #FFA502;
-  --color-primary-hover: #FF7F50;
-  --color-accent-yellow: #FFA502;
-  --color-accent-green: #2ED573;
-  --color-accent-red: #FF4757;
-  --color-accent-purple: #8E44AD;
+  --color-primary: #00C3FF;
+  --color-primary-hover: #0088FF;
+  --color-accent-yellow: #FFD700;
+  --color-accent-green: #00FF88;
+  --color-accent-red: #FF2D55;
+  --color-accent-purple: #A855F7;
 
   /* Flavor Accent Colors */
-  --flavor-salted: #FFA502;
-  --flavor-herb: #2ED573;
-  --flavor-masala: #0984E3;
-  --flavor-fiery: #8E44AD;
-  --flavor-tomato: #FF4757;
-  --flavor-dynamite: #FF7F50;
+  --flavor-salted: #FFD700;
+  --flavor-herb: #00FF88;
+  --flavor-masala: #00C3FF;
+  --flavor-fiery: #A855F7;
+  --flavor-tomato: #FF2D55;
+  --flavor-dynamite: #FF9F1C;
 
   /* Typography */
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
 
-  --text-main: #2D1F17;
-  --text-muted: #7A685D;
-  --text-gold: #D97706;
-  --text-glow-yellow: #D97706;
-  --text-glow-cyan: #0284C7;
-  --text-glow-green: #15803D;
+  --text-main: #FFFFFF;
+  --text-muted: #8E9BAE;
+  --text-gold: #FFD700;
+  --text-glow-yellow: #FFD700;
+  --text-glow-cyan: #00C3FF;
+  --text-glow-green: #00FF88;
 
   /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 16px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
   --radius-lg: 24px;
 }
 
@@ -251,18 +251,18 @@ html, body {
   align-items: center;
 }
 
-/* Top Header Bar */
+/* Top Header Bar (Dark High-Contrast Neon Arcade) */
 .game-header {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 12px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border: 2px solid var(--bg-card-border);
+  padding: 6px 14px;
+  background: rgba(10, 13, 26, 0.94);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(0, 195, 255, 0.35);
   border-radius: var(--radius-md);
-  box-shadow: 0 6px 20px rgba(220, 150, 50, 0.15);
+  box-shadow: 0 0 25px rgba(0, 195, 255, 0.22);
   flex-shrink: 0;
 }
 
@@ -276,7 +276,7 @@ html, body {
   height: 28px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  filter: drop-shadow(0 0 8px rgba(0, 195, 255, 0.6));
 }
 
 .brand-titles {
@@ -289,7 +289,8 @@ html, body {
   font-size: 1.1rem;
   font-weight: 900;
   letter-spacing: 2px;
-  color: #D97706;
+  color: #00C3FF;
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.7);
   line-height: 1;
 }
 
@@ -305,11 +306,12 @@ html, body {
 .header-score-pill {
   display: flex;
   align-items: center;
-  background: #FFF9E6;
-  border: 2px solid #FFEAA7;
+  background: rgba(5, 7, 14, 0.85);
+  border: 2px solid rgba(255, 215, 0, 0.4);
   border-radius: 20px;
   padding: 4px 16px;
   gap: 14px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
 }
 
 .header-stat {
@@ -319,7 +321,7 @@ html, body {
 }
 
 .header-stat.divider {
-  border-left: 1px solid #F0E6D2;
+  border-left: 1px solid rgba(255, 215, 0, 0.25);
   padding-left: 14px;
 }
 
@@ -332,14 +334,16 @@ html, body {
 
 .stat-val {
   font-family: var(--font-mono);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 900;
-  color: #D97706;
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
   line-height: 1;
 }
 
 .stat-val.best-val {
-  color: #0284C7;
+  color: #00C3FF;
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.6);
 }
 
 .header-actions {
@@ -350,9 +354,9 @@ html, body {
 }
 
 .icon-btn {
-  background: #FFF8E7;
-  border: 2px solid #F5E6CC;
-  color: var(--text-main);
+  background: rgba(10, 13, 26, 0.90);
+  border: 2px solid rgba(0, 195, 255, 0.35);
+  color: #FFFFFF;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -361,21 +365,22 @@ html, body {
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 12px rgba(0, 195, 255, 0.25);
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 #btn-help {
-  background: #FFF3D6;
-  border: 2px solid #FFA502;
-  color: #D97706;
+  background: rgba(10, 13, 26, 0.90);
+  border: 2px solid #FFD700;
+  color: #FFD700;
   font-weight: 900;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
 }
 
 .icon-btn:hover {
-  background: #FFEAA7;
-  border-color: var(--color-primary);
+  background: rgba(0, 195, 255, 0.25);
+  border-color: #00C3FF;
 }
 
 .icon-btn:active {
@@ -435,118 +440,113 @@ html, body {
   transition: width 0.3s ease;
 }
 
-/* Main Layout Grid */
+/* Main Layout Grid (Two-Column Flex Split wrapped in #0a0d1a) */
 .game-layout {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start; /* Left Sidebar top flush with main playing grid */
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   flex: 1;
   min-height: 0;
   margin: 4px 0;
+  background: #0a0d1a;
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 145px;
 }
 
-/* Light Cards with Glassmorphism Overlay */
-.glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(10px);
-  border: 2px solid var(--bg-card-border);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  box-shadow: 0 6px 20px rgba(200, 140, 40, 0.12);
+.sidebar-left {
+  width: 28%;
+  min-width: 100px;
+  max-width: 135px;
+  flex-shrink: 0;
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #F7F0E2;
-}
-
-.card-icon {
-  font-size: 1rem;
-}
-
-.card-label {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 0.75rem;
-  letter-spacing: 1.5px;
-  color: var(--text-muted);
-}
-
-.stat-card {
+/* Dark, Rounded HUD Module Cards */
+.hud-module {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 195, 255, 0.2);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  padding: 8px 6px;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  padding: 10px 14px;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-.stat-number {
+.hud-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.hud-heading {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  color: #00C3FF;
+  letter-spacing: 1.5px;
+}
+
+.hud-val {
   font-family: var(--font-mono);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 900;
   line-height: 1;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-.glow-yellow {
-  color: #D97706;
+.val-yellow {
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.65);
 }
 
-.glow-green {
-  color: #15803D;
+.val-green {
+  color: #00FF88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.65);
 }
 
-.glow-cyan {
-  color: #0284C7;
-}
-
-/* Goal Card */
-.goal-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.goal-text {
-  font-size: 0.75rem;
+.goal-subtext {
+  font-size: 0.58rem;
   font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: 1px;
-}
-
-.goal-progress-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+  color: #FFFFFF;
+  margin: 2px 0;
+  letter-spacing: 0.5px;
 }
 
 .goal-progress-bar {
-  flex: 1;
-  height: 8px;
-  background: #F0E6D2;
-  border-radius: 4px;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
   overflow: hidden;
-  border: 1px solid #FFEAA7;
+  margin: 3px 0;
+  border: 1px solid rgba(255, 215, 0, 0.25);
 }
 
-.goal-val {
+.goal-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #FF7F50);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.goal-counter {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 900;
-  color: #D97706;
+  color: #FFD700;
 }
 
 /* Hold & Next Canvas Wrappers */
@@ -636,19 +636,45 @@ html, body {
   min-width: 0;
 }
 
+/* 1. Constrain the Playing Field Container */
+.game-matrix-container,
 .playfield-container {
   position: relative;
-  max-height: 100%;
-  max-width: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(6px);
-  border: 4px solid #FFA502;
+  width: 100%;
+  max-width: 420px; /* Locks grid width on desktop so columns stay tight */
+  margin: 0 auto;   /* Centers the matrix vertically/horizontally */
+  aspect-ratio: 7 / 14; /* Matches 7 columns x 14 rows layout */
+  background: #0a0d1a;
+  backdrop-filter: blur(12px);
+  border: 4px solid #00C3FF;
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 35px rgba(255, 165, 0, 0.22), 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 35px rgba(0, 195, 255, 0.45), 0 10px 30px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   touch-action: none;
-  margin: 0 auto;
   flex-shrink: 0;
+}
+
+/* 2. Enforce Edge-to-Edge Block Filling inside Cells */
+.grid-cell {
+  aspect-ratio: 4 / 5; /* Matches packet proportions */
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.block-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: fill !important;
+}
+
+/* 3. Handle Desktop Layout Spacing */
+.desktop-layout-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 #game-canvas {
@@ -897,18 +923,19 @@ html, body {
   letter-spacing: 1px;
 }
 
-/* BOTTOM TOUCH CONTROLS DECK (Light Theme) */
+/* BOTTOM TOUCH CONTROLS DECK (Dark Neon Arcade Theme) */
 .touch-controls-deck {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: #FFFFFF;
-  border: 2px solid #F0E6D2;
+  background: rgba(10, 13, 26, 0.94);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(0, 195, 255, 0.35);
   border-radius: var(--radius-md);
   padding: 8px 12px;
-  box-shadow: 0 8px 24px rgba(220, 150, 50, 0.12);
+  box-shadow: 0 0 25px rgba(0, 195, 255, 0.20);
   margin-top: 4px;
   flex-shrink: 0;
 }
@@ -916,33 +943,35 @@ html, body {
 .touch-action-btn {
   flex: 1;
   height: 52px;
-  background: #FFF9E6;
-  border: 2px solid #FFEAA7;
+  background: rgba(5, 7, 14, 0.85);
+  border: 2px solid rgba(0, 195, 255, 0.40);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-main);
+  color: #FFFFFF;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: 0 0 12px rgba(0, 195, 255, 0.20);
 }
 
 .touch-action-btn:hover {
-  background: #FFEAA7;
-  border-color: var(--color-primary);
+  background: rgba(0, 195, 255, 0.25);
+  border-color: #00C3FF;
+  box-shadow: 0 0 20px rgba(0, 195, 255, 0.5);
 }
 
 .touch-action-btn:active {
   transform: scale(0.92);
-  background: #FFA502;
+  background: #00C3FF;
   color: #FFFFFF;
 }
 
 .btn-arrow {
   font-size: 1.3rem;
-  color: #D97706;
+  color: #FFFFFF;
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.9);
   line-height: 1;
 }
 
@@ -950,17 +979,8 @@ html, body {
   font-family: var(--font-heading);
   font-size: 0.58rem;
   font-weight: 800;
-  letter-spacing: 0.8px;
   color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.btn-caption {
-  font-family: var(--font-heading);
-  font-size: 0.58rem;
-  font-weight: 800;
   letter-spacing: 0.8px;
-  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -1360,3 +1380,46 @@ html, body {
     font-size: 0.5rem;
   }
 }
+
+/* Grid Container & Cell Proportions (7 columns wide, 0px horizontal gaps) */
+.grid-container,
+.playfield-container {
+  grid-template-columns: repeat(7, 1fr); /* Ensure exactly 7 columns */
+}
+
+.grid-cell {
+  aspect-ratio: 1 / 1.4; /* Makes the grid cells themselves narrower and taller */
+  position: relative;
+  overflow: visible;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Solution A: Stretch Image Horizontally across 100% cell width and height */
+.block-image,
+.block-sprite,
+.grid-cell img,
+.block-tile,
+.block-img,
+.packet-block-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important; /* Overrides ratio lock, stretching block edge-to-edge */
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block;
+}
+
+
+
+
+
+
+
+
+

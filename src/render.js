@@ -21,8 +21,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 1.04 ratio for maximum screen space & fill
-const PACKET_RATIO = 1.04;
+// Chip packet aspect ratio: 4:5 vertical rectangle proportions (1.25 height:width ratio)
+const PACKET_RATIO = 1.25;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -34,43 +34,32 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 40;
-    this.cellHeight = Math.round(40 * PACKET_RATIO);
-    this.cellSize   = 40; // backward compat alias
+    this.cellWidth  = 45;
+    this.cellHeight = Math.round(45 * PACKET_RATIO);
+    this.cellSize   = 45; // backward compat alias
     this.dpr = window.devicePixelRatio || 1;
   }
 
-  // ─── Resize to fit parent container with target 350px width ───────────────
+  // ─── Resize to fit parent container (7x14 grid, 0px horizontal gaps) ───────────────
   resizeToContainer(container) {
     if (!container) return;
     const section = container.parentElement;
-    const rect = section
-      ? section.getBoundingClientRect()
-      : container.getBoundingClientRect();
+    const availW = section ? Math.min(420, section.getBoundingClientRect().width) : Math.min(420, container.getBoundingClientRect().width);
+    const availH = section ? section.getBoundingClientRect().height : container.getBoundingClientRect().height;
 
-    const maxW = Math.floor(rect.width);
-    const maxH = Math.floor(rect.height);
+    // Fit within both available width and height for 7 cols x 14 rows with ratio 1.25 (PACKET_RATIO)
+    const maxCellWFromWidth  = availW / GRID_COLS;
+    const maxCellWFromHeight = availH > 0 ? availH / (GRID_ROWS * PACKET_RATIO) : maxCellWFromWidth;
 
-    // Target 35px per cell for 10 columns -> exactly 350px board width!
-    // Scale cell size down only if viewport width is less than 350px.
-    const targetCellW = 35; // 35px × 10 cols = 350px width
-    const maxCellByW  = Math.floor(maxW / GRID_COLS);
-    const maxCellByH  = Math.floor(maxH / GRID_ROWS);
+    const cellW = Math.max(20, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
+    const cellH = Math.round(cellW * PACKET_RATIO);
 
-    // Default to 35px for 350px width, clamped to fit screen if needed
-    const cellW = Math.min(targetCellW, Math.max(28, maxCellByW));
-    const cellH = Math.min(cellW, Math.max(28, maxCellByH));
+    this.cellWidth  = cellW;
+    this.cellHeight = cellH;
+    this.cellSize   = cellW;
 
-    // Force cellWidth = 35px (350px board width) whenever available width allows
-    const finalCellW = maxW >= 350 ? 35 : cellW;
-    const finalCellH = maxH >= (finalCellW * GRID_ROWS) ? finalCellW : cellH;
-
-    this.cellWidth  = finalCellW;
-    this.cellHeight = finalCellH;
-    this.cellSize   = finalCellW;
-
-    this.boardWidth  = finalCellW * GRID_COLS; // 35px * 10 = 350px!
-    this.boardHeight = finalCellH * GRID_ROWS;
+    this.boardWidth  = cellW * GRID_COLS;
+    this.boardHeight = cellH * GRID_ROWS;
 
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
@@ -81,6 +70,14 @@ export class CanvasRenderer {
     this.canvas.width  = Math.floor(this.boardWidth  * this.dpr);
     this.canvas.height = Math.floor(this.boardHeight * this.dpr);
 
+    const particleCanvas = document.getElementById('particle-canvas');
+    if (particleCanvas) {
+      particleCanvas.width = this.canvas.width;
+      particleCanvas.height = this.canvas.height;
+      particleCanvas.style.width = `${this.boardWidth}px`;
+      particleCanvas.style.height = `${this.boardHeight}px`;
+    }
+
     this.ctx.resetTransform();
     this.ctx.scale(this.dpr, this.dpr);
   }
@@ -89,16 +86,16 @@ export class CanvasRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
   }
 
-  // ─── Grid background (White overlay with low opacity over red background) ─
+  // ─── Grid background (Dark Arcade #0a0d1a Theme with Neon Blue Lines) ───
   drawGrid(width, height) {
     this.ctx.clearRect(0, 0, width, height);
 
-    // Clean white overlay background with low opacity
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
+    // Dark semi-transparent blue/black container (#0a0d1a)
+    this.ctx.fillStyle = 'rgba(10, 13, 26, 0.94)';
     this.ctx.fillRect(0, 0, width, height);
 
-    // Warm subtle grid lines
-    this.ctx.strokeStyle = 'rgba(217, 119, 6, 0.20)';
+    // Subtle Glowing Neon Blue Grid Lines
+    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.18)';
     this.ctx.lineWidth = 1.0;
 
     for (let c = 0; c <= GRID_COLS; c++) {
@@ -135,22 +132,17 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw one packet block tile ───────────────────────────────────────────
-  // x, y        : grid column / row indices
-  // cellSize    : cellWidth for this cell
-  // customCellH : override cellHeight (used in preview canvases)
-  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null) {
+  // ─── Draw one 3D neon packet block tile (100% cell slot fill, 0px horizontal gaps) ─────
+  drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null) {
     const cW = cellSize;
-    const cH = customCellH != null ? customCellH : (cellSize * (this.cellHeight / this.cellWidth));
+    const cH = customCellH != null ? customCellH : Math.round(cellSize * PACKET_RATIO);
 
-    // 2px bleed so packets butt up edge-to-edge with zero gap
-    const blockW = cW + 2;
-    const blockH = cH + 2;
-    const bleedX = 1;
-    const bleedY = 1;
+    // Fill 100% width and height edge-to-edge (0px padding for solid seamless Tetromino shapes)
+    const blockW = cW;
+    const blockH = cH;
 
-    const px = offsetX + x * cW - bleedX;
-    const py = offsetY + y * cH - bleedY;
+    const px = offsetX + x * cW;
+    const py = offsetY + y * cH;
 
     const flavorId = flavor ? flavor.id : 'salted';
     const img = PACKET_IMAGES[flavorId];
@@ -158,7 +150,7 @@ export class CanvasRenderer {
     if (isGhost) {
       if (img && img.complete && img.naturalWidth) {
         ctx.save();
-        ctx.globalAlpha = 0.32;
+        ctx.globalAlpha = 0.28;
         ctx.drawImage(img, px, py, blockW, blockH);
         ctx.restore();
       }
@@ -166,22 +158,23 @@ export class CanvasRenderer {
     }
 
     if (img && img.complete && img.naturalWidth) {
+      ctx.save();
+      if (isActiveFalling) {
+        // Glowing neon outline aura around active falling piece
+        ctx.shadowColor = 'rgba(0, 225, 255, 0.9)';
+        ctx.shadowBlur = 10;
+      } else {
+        // Subtle drop-shadow effect on placed blocks against dark navy (#0a0d1a) grid
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 3;
+      }
       ctx.drawImage(img, px, py, blockW, blockH);
+      ctx.restore();
     }
   }
 
-  adjustColorBrightness(hex, percent) {
-    let num = parseInt(hex.replace('#', ''), 16);
-    let r = (num >> 16) + percent;
-    let g = ((num >> 8) & 0x00FF) + percent;
-    let b = (num & 0x0000FF) + percent;
-    r = Math.min(255, Math.max(0, r));
-    g = Math.min(255, Math.max(0, g));
-    b = Math.min(255, Math.max(0, b));
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-  }
-
-  // ─── Render main playfield ────────────────────────────────────────────────
+  // ─── Render main playfield with vertical light trail animation ───────────
   renderPlayfield(game, shakeOffset = { x: 0, y: 0 }) {
     const width  = this.canvas.width  / this.dpr;
     const height = this.canvas.height / this.dpr;
@@ -197,7 +190,7 @@ export class CanvasRenderer {
       for (let c = 0; c < GRID_COLS; c++) {
         const cell = game.grid[r][c];
         if (cell) {
-          this.drawTile(this.ctx, c, r, this.cellWidth, cell.flavor);
+          this.drawTile(this.ctx, c, r, this.cellWidth, cell.flavor, false, false);
         }
       }
     }
@@ -205,7 +198,27 @@ export class CanvasRenderer {
     if (game.currentPiece && !game.gameOver) {
       const piece = game.currentPiece;
 
-      // 2. Ghost piece
+      // 2a. Glowing vertical light beam/trail rising behind active falling piece
+      this.ctx.save();
+      for (let r = 0; r < piece.matrix.length; r++) {
+        for (let c = 0; c < piece.matrix[r].length; c++) {
+          if (piece.matrix[r][c]) {
+            const bx = (piece.x + c) * this.cellWidth;
+            const by = (piece.y + r) * this.cellHeight;
+            if (by > 0) {
+              const beamGrad = this.ctx.createLinearGradient(bx, 0, bx, by + this.cellHeight);
+              beamGrad.addColorStop(0, 'rgba(0, 195, 255, 0.35)');
+              beamGrad.addColorStop(0.6, 'rgba(168, 85, 247, 0.20)');
+              beamGrad.addColorStop(1, 'rgba(0, 195, 255, 0)');
+              this.ctx.fillStyle = beamGrad;
+              this.ctx.fillRect(bx, 0, this.cellWidth, by + this.cellHeight);
+            }
+          }
+        }
+      }
+      this.ctx.restore();
+
+      // 2b. Ghost piece
       const ghostY = game.getGhostY();
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
@@ -213,20 +226,20 @@ export class CanvasRenderer {
             const gx = piece.x + c;
             const gy = ghostY + r;
             if (gy >= 0) {
-              this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true);
+              this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true, false);
             }
           }
         }
       }
 
-      // 3. Active falling piece
+      // 3. Active falling piece (with glowing neon outline)
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
           if (piece.matrix[r][c]) {
             const px = piece.x + c;
             const py = piece.y + r;
             if (py >= 0) {
-              this.drawTile(this.ctx, px, py, this.cellWidth, piece.flavor);
+              this.drawTile(this.ctx, px, py, this.cellWidth, piece.flavor, false, true);
             }
           }
         }

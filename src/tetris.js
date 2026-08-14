@@ -1,10 +1,10 @@
 /* ==========================================================================
    TETRIS ENGINE - KAPPO CRUNCH STACK
-   10x20 Grid, SRS Rotation System, Wall Kicks, 7-Bag Randomizer, Flavor Mapping
+   7x14 Grid (7 cols wide x 14 rows high), SRS Rotation System, Wall Kicks, 7-Bag Randomizer
    ========================================================================== */
 
-export const GRID_COLS = 10;
-export const GRID_ROWS = 16;
+export const GRID_COLS = 7;
+export const GRID_ROWS = 14;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
