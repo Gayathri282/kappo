@@ -86,7 +86,7 @@ const particles = new ParticleSystem(particleCanvas);
 let lastTime = 0;
 let dropCounter = 0;
 let pieceVisualRow = 0;
-let lastPieceKey = null;
+let activePieceRef = null;
 let gameStarted = false;
 let bestScore = parseInt(localStorage.getItem('kappo_best_stack') || '0', 10);
 let lastFactScoreMilestone = 0;
@@ -138,31 +138,45 @@ function checkLandingClamp() {
 }
 
 function moveLeftAction() {
+  if (!game.currentPiece || game.gameOver) return;
+  const oldY = game.currentPiece.y;
   if (game.moveLeft()) {
     sound.playRotate();
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function moveRightAction() {
+  if (!game.currentPiece || game.gameOver) return;
+  const oldY = game.currentPiece.y;
   if (game.moveRight()) {
     sound.playRotate();
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function rotateCWAction() {
+  if (!game.currentPiece || game.gameOver) return;
+  const oldY = game.currentPiece.y;
   if (game.rotate(1)) {
     sound.playRotate();
-    dropCounter = 0;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function rotateCCWAction() {
+  if (!game.currentPiece || game.gameOver) return;
+  const oldY = game.currentPiece.y;
   if (game.rotate(-1)) {
     sound.playRotate();
-    dropCounter = 0;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
@@ -377,10 +391,10 @@ function update(time = 0) {
     // 2. Per-frame continuous true free-fall physics with pre-render boundary & stack clamping
     if (game.currentPiece) {
       const piece = game.currentPiece;
-      const pieceId = `${piece.type}_${piece.flavor ? piece.flavor.id : 'salted'}_rot${piece.rotation}_x${piece.x}`;
 
-      if (lastPieceKey !== pieceId) {
-        lastPieceKey = pieceId;
+      // Only initialize pieceVisualRow when a brand NEW piece spawns
+      if (activePieceRef !== piece) {
+        activePieceRef = piece;
         pieceVisualRow = piece.y;
       }
 
@@ -403,7 +417,7 @@ function update(time = 0) {
         if (!game.gameOver) {
           game.spawnPiece();
           if (game.currentPiece) {
-            lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}_rot${game.currentPiece.rotation}_x${game.currentPiece.x}`;
+            activePieceRef = game.currentPiece;
             pieceVisualRow = game.currentPiece.y;
           }
         }
