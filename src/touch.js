@@ -1,10 +1,8 @@
 /* ==========================================================================
    MOBILE DIRECT SCREEN TOUCH & CONTROLS ENGINE
-   - Left 50% outer side of screen: Tap or Drag Left
-   - Right 50% outer side of screen: Tap or Drag Right
-   - Top 25% upper zone: Tap to Rotate Piece (↻)
-   - Swipe Up / Tap Hold: Hold Piece (📦)
-   - Dedicated ⚡ SPEED BOOST button for accelerated fall gravity
+   - Left / Right Swiping and Tapping anywhere on screen (inside & outside grid)
+   - Rotation enabled until the second last row (row <= 15 for 17 rows)
+   - Dedicated ⚡ TURBO BOOST button for accelerated fall gravity
    ========================================================================== */
 
 export class TouchController {
@@ -35,6 +33,7 @@ export class TouchController {
     const btnLeft = document.getElementById('btn-touch-left');
     const btnRight = document.getElementById('btn-touch-right');
     const btnSoftDrop = document.getElementById('btn-touch-soft-drop');
+    const btnTurbo = document.getElementById('btn-touch-turbo');
     const btnRotate = document.getElementById('btn-touch-rotate');
 
     const bindButton = (btn, action) => {
@@ -48,7 +47,6 @@ export class TouchController {
 
       btn.addEventListener('touchstart', triggerAction, { passive: false });
       btn.addEventListener('click', (e) => {
-        // Prevent duplicate trigger if touchstart fired
         if (e.detail !== 0) triggerAction(e);
       });
     };
@@ -56,14 +54,13 @@ export class TouchController {
     bindButton(btnLeft, () => this.handlers.onLeft());
     bindButton(btnRight, () => this.handlers.onRight());
     bindButton(btnSoftDrop, () => this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null);
+    bindButton(btnTurbo, () => this.handlers.onTurbo ? this.handlers.onTurbo() : (this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null));
     bindButton(btnRotate, () => this.handlers.onRotateCW());
   }
 
-  // Full Screen Direct Touch Allocation & Gestures
+  // Full Screen Direct Touch Allocation & Gestures (Works Inside & Outside Playgrid)
   initDirectTouchAllocation() {
-    const container = document.getElementById('playfield-container');
     const mobileHoldBox = document.getElementById('hold-canvas-mobile');
-    if (!container) return;
 
     // Tap Mobile Hold Box
     if (mobileHoldBox) {
@@ -74,25 +71,30 @@ export class TouchController {
       }, { passive: false });
     }
 
-    // Touch Start on Playfield Container
-    container.addEventListener('touchstart', (e) => {
+    const isInteractiveElement = (target) => {
+      if (!target) return false;
+      return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn');
+    };
+
+    // Touch Start anywhere on screen
+    document.addEventListener('touchstart', (e) => {
+      if (isInteractiveElement(e.target)) return;
       if (e.touches.length > 0) {
-        if (e.cancelable) e.preventDefault();
         const touch = e.touches[0];
         this.touchStartX = touch.clientX;
         this.touchStartY = touch.clientY;
         this.lastColumnStep = touch.clientX;
         this.touchStartTime = Date.now();
       }
-    }, { passive: false });
+    }, { passive: true });
 
     // Touch Dragging Finger across Left / Right Zones
-    container.addEventListener('touchmove', (e) => {
+    document.addEventListener('touchmove', (e) => {
+      if (isInteractiveElement(e.target)) return;
       if (e.touches.length > 0) {
-        if (e.cancelable) e.preventDefault();
         const currentX = e.touches[0].clientX;
         const deltaXFromLast = currentX - this.lastColumnStep;
-        const stepThreshold = 22; // pixels per column step
+        const stepThreshold = 20; // pixels per column step
 
         if (Math.abs(deltaXFromLast) >= stepThreshold) {
           this.vibrate(6);
@@ -104,14 +106,13 @@ export class TouchController {
           this.lastColumnStep = currentX;
         }
       }
-    }, { passive: false });
+    }, { passive: true });
 
     // Touch End (Left Zone / Right Zone Taps & Swipe Up for Hold)
-    container.addEventListener('touchend', (e) => {
+    document.addEventListener('touchend', (e) => {
+      if (isInteractiveElement(e.target)) return;
       if (e.changedTouches.length > 0) {
-        if (e.cancelable) e.preventDefault();
         const touch = e.changedTouches[0];
-        const rect = container.getBoundingClientRect();
 
         const endX = touch.clientX;
         const endY = touch.clientY;
@@ -123,9 +124,6 @@ export class TouchController {
         const absX = Math.abs(deltaX);
         const absY = Math.abs(deltaY);
 
-        const canvasRelativeX = endX - rect.left;
-        const canvasRelativeY = endY - rect.top;
-
         // 1. Swipe Up -> Hold Piece (📦)
         if (deltaY < -40 && absY > absX) {
           this.vibrate(12);
@@ -135,33 +133,37 @@ export class TouchController {
 
         // 2. DIRECT TOUCH ZONES (< 18px movement within 240ms)
         if (absX < 18 && absY < 18 && duration < 240) {
-          const normX = canvasRelativeX / rect.width;
-          const normY = canvasRelativeY / rect.height;
+          const screenW = window.innerWidth;
+          const screenH = window.innerHeight;
+
+          const normX = endX / screenW;
+          const normY = endY / screenH;
 
           // Visual touch ripple feedback
           if (this.particles) {
-            this.particles.spawnTouchRipple(canvasRelativeX, canvasRelativeY);
+            this.particles.spawnTouchRipple(endX, endY);
           }
 
           this.vibrate(10);
 
           const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
-          const allowTouchRotate = pieceY < 4; // Only allow canvas touch rotation on upper rows (row < 4)
+          // Rotation enabled working till the second to last row (pieceY <= 15 for 17 rows)
+          const allowTouchRotate = pieceY <= 15;
 
-          // Top 25% zone -> Rotate Piece Clockwise (Only when above row 4)
-          if (normY < 0.25 && allowTouchRotate) {
+          // Upper 20% zone -> Rotate Piece Clockwise (Only when above second last row)
+          if (normY < 0.20 && allowTouchRotate) {
             this.handlers.onRotateCW();
           }
-          // Left 50% zone -> Move Left
+          // Left 50% screen zone -> Move Left
           else if (normX < 0.50) {
             this.handlers.onLeft();
           }
-          // Right 50% zone -> Move Right
+          // Right 50% screen zone -> Move Right
           else {
             this.handlers.onRight();
           }
         }
       }
-    }, { passive: false });
+    }, { passive: true });
   }
 }

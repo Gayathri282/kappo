@@ -707,14 +707,14 @@ html, body {
   display: block;
 }
 
-/* 3. Matrix Container (10 Cols x 13 Rows Max Height, 1:1 Square Cells) */
+/* 3. Matrix Container (10 Cols x 17 Rows Max Height, 1:1 Square Cells) */
 .game-matrix-container,
 .playfield-container {
   position: relative;
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  aspect-ratio: 10 / 13; /* 10 cols x 13 rows max height */
+  aspect-ratio: 10 / 17; /* 10 cols x 17 rows max height */
   background: #05070e;
   border: 3px solid #00C3FF;
   border-radius: 16px;
