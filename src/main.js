@@ -318,7 +318,11 @@ function updateHUD() {
 }
 
 function updateSoundButtonUI() {
-  btnSound.querySelector('.sound-icon').textContent = sound.isMuted() ? '🔇' : '🔊';
+  if (!btnSound) return;
+  const icon = btnSound.querySelector('.sound-icon');
+  if (icon) {
+    icon.textContent = sound.isMuted() ? '🔇' : '🔊';
+  }
 }
 
 // Render Update Loop
@@ -436,19 +440,25 @@ function updateCarouselSlide(slideIndex) {
   });
 }
 
-btnCarouselPrev.addEventListener('click', () => updateCarouselSlide(currentSlide - 1));
-btnCarouselNext.addEventListener('click', () => {
-  if (currentSlide === totalSlides - 1) {
-    closeTutorialModal();
-  } else {
-    updateCarouselSlide(currentSlide + 1);
-  }
-});
+if (btnCarouselPrev) {
+  btnCarouselPrev.addEventListener('click', () => updateCarouselSlide(currentSlide - 1));
+}
+if (btnCarouselNext) {
+  btnCarouselNext.addEventListener('click', () => {
+    if (currentSlide === totalSlides - 1) {
+      closeTutorialModal();
+    } else {
+      updateCarouselSlide(currentSlide + 1);
+    }
+  });
+}
 
-const dotsList = carouselDotsContainer.querySelectorAll('.dot');
-dotsList.forEach((dot, idx) => {
-  dot.addEventListener('click', () => updateCarouselSlide(idx));
-});
+if (carouselDotsContainer) {
+  const dotsList = carouselDotsContainer.querySelectorAll('.dot');
+  dotsList.forEach((dot, idx) => {
+    dot.addEventListener('click', () => updateCarouselSlide(idx));
+  });
+}
 
 // Interactive Kappo Product Showcase Switcher (Desktop Right Sidebar)
 const PRODUCT_SHOWCASE_LIST = [
@@ -474,12 +484,14 @@ if (productShowcaseCard) {
 }
 
 function openTutorialModal() {
+  if (!tutorialModal) return;
   if (gameStarted && !game.paused) pauseGame();
   updateCarouselSlide(0);
   tutorialModal.classList.remove('hidden');
 }
 
 function closeTutorialModal() {
+  if (!tutorialModal) return;
   tutorialModal.classList.add('hidden');
   localStorage.setItem('kappo_tutorial_seen', 'true');
   if (!gameStarted) {
@@ -489,8 +501,8 @@ function closeTutorialModal() {
   }
 }
 
-btnCloseTutorial.addEventListener('click', closeTutorialModal);
-btnTutorialStart.addEventListener('click', closeTutorialModal);
+if (btnCloseTutorial) btnCloseTutorial.addEventListener('click', closeTutorialModal);
+if (btnTutorialStart) btnTutorialStart.addEventListener('click', closeTutorialModal);
 
 // Window Keyboard Controls
 window.addEventListener('keydown', (e) => {
@@ -569,28 +581,34 @@ startOverlay.addEventListener('touchstart', (e) => {
   }
 }, { passive: false });
 
-btnStart.addEventListener('click', startGame);
+if (btnStart) btnStart.addEventListener('click', startGame);
 
-btnSound.addEventListener('click', () => {
-  sound.toggleMute();
-  updateSoundButtonUI();
-});
+if (btnSound) {
+  btnSound.addEventListener('click', () => {
+    sound.toggleMute();
+    updateSoundButtonUI();
+  });
+}
 
-btnPause.addEventListener('click', () => {
-  if (game.paused) resumeGame();
-  else pauseGame();
-});
+if (btnPause) {
+  btnPause.addEventListener('click', () => {
+    if (game.paused) resumeGame();
+    else pauseGame();
+  });
+}
 
-btnResume.addEventListener('click', resumeGame);
+if (btnResume) btnResume.addEventListener('click', resumeGame);
 
-btnRestart.addEventListener('click', startGame);
-btnRestartPause.addEventListener('click', startGame);
+if (btnRestart) btnRestart.addEventListener('click', startGame);
+if (btnRestartPause) btnRestartPause.addEventListener('click', startGame);
 
 // Question Mark Icon Button (❓) -> Shows Instructions Modal
-btnHelp.addEventListener('click', openTutorialModal);
+if (btnHelp) btnHelp.addEventListener('click', openTutorialModal);
 
-// SHOW INSTRUCTIONS MODAL FIRST ON LOAD
-openTutorialModal();
+// SHOW INSTRUCTIONS MODAL FIRST ON LOAD IF PRESENT
+if (tutorialModal) {
+  openTutorialModal();
+}
 
 // Run Loop
 requestAnimationFrame(update);

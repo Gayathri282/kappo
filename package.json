@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0"
   }
 }

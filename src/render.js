@@ -21,8 +21,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 1:1.35 tall vertical rectangle proportions
-const PACKET_RATIO = 1.35;
+// Chip packet aspect ratio: 1:1 Square Grid Cells
+const PACKET_RATIO = 1.0;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -34,25 +34,25 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 45;
-    this.cellHeight = Math.round(45 * PACKET_RATIO);
-    this.cellSize   = 45; // backward compat alias
+    this.cellWidth  = 55;
+    this.cellHeight = 55;
+    this.cellSize   = 55; // backward compat alias
     this.dpr = window.devicePixelRatio || 1;
   }
 
-  // ─── Resize to fit parent container (7x14 grid, 0px horizontal gaps) ───────────────
+  // ─── Resize to fit parent container (7x14 grid, 1:1 Square Cells) ───────────────
   resizeToContainer(container) {
     if (!container) return;
     const section = container.parentElement;
-    const availW = section ? Math.min(360, section.getBoundingClientRect().width) : Math.min(360, container.getBoundingClientRect().width);
+    const availW = section ? section.getBoundingClientRect().width : container.getBoundingClientRect().width;
     const availH = section ? section.getBoundingClientRect().height : container.getBoundingClientRect().height;
 
-    // Fit within both available width and height for 7 cols x 14 rows with ratio 1.25 (PACKET_RATIO)
+    // Fit square 1:1 cells within available width and screen height (13 rows max)
     const maxCellWFromWidth  = availW / GRID_COLS;
-    const maxCellWFromHeight = availH > 0 ? availH / (GRID_ROWS * PACKET_RATIO) : maxCellWFromWidth;
+    const maxCellWFromHeight = availH > 0 ? availH / GRID_ROWS : maxCellWFromWidth;
 
-    const cellW = Math.max(20, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
-    const cellH = Math.round(cellW * PACKET_RATIO);
+    const cellW = Math.max(16, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
+    const cellH = cellW; // FORCE 1:1 PERFECT SQUARE CELLS!
 
     this.cellWidth  = cellW;
     this.cellHeight = cellH;
@@ -86,16 +86,16 @@ export class CanvasRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
   }
 
-  // ─── Grid background (Dark Arcade #0a0d1a Theme with Neon Blue Lines) ───
+  // ─── Grid background (Uniform Dark Navy #05070e with Faint Grid Lines) ───
   drawGrid(width, height) {
     this.ctx.clearRect(0, 0, width, height);
 
-    // Dark semi-transparent blue/black container (#0a0d1a)
-    this.ctx.fillStyle = 'rgba(10, 13, 26, 0.94)';
+    // Solid dark navy/black playfield container (#05070e)
+    this.ctx.fillStyle = '#05070e';
     this.ctx.fillRect(0, 0, width, height);
 
-    // Subtle Glowing Neon Blue Grid Lines
-    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.18)';
+    // Faint Glowing Cyan Grid Lines (Subtle & Blended like Image 2)
+    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.04)';
     this.ctx.lineWidth = 1.0;
 
     for (let c = 0; c <= GRID_COLS; c++) {
@@ -137,9 +137,9 @@ export class CanvasRenderer {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : Math.round(cellSize * PACKET_RATIO);
 
-    // Fill 100% width and height edge-to-edge (0px padding for solid seamless Tetromino shapes)
-    const blockW = cW;
-    const blockH = cH;
+    // Fill 100% width and height + 1.2px overlap extension (0px seams for solid edge-to-edge colors)
+    const blockW = cW + 1.2;
+    const blockH = cH + 1.2;
 
     const px = offsetX + x * cW;
     const py = offsetY + y * cH;
@@ -165,7 +165,7 @@ export class CanvasRenderer {
       }
       if (isActiveFalling) {
         // Glowing neon outline aura around active falling piece
-        ctx.shadowColor = 'rgba(0, 225, 255, 0.9)';
+        ctx.shadowColor = 'rgba(255, 45, 85, 0.9)';
         ctx.shadowBlur = 10;
       }
       ctx.drawImage(img, px, py, blockW, blockH);
@@ -196,8 +196,18 @@ export class CanvasRenderer {
 
     if (game.currentPiece && !game.gameOver) {
       const piece = game.currentPiece;
+      const flavorId = piece.flavor ? piece.flavor.id : 'salted';
 
-      // 2a. Glowing vertical light beam/trail rising behind active falling piece
+      // Dynamic Laser Beam Gradient matching exact packet flavor (Yellow -> Yellow, Green -> Green, Red -> Red, Purple -> Purple)
+      const FLAVOR_BEAM_COLORS = {
+        salted:   { start: 'rgba(250, 204, 21, 0.65)', mid: 'rgba(234, 179, 8, 0.30)',  end: 'rgba(250, 204, 21, 0)' },
+        chilli:   { start: 'rgba(34, 197, 94, 0.65)',  mid: 'rgba(22, 163, 74, 0.30)',  end: 'rgba(34, 197, 94, 0)' },
+        tomato:   { start: 'rgba(239, 68, 68, 0.65)',  mid: 'rgba(220, 38, 38, 0.30)',  end: 'rgba(239, 68, 68, 0)' },
+        dynamite: { start: 'rgba(168, 85, 247, 0.65)', mid: 'rgba(217, 70, 239, 0.30)', end: 'rgba(168, 85, 247, 0)' }
+      };
+      const beamColors = FLAVOR_BEAM_COLORS[flavorId] || FLAVOR_BEAM_COLORS.salted;
+
+      // 2a. Dynamic glowing vertical laser beam rising behind active falling piece
       this.ctx.save();
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
@@ -205,12 +215,16 @@ export class CanvasRenderer {
             const bx = (piece.x + c) * this.cellWidth;
             const by = (piece.y + r) * this.cellHeight;
             if (by > 0) {
-              const beamGrad = this.ctx.createLinearGradient(bx, 0, bx, by + this.cellHeight);
-              beamGrad.addColorStop(0, 'rgba(0, 195, 255, 0.35)');
-              beamGrad.addColorStop(0.6, 'rgba(168, 85, 247, 0.20)');
-              beamGrad.addColorStop(1, 'rgba(0, 195, 255, 0)');
+              const maxBeamH = this.cellHeight * 3;
+              const beamH = Math.min(maxBeamH, by);
+              const startY = by - beamH;
+
+              const beamGrad = this.ctx.createLinearGradient(bx, by, bx, startY);
+              beamGrad.addColorStop(0, beamColors.start);
+              beamGrad.addColorStop(0.5, beamColors.mid);
+              beamGrad.addColorStop(1, beamColors.end);
               this.ctx.fillStyle = beamGrad;
-              this.ctx.fillRect(bx, 0, this.cellWidth, by + this.cellHeight);
+              this.ctx.fillRect(bx, startY, this.cellWidth, beamH);
             }
           }
         }

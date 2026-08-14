@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <script type="module" crossorigin src="/assets/index-Dn0CyYQ3.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-C54Btrdj.css">
+  <script type="module" crossorigin src="/assets/index-DZXq5Wn6.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-B3OXzI1D.css">
 </head>
 <body>
   <!-- Full-Page Background Banner with Green Overlay -->
@@ -25,85 +25,77 @@
   <!-- Main Mobile-First App Shell -->
   <div class="app-container">
     
-    <!-- Top Header Bar (Inspired by LAY STACKS UI) -->
+    <!-- Top Header Bar (Kappo Stacks Exact Reference Layout) -->
     <header class="game-header">
       <div class="brand-badge">
-        <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
+        <div class="kappo-logo-shield">
+          <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
+        </div>
         <div class="brand-titles">
-          <h1 class="brand-title">STACKS</h1>
+          <h1 class="brand-title"><span class="title-kappo">KAPPO</span> <span class="title-stacks">STACKS</span></h1>
           <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
         </div>
       </div>
 
-      <!-- Score, Best & Goal Pill (Condensed Header) -->
-      <div class="header-score-pill">
-        <div class="header-stat">
+      <!-- Holographic Scoreboard Box -->
+      <div class="header-score-box">
+        <div class="score-top-row">
           <span class="stat-lbl">SCORE</span>
-          <span id="score-val-header" class="stat-val">0</span>
+          <span id="score-val-header" class="stat-val-main">0</span>
         </div>
-        <div class="header-stat divider">
-          <span class="stat-lbl">BEST</span>
-          <span id="high-score-val-header" class="stat-val best-val">0</span>
-        </div>
-        <div class="header-stat divider">
-          <span class="stat-lbl">GOAL</span>
-          <span id="goal-progress-txt-mobile" class="stat-val goal-val">0/10</span>
+        <div class="score-bottom-row">
+          <span class="best-lbl">BEST</span>
+          <span id="high-score-val-header" class="best-val-main">0</span>
         </div>
       </div>
 
+      <!-- Pause Button -->
       <div class="header-actions">
-        <button id="btn-speed-boost" class="icon-btn speed-boost-btn" title="Turbo Speed" aria-label="Speed Boost">
-          <span class="speed-icon">⚡</span>
-        </button>
-        <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
-          <span class="sound-icon">🔊</span>
-        </button>
-        <button id="btn-pause" class="icon-btn" title="Pause Game" aria-label="Pause Game">
-          <span>⏸️</span>
-        </button>
-        <button id="btn-help" class="icon-btn" title="How to Play" aria-label="How to Play">
-          <span>❓</span>
+        <button id="btn-pause" class="icon-btn pause-pill-btn" title="Pause Game" aria-label="Pause Game">
+          <span class="pause-icon">❚❚</span>
         </button>
       </div>
     </header>
 
-    <!-- Main Layout Grid (Two-Column Split: Left HUD Sidebar + Right Play Matrix) -->
+    <!-- Main Layout Grid (Left HUD Sidebar + Right 10x20 Play Matrix) -->
     <main class="game-layout desktop-layout-wrapper">
 
-      <!-- LEFT SIDEBAR HUD (Always visible 28% / 100-120px column) -->
+      <!-- LEFT SIDEBAR HUD (Solid Glowing Container Frame) -->
       <aside class="sidebar sidebar-left">
-        <!-- Module 1: LEVEL -->
-        <div class="hud-module level-module">
-          <span class="hud-label">LEVEL</span>
-          <span id="level-val" class="hud-val val-yellow">01</span>
-        </div>
-
-        <!-- Module 2: LINES -->
-        <div class="hud-module lines-module">
-          <span class="hud-label">LINES</span>
-          <span id="lines-val" class="hud-val val-green">0</span>
-        </div>
-
-        <!-- Module 3: GOAL -->
-        <div class="hud-module goal-module">
-          <span class="hud-label">GOAL</span>
-          <div class="goal-subtext">CLEAR <span id="goal-target-lines">10</span> LINES</div>
-          <div class="goal-progress-bar">
-            <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
+        <div class="hud-outer-frame">
+          <!-- Module 1: LEVEL -->
+          <div class="hud-module level-module">
+            <span class="hud-label">LEVEL</span>
+            <span id="level-val" class="hud-val val-gold">01</span>
           </div>
-          <span id="goal-progress-txt-desktop" class="goal-counter">0/10</span>
-        </div>
 
-        <!-- Module 4: NEXT Queue -->
-        <div class="hud-module next-module">
-          <span class="hud-label hud-heading">NEXT</span>
-          <div class="canvas-wrapper next-wrapper">
-            <canvas id="next-canvas" width="100" height="200"></canvas>
+          <!-- Module 2: LINES -->
+          <div class="hud-module lines-module">
+            <span class="hud-label">LINES</span>
+            <span id="lines-val" class="hud-val val-green">0</span>
+          </div>
+
+          <!-- Module 3: GOAL -->
+          <div class="hud-module goal-module">
+            <span class="hud-label">GOAL</span>
+            <div class="goal-subtext">CLEAR 10 LINES</div>
+            <div class="goal-progress-bar">
+              <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
+            </div>
+            <span id="goal-progress-txt-desktop" class="goal-counter">0/10</span>
+          </div>
+
+          <!-- Module 4: NEXT Queue -->
+          <div class="hud-module next-module">
+            <span class="hud-label hud-heading">NEXT</span>
+            <div class="canvas-wrapper next-wrapper">
+              <canvas id="next-canvas" width="110" height="240"></canvas>
+            </div>
           </div>
         </div>
       </aside>
 
-      <!-- RIGHT COLUMN: Main 7x14 Play Matrix Section -->
+      <!-- RIGHT COLUMN: Main 10x20 Play Matrix Section -->
       <section class="playfield-section">
         <div id="playfield-container" class="playfield-container game-matrix-container grid-container">
           <!-- Canvas layer for pieces & dark playfield grid -->
@@ -119,8 +111,10 @@
           <!-- Start Game Overlay Screen -->
           <div id="start-overlay" class="overlay-screen">
             <div class="overlay-content">
-              <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="overlay-logo-img" />
-              <h2 class="overlay-subtitle-stacks">STACKS</h2>
+              <div class="kappo-logo-shield overlay-shield">
+                <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="overlay-logo-img" />
+              </div>
+              <h2 class="overlay-subtitle-stacks">KAPPO STACKS</h2>
               <p>Stack 3D air-filled chip packets, clear lines & trigger full crunch combos!</p>
               <button id="btn-start" class="btn-primary btn-large">
                 <span class="btn-text">START PLAYING</span>
@@ -130,45 +124,44 @@
         </div>
       </section>
 
-      <!-- RIGHT SIDEBAR -->
-      <aside class="sidebar sidebar-right desktop-only">
-        <!-- Large Kappo Product Showcase Image Card -->
-        <div class="glass-card product-showcase-card">
-          <div class="card-header">
-            <span class="card-icon">🍌</span>
-            <span class="card-label">KAPPO CHIPS</span>
-          </div>
-          <div class="product-image-container">
-            <img id="product-showcase-img" src="/assets/packet_salted.png" alt="Kappo Chips Packet" class="product-showcase-img" />
-          </div>
-          <div class="product-badge-info">
-            <span id="product-flavor-title" class="product-flavor-name">Classic Salted</span>
-            <span class="product-tagline-sm">100% Real Kerala Crunch</span>
-          </div>
-        </div>
-      </aside>
-
     </main>
 
-    <!-- BOTTOM TOUCH CONTROLS DECK (Exact LAY STACKS UI layout inspired by Image 5) -->
+    <!-- BOTTOM TOUCH CONTROLS DECK (Matching Reference Buttons) -->
     <div id="touch-controls-deck" class="touch-controls-deck">
-      <button id="btn-touch-left" class="touch-action-btn" aria-label="Move Left">
-        <span class="btn-arrow">←</span>
+      <div class="control-btn-wrapper">
+        <button id="btn-touch-left" class="touch-action-btn" aria-label="Move Left">
+          <span class="btn-arrow">←</span>
+        </button>
         <span class="btn-caption">MOVE LEFT</span>
-      </button>
-      <button id="btn-touch-right" class="touch-action-btn" aria-label="Move Right">
-        <span class="btn-arrow">→</span>
+      </div>
+      <div class="control-btn-wrapper">
+        <button id="btn-touch-right" class="touch-action-btn" aria-label="Move Right">
+          <span class="btn-arrow">→</span>
+        </button>
         <span class="btn-caption">MOVE RIGHT</span>
-      </button>
-      <button id="btn-touch-soft-drop" class="touch-action-btn" aria-label="Soft Drop">
-        <span class="btn-arrow">↓</span>
+      </div>
+      <div class="control-btn-wrapper">
+        <button id="btn-touch-soft-drop" class="touch-action-btn" aria-label="Soft Drop">
+          <span class="btn-arrow">↓</span>
+        </button>
         <span class="btn-caption">SOFT DROP</span>
-      </button>
-      <button id="btn-touch-rotate" class="touch-action-btn rotate-btn" aria-label="Rotate">
-        <span class="btn-arrow">↻</span>
+      </div>
+      <div class="control-btn-wrapper">
+        <button id="btn-touch-rotate" class="touch-action-btn rotate-btn" aria-label="Rotate">
+          <span class="btn-arrow">↻</span>
+        </button>
         <span class="btn-caption">ROTATE</span>
-      </button>
+      </div>
     </div>
+
+    <!-- Bottom Floor Decor (Cassava Root & Chips) -->
+    <div class="floor-decor-container">
+      <div class="floor-decor chip-bottom-left"></div>
+      <div class="floor-decor cassava-root-center"></div>
+      <div class="floor-decor chip-bottom-right"></div>
+    </div>
+
+  </div>
 
   </div>
 

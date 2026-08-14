@@ -4,15 +4,15 @@
    ========================================================================== */
 
 :root {
-  /* Dark High-Contrast Neon Arcade Palette (#0a0d1a) */
-  --bg-dark: #0a0d1a;
-  --bg-dark-secondary: #05070e;
-  --bg-card: rgba(10, 13, 26, 0.92);
-  --bg-card-border: rgba(0, 195, 255, 0.35);
-  --bg-card-hover: rgba(0, 195, 255, 0.15);
+  /* Dark Red / Maroon Palette (#2A030A) matching mobile background asset */
+  --bg-dark: #2A030A;
+  --bg-dark-secondary: #180104;
+  --bg-card: rgba(42, 3, 10, 0.90);
+  --bg-card-border: rgba(239, 68, 68, 0.45);
+  --bg-card-hover: rgba(239, 68, 68, 0.25);
 
-  --color-primary: #00C3FF;
-  --color-primary-hover: #0088FF;
+  --color-primary: #EF4444;
+  --color-primary-hover: #DC2626;
   --color-accent-yellow: #FFD700;
   --color-accent-green: #00FF88;
   --color-accent-red: #FF2D55;
@@ -66,53 +66,24 @@ html, body {
   position: fixed;
   inset: 0;
   overscroll-behavior: none;
-  background-color: #fff9ed;
+  background: #05070e !important;
+  background-image: radial-gradient(circle at 50% 50%, rgba(5, 7, 14, 0.65) 0%, rgba(5, 7, 14, 0.85) 60%, rgba(2, 4, 10, 0.98) 100%), url('/assets/mobile_bg.jpg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
   color: var(--text-main);
   font-family: var(--font-body);
 }
 
-/* Kappo Red Wavy Background & Low-Opacity Decorative Chips */
-.bg-pattern {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  overflow: hidden;
-  pointer-events: none;
+/* Hide legacy overlay patterns */
+.bg-pattern, .bg-gradient-overlay {
+  display: none !important;
 }
 
-/* Base Full-Page Background: Crave the Crunch Kappo Banner */
-.bg-pattern::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("/assets/kappo_crave_crunch_bg.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.65;
-}
-
-/* Kappo Kathakali Packet Green Color Overlay */
-.bg-gradient-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(135deg, rgba(15, 81, 50, 0.45), rgba(34, 197, 94, 0.28));
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-
-/* Floating Decorative Low-Opacity Kappo Chip Packets & Chips */
+/* Floating Decorative Items - Hidden for clean structured background */
 .bg-decor-item {
-  position: absolute;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.28;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
-  pointer-events: none;
-  z-index: -1;
-  transition: opacity 0.3s ease;
+  display: none !important;
 }
 
 /* Left Top: Chilli Garlic Packet */
@@ -251,32 +222,47 @@ html, body {
   align-items: center;
 }
 
-/* Top Header Bar (Dark High-Contrast Neon Arcade) */
+/* Top Header Bar (Exact Reference Image Styling) */
 .game-header {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 14px;
-  background: rgba(10, 13, 26, 0.94);
-  backdrop-filter: blur(12px);
-  border: 2px solid rgba(0, 195, 255, 0.35);
-  border-radius: var(--radius-md);
-  box-shadow: 0 0 25px rgba(0, 195, 255, 0.22);
+  padding: 6px 12px;
+  background: transparent;
   flex-shrink: 0;
 }
 
 .brand-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.kappo-logo-shield {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
 }
 
 .brand-logo-img {
-  height: 28px;
+  height: 26px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(0, 195, 255, 0.6));
+}
+
+.overlay-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 8px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 6px 14px;
 }
 
 .brand-titles {
@@ -286,88 +272,122 @@ html, body {
 
 .brand-title {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: 2px;
-  color: #00C3FF;
-  text-shadow: 0 0 10px rgba(0, 195, 255, 0.7);
+  letter-spacing: 1.5px;
   line-height: 1;
 }
 
+.title-kappo {
+  color: #00C3FF;
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.7);
+}
+
+.title-stacks {
+  color: #FFD700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.8), 0 2px 0 #D97706;
+}
+
 .brand-tagline {
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   font-weight: 800;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  margin-top: 1px;
+  letter-spacing: 0.8px;
+  color: #E2E8F0;
+  margin-top: 2px;
 }
 
-/* Header Score & Best Counter */
-.header-score-pill {
+/* Holographic Scoreboard Box */
+.header-score-box {
+  background: #05070e;
+  border: 2px solid rgba(0, 195, 255, 0.4);
+  border-radius: 12px;
+  padding: 5px 16px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  background: rgba(5, 7, 14, 0.85);
-  border: 2px solid rgba(255, 215, 0, 0.4);
-  border-radius: 20px;
-  padding: 4px 16px;
-  gap: 14px;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 15px rgba(0, 195, 255, 0.3);
+  min-width: 130px;
 }
 
-.header-stat {
+.score-top-row {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.header-stat.divider {
-  border-left: 1px solid rgba(255, 215, 0, 0.25);
-  padding-left: 14px;
-}
-
 .stat-lbl {
-  font-size: 0.55rem;
+  font-family: var(--font-heading);
+  font-size: 0.58rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: #E2E8F0;
   letter-spacing: 1px;
 }
 
-.stat-val {
+.stat-val-main {
   font-family: var(--font-mono);
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 900;
-  color: #FFD700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  color: #FFD700 !important;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
   line-height: 1;
 }
 
-.stat-val.best-val {
+.score-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  border-top: 1px solid rgba(0, 195, 255, 0.25);
+  margin-top: 3px;
+  padding-top: 3px;
+}
+
+.best-lbl {
+  font-family: var(--font-heading);
+  font-size: 0.55rem;
+  font-weight: 800;
   color: #00C3FF;
-  text-shadow: 0 0 10px rgba(0, 195, 255, 0.6);
+  letter-spacing: 0.8px;
+}
+
+.best-val-main {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #FFFFFF;
 }
 
 .header-actions {
   display: flex;
-  gap: 6px;
-  flex-shrink: 0;
   align-items: center;
 }
 
-.icon-btn {
-  background: rgba(10, 13, 26, 0.90);
-  border: 2px solid rgba(0, 195, 255, 0.35);
-  color: #FFFFFF;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.pause-pill-btn {
+  background: #05070e;
+  border: 2px solid rgba(0, 195, 255, 0.4);
+  border-radius: 12px;
+  width: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  color: #FFFFFF;
   cursor: pointer;
-  box-shadow: 0 0 12px rgba(0, 195, 255, 0.25);
+  box-shadow: 0 0 15px rgba(0, 195, 255, 0.3);
   transition: all 0.2s ease;
-  flex-shrink: 0;
+}
+
+.pause-icon {
+  font-size: 1rem;
+  letter-spacing: 2px;
+  font-weight: 900;
+  color: #FFFFFF;
+}
+
+.icon-btn:hover, .pause-circle-btn:hover {
+  background: rgba(0, 195, 255, 0.2);
+  border-color: #00C3FF;
 }
 
 #btn-help {
@@ -440,19 +460,19 @@ html, body {
   transition: width 0.3s ease;
 }
 
-/* Main Layout Grid (Two-Column Flex Split wrapped in #0a0d1a) */
+/* Main Layout Grid (Two-Column Flex Split) */
 .game-layout {
   display: flex;
   flex-direction: row;
-  align-items: flex-start; /* Left Sidebar top flush with main playing grid */
+  align-items: flex-start;
   justify-content: center;
   gap: 12px;
   width: 100%;
   flex: 1;
   min-height: 0;
   margin: 4px 0;
-  background: #0a0d1a;
-  border-radius: var(--radius-lg);
+  /* background: #0a0d1a; */
+  /* border-radius: var(--radius-lg); */
   padding: 8px;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
@@ -469,34 +489,44 @@ html, body {
   flex-shrink: 0;
 }
 
-/* Dark, Rounded HUD Module Cards */
+/* Outer Solid Glowing Frame for Left Sidebar (Matching Reference Image) */
+.hud-outer-frame {
+  background: #05070e;
+  border: 2px solid #00C3FF;
+  border-radius: 16px;
+  padding: 10px 8px;
+  box-shadow: 0 0 20px rgba(0, 195, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 .hud-module {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(0, 195, 255, 0.2);
-  border-radius: 12px;
-  margin-bottom: 10px;
-  padding: 8px 6px;
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 195, 255, 0.2);
+  border-radius: 0;
+  margin-bottom: 0;
+  padding: 6px 4px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
-.hud-label {
+.hud-module:last-child {
+  border-bottom: none;
+}
+
+.hud-label, .hud-heading {
+  font-family: var(--font-heading);
   font-size: 0.62rem;
-  color: var(--text-muted);
+  color: #E2E8F0 !important;
   letter-spacing: 1.2px;
   text-transform: uppercase;
   font-weight: 800;
   margin-bottom: 2px;
-}
-
-.hud-heading {
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  color: #00C3FF;
-  letter-spacing: 1.5px;
 }
 
 .hud-val {
@@ -507,46 +537,55 @@ html, body {
   margin-top: 2px;
 }
 
-.val-yellow {
-  color: #FFD700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.65);
+.val-gold {
+  color: #FFD700 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
 }
 
 .val-green {
-  color: #00FF88;
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.65);
+  color: #00FF88 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
+}
+
+.goal-module {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
 }
 
 .goal-subtext {
   font-size: 0.58rem;
   font-weight: 800;
-  color: #FFFFFF;
-  margin: 2px 0;
+  color: #FFD700;
   letter-spacing: 0.5px;
+  margin: 0;
 }
 
 .goal-progress-bar {
-  width: 100%;
-  height: 6px;
+  width: 90%;
+  height: 8px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  margin: 3px 0;
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  margin: 2px 0;
 }
 
 .goal-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FFD700, #FF7F50);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #FFD700, #FFA502);
+  border-radius: 4px;
   transition: width 0.3s ease;
 }
 
 .goal-counter {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 900;
   color: #FFD700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
 }
 
 /* Hold & Next Canvas Wrappers */
@@ -636,14 +675,14 @@ html, body {
   min-width: 0;
 }
 
-/* 1. Change Grid Layout to 7 Columns */
+/* 1. Grid Layout to 10 Columns */
 .grid-container {
-  grid-template-columns: repeat(7, 1fr) !important;
+  grid-template-columns: repeat(10, 1fr) !important;
 }
 
-/* 2. Force Edge-to-Edge Cell Fill (No Black Gaps) & Tall Aspect Ratio */
+/* 2. Force Edge-to-Edge Cell Fill (No Black Gaps) & Square 1:1 Cell Aspect Ratio */
 .grid-cell {
-  aspect-ratio: 1 / 1.35 !important; /* Forces cells to be tall vertical boxes */
+  aspect-ratio: 1 / 1 !important; /* Square 1:1 Grid Cells matching Image 2 */
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box;
@@ -668,32 +707,39 @@ html, body {
   display: block;
 }
 
-/* 3. Constrain Matrix Container on Large Screens */
+/* 3. Matrix Container (10 Cols x 13 Rows Max Height, 1:1 Square Cells) */
 .game-matrix-container,
 .playfield-container {
   position: relative;
   width: 100%;
-  max-width: 360px; /* Prevents grid columns from stretching too wide on desktop */
+  max-width: 100%;
   margin: 0 auto;
-  aspect-ratio: 7 / 14; /* Matches 7 columns x 14 rows layout */
-  background: #0a0d1a;
-  backdrop-filter: blur(12px);
-  border: 4px solid #00C3FF;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 0 35px rgba(0, 195, 255, 0.45), 0 10px 30px rgba(0, 0, 0, 0.6);
+  aspect-ratio: 10 / 13; /* 10 cols x 13 rows max height */
+  background: #05070e;
+  border: 3px solid #00C3FF;
+  border-radius: 16px;
+  box-shadow: 0 0 25px rgba(0, 195, 255, 0.5), inset 0 0 15px rgba(0, 195, 255, 0.2);
   overflow: hidden;
   touch-action: none;
   flex-shrink: 0;
 }
 
-/* 3. Handle Desktop Layout Spacing */
+/* 3. Handle Layout Spacing (20% Sidebar, 75% Board Section) */
 .desktop-layout-wrapper {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
-  max-width: 1200px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+}
+
+.sidebar-left {
+  width: 20%;
+  min-width: 100px;
+  max-width: 130px;
+  flex-shrink: 0;
 }
 
 #game-canvas {
@@ -747,8 +793,8 @@ html, body {
 .overlay-screen {
   position: absolute;
   inset: 0;
-  background: rgba(255, 253, 245, 0.85);
-  backdrop-filter: blur(6px);
+  background: rgba(5, 7, 14, 0.94);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -756,21 +802,23 @@ html, body {
   text-align: center;
   z-index: 10;
   cursor: pointer;
+  color: #FFFFFF;
 }
 
 .overlay-logo-img {
   max-width: 180px;
   height: auto;
   margin: 0 auto 4px;
-  filter: drop-shadow(0 4px 12px rgba(217, 119, 6, 0.25));
+  filter: drop-shadow(0 0 10px rgba(0, 195, 255, 0.5));
 }
 
 .overlay-subtitle-stacks {
   font-family: var(--font-heading);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 900;
   letter-spacing: 3px;
-  color: #D97706;
+  color: #00C3FF;
+  text-shadow: 0 0 12px rgba(0, 195, 255, 0.8);
   margin: 0 0 10px;
 }
 
@@ -860,8 +908,8 @@ html, body {
 
 /* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #FF4757, #FF6B4A);
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #00C3FF, #0077FF);
+  color: #FFFFFF !important;
   border: none;
   font-family: var(--font-heading);
   font-weight: 900;
@@ -870,13 +918,13 @@ html, body {
   padding: 12px 22px;
   border-radius: 25px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(255, 71, 87, 0.35);
+  box-shadow: 0 4px 15px rgba(0, 195, 255, 0.4);
   transition: all 0.2s ease;
   width: 100%;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #FF6B81, #FF4757);
+  background: linear-gradient(135deg, #33D1FF, #0066FF);
 }
 
 .btn-primary:active {
@@ -884,9 +932,9 @@ html, body {
 }
 
 .btn-secondary {
-  background: #FFF8E7;
-  border: 2px solid #F5E6CC;
-  color: var(--text-main);
+  background: #050814 !important;
+  border: 2px solid #00C3FF !important;
+  color: #00C3FF !important;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 0.88rem;
@@ -898,6 +946,13 @@ html, body {
   align-items: center;
   justify-content: center;
   width: 100%;
+  box-shadow: 0 0 12px rgba(0, 195, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 195, 255, 0.25) !important;
+  color: #FFFFFF !important;
 }
 
 /* SPEED BOOST / TURBO BUTTON */
@@ -942,43 +997,45 @@ html, body {
   letter-spacing: 1px;
 }
 
-/* BOTTOM TOUCH CONTROLS DECK (Dark Neon Arcade Theme) */
+/* BOTTOM TOUCH CONTROLS DECK (Exact Reference Square Buttons) */
 .touch-controls-deck {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: rgba(10, 13, 26, 0.94);
-  backdrop-filter: blur(12px);
-  border: 2px solid rgba(0, 195, 255, 0.35);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  box-shadow: 0 0 25px rgba(0, 195, 255, 0.20);
-  margin-top: 4px;
+  justify-content: space-around;
+  gap: 12px;
+  padding: 6px 12px;
+  margin-top: 6px;
   flex-shrink: 0;
 }
 
-.touch-action-btn {
-  flex: 1;
-  height: 52px;
-  background: rgba(5, 7, 14, 0.85);
-  border: 2px solid rgba(0, 195, 255, 0.40);
-  border-radius: var(--radius-sm);
+.control-btn-wrapper {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.touch-action-btn {
+  width: 62px;
+  height: 62px;
+  background: #050814;
+  border: 2px solid #00C3FF;
+  border-radius: 16px;
+  display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 0 12px rgba(0, 195, 255, 0.20);
+  box-shadow: none !important;
 }
 
 .touch-action-btn:hover {
   background: rgba(0, 195, 255, 0.25);
   border-color: #00C3FF;
-  box-shadow: 0 0 20px rgba(0, 195, 255, 0.5);
+  box-shadow: 0 0 22px rgba(0, 195, 255, 0.6);
 }
 
 .touch-action-btn:active {
@@ -988,19 +1045,58 @@ html, body {
 }
 
 .btn-arrow {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
+  font-weight: 900;
   color: #FFFFFF;
-  text-shadow: 0 0 10px rgba(0, 195, 255, 0.9);
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.8);
   line-height: 1;
 }
 
 .btn-caption {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-size: 0.58rem;
   font-weight: 800;
-  color: var(--text-muted);
-  letter-spacing: 0.8px;
-  margin-top: 2px;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Floor Decor Container (Cassava Root & Chips at bottom) */
+.floor-decor-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  margin-top: -10px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.cassava-root-center {
+  width: 140px;
+  height: 32px;
+  background: linear-gradient(135deg, #78350F, #92400E);
+  border-radius: 20px 20px 10px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+.chip-bottom-left, .chip-bottom-right {
+  width: 36px;
+  height: 28px;
+  background: linear-gradient(135deg, #FACC15, #EAB308);
+  border-radius: 50% 40% 60% 45%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.chip-bottom-left {
+  transform: rotate(-20deg);
+}
+
+.chip-bottom-right {
+  transform: rotate(25deg);
 }
 
 /* Modals */
@@ -1017,29 +1113,29 @@ html, body {
 }
 
 .modal-card {
-  background: rgba(8, 20, 48, 0.95);
-  border: 3px solid #0066FF;
+  background: rgba(5, 8, 20, 0.96);
+  border: 3px solid #00C3FF;
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 100%;
   max-width: 390px;
-  box-shadow: 0 0 35px rgba(0, 136, 255, 0.4);
+  box-shadow: 0 0 35px rgba(0, 195, 255, 0.45);
   text-align: center;
-  color: #F8FAFC;
+  color: #FFFFFF;
 }
 
 .modal-title {
   font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 900;
-  color: #FACC15;
+  color: #FFD700;
   margin-bottom: 4px;
-  text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
 }
 
 .modal-subtitle {
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  color: #E2E8F0;
   margin-bottom: 18px;
 }
 
@@ -1051,8 +1147,8 @@ html, body {
 }
 
 .modal-stat-box {
-  background: rgba(0, 30, 80, 0.6);
-  border: 1.5px solid rgba(0, 136, 255, 0.3);
+  background: #050814;
+  border: 1.5px solid rgba(0, 195, 255, 0.4);
   border-radius: var(--radius-sm);
   padding: 8px;
   display: flex;
@@ -1062,14 +1158,14 @@ html, body {
 .modal-stat-label {
   font-size: 0.6rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: #00C3FF;
 }
 
 .modal-stat-value {
   font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 900;
-  color: #FACC15;
+  color: #FFD700;
 }
 
 .modal-actions {
@@ -1360,11 +1456,26 @@ html, body {
     padding: 2px 4px;
   }
 
+  /* Mobile Device Responsive Background Image with Radial Opacity Lowering */
+  body {
+    background-image: radial-gradient(circle at 50% 50%, rgba(5, 7, 14, 0.65) 0%, rgba(5, 7, 14, 0.85) 60%, rgba(2, 4, 10, 0.98) 100%), url('/assets/mobile_bg.jpg') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .bg-pattern, .bg-gradient-overlay {
+    display: none !important;
+  }
+
   .game-layout {
     margin: 2px 0;
     flex: 1;
     min-height: 0;
     width: 100%;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .playfield-section {
@@ -1382,28 +1493,70 @@ html, body {
   }
 
   .touch-controls-deck {
-    padding: 4px 6px;
-    gap: 4px;
-    margin-top: 2px;
+    padding: 6px 8px;
+    gap: 8px;
+    margin-top: 4px;
   }
 
   .touch-action-btn {
-    height: 44px;
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 16px !important;
   }
 
   .btn-arrow {
-    font-size: 1.1rem;
+    font-size: 1.5rem !important;
   }
 
   .btn-caption {
-    font-size: 0.5rem;
+    font-size: 0.55rem !important;
   }
 }
 
-/* Grid Container & Cell Proportions (7 columns wide, 0px horizontal gaps) */
+/* Tablet Device Background Image with Radial Opacity Lowering (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body {
+    background-image: radial-gradient(circle at 50% 50%, rgba(5, 7, 14, 0.65) 0%, rgba(5, 7, 14, 0.85) 60%, rgba(2, 4, 10, 0.98) 100%), url('/assets/tablet_bg.jpg') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .bg-pattern, .bg-gradient-overlay {
+    display: none !important;
+  }
+
+  .game-layout {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Desktop Screen Background Image with Radial Opacity Lowering (1025px+) */
+@media (min-width: 1025px) {
+  body {
+    background-image: radial-gradient(circle at 50% 50%, rgba(5, 7, 14, 0.65) 0%, rgba(5, 7, 14, 0.85) 60%, rgba(2, 4, 10, 0.98) 100%), url('/assets/desktop_bg.jpg') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .bg-pattern, .bg-gradient-overlay {
+    display: none !important;
+  }
+
+  .game-layout {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Grid Container & Cell Proportions (10 columns wide x 20 rows high) */
 .grid-container,
 .playfield-container {
-  grid-template-columns: repeat(7, 1fr); /* Ensure exactly 7 columns */
+  grid-template-columns: repeat(10, 1fr) !important; /* Exactly 10 columns */
 }
 
 .grid-cell {
