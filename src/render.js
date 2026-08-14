@@ -21,8 +21,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 4:5 vertical rectangle proportions (1.25 height:width ratio)
-const PACKET_RATIO = 1.25;
+// Chip packet aspect ratio: 1:1.35 tall vertical rectangle proportions
+const PACKET_RATIO = 1.35;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -44,7 +44,7 @@ export class CanvasRenderer {
   resizeToContainer(container) {
     if (!container) return;
     const section = container.parentElement;
-    const availW = section ? Math.min(420, section.getBoundingClientRect().width) : Math.min(420, container.getBoundingClientRect().width);
+    const availW = section ? Math.min(360, section.getBoundingClientRect().width) : Math.min(360, container.getBoundingClientRect().width);
     const availH = section ? section.getBoundingClientRect().height : container.getBoundingClientRect().height;
 
     // Fit within both available width and height for 7 cols x 14 rows with ratio 1.25 (PACKET_RATIO)
@@ -159,15 +159,14 @@ export class CanvasRenderer {
 
     if (img && img.complete && img.naturalWidth) {
       ctx.save();
+      ctx.globalAlpha = alpha;
+      if (typeof ctx.filter !== 'undefined') {
+        ctx.filter = 'none';
+      }
       if (isActiveFalling) {
         // Glowing neon outline aura around active falling piece
         ctx.shadowColor = 'rgba(0, 225, 255, 0.9)';
         ctx.shadowBlur = 10;
-      } else {
-        // Subtle drop-shadow effect on placed blocks against dark navy (#0a0d1a) grid
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetY = 3;
       }
       ctx.drawImage(img, px, py, blockW, blockH);
       ctx.restore();

@@ -636,13 +636,45 @@ html, body {
   min-width: 0;
 }
 
-/* 1. Constrain the Playing Field Container */
+/* 1. Change Grid Layout to 7 Columns */
+.grid-container {
+  grid-template-columns: repeat(7, 1fr) !important;
+}
+
+/* 2. Force Edge-to-Edge Cell Fill (No Black Gaps) & Tall Aspect Ratio */
+.grid-cell {
+  aspect-ratio: 1 / 1.35 !important; /* Forces cells to be tall vertical boxes */
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 3. Ensure Placed Grid Blocks are 100% Bright & Vibrant & Fill Cell Completely */
+.grid-cell img,
+.stacked-block-image,
+.block-tile,
+.block-image {
+  opacity: 1 !important;
+  filter: none !important; /* Removes any darkness/dimming effects */
+  mix-blend-mode: normal !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important; /* Forces edge-to-edge coverage like Lay's */
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block;
+}
+
+/* 3. Constrain Matrix Container on Large Screens */
 .game-matrix-container,
 .playfield-container {
   position: relative;
   width: 100%;
-  max-width: 420px; /* Locks grid width on desktop so columns stay tight */
-  margin: 0 auto;   /* Centers the matrix vertically/horizontally */
+  max-width: 360px; /* Prevents grid columns from stretching too wide on desktop */
+  margin: 0 auto;
   aspect-ratio: 7 / 14; /* Matches 7 columns x 14 rows layout */
   background: #0a0d1a;
   backdrop-filter: blur(12px);
@@ -652,19 +684,6 @@ html, body {
   overflow: hidden;
   touch-action: none;
   flex-shrink: 0;
-}
-
-/* 2. Enforce Edge-to-Edge Block Filling inside Cells */
-.grid-cell {
-  aspect-ratio: 4 / 5; /* Matches packet proportions */
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.block-image {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: fill !important;
 }
 
 /* 3. Handle Desktop Layout Spacing */
