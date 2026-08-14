@@ -153,13 +153,13 @@ export class TetrisGame {
     return this.score;
   }
 
-  // Update survival timer & time-based gravity acceleration + continuous time score trickle
+  // Update survival timer & time-based gravity acceleration + minor background score trickle (+1 pt every 4s)
   updateTime(deltaSeconds) {
     if (this.gameOver || this.paused) return false;
     this.survivalTime += deltaSeconds;
 
-    // Continuous score trickle over time (+3 points/sec multiplied by level)
-    this.scoreAccumulator += deltaSeconds * 3 * Math.sqrt(this.level);
+    // Minor background time trickle (+1 point every 4 seconds, barely noticeable minute-to-minute)
+    this.scoreAccumulator += deltaSeconds * 0.25;
     if (this.scoreAccumulator >= 1.0) {
       const pts = Math.floor(this.scoreAccumulator);
       this.scoreAccumulator -= pts;

@@ -33,62 +33,64 @@ class SoundEngine {
 
   /* --- SOUND EFFECTS --- */
 
-  // 1. Line Clear / Row Break Sound (Gentle plastic packet crinkle & pop)
+  // 1. Line Clear / Row Break Sound (Fun cartoonish plastic crunch + celebratory sparkle pop!)
   playCrunch(linesCleared = 1) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.12 + linesCleared * 0.04;
+    const duration = 0.18 + linesCleared * 0.05;
 
-    // Create gentle plastic foil crinkle noise buffer
+    // A. Crisp cartoon bubble-wrap crunch pop
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
 
     for (let i = 0; i < bufferSize; i++) {
       const t = i / bufferSize;
-      // Staggered micro-rustle envelope for soft plastic feel
-      const env = Math.exp(-t * 6) + 0.3 * Math.exp(-Math.pow(t - 0.3, 2) * 40);
-      const crackle = (Math.random() * 2 - 1) * env;
-      output[i] = crackle;
+      const env = Math.exp(-t * 8) + 0.4 * Math.exp(-Math.pow(t - 0.2, 2) * 50);
+      output[i] = (Math.random() * 2 - 1) * env;
     }
 
-    const whiteNoise = this.ctx.createBufferSource();
-    whiteNoise.buffer = buffer;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
 
-    // Smooth plastic foil bandpass filter
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(3000 + linesCleared * 250, now);
-    filter.Q.setValueAtTime(1.2, now);
+    filter.frequency.setValueAtTime(3600 + linesCleared * 300, now);
+    filter.Q.setValueAtTime(1.1, now);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.setValueAtTime(0.20, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    whiteNoise.connect(filter);
+    noise.connect(filter);
     filter.connect(gain);
     gain.connect(this.ctx.destination);
+    noise.start(now);
 
-    whiteNoise.start(now);
+    // B. Bright celebratory sparkle pop notes (Fun mobile game reward feel!)
+    const baseFreqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    const countToPlay = Math.min(4, linesCleared + 1);
 
-    // Soft gentle plastic pop tone
-    const osc = this.ctx.createOscillator();
-    const oscGain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320 + linesCleared * 60, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + duration);
+    for (let idx = 0; idx < countToPlay; idx++) {
+      const osc = this.ctx.createOscillator();
+      const oscGain = this.ctx.createGain();
+      const noteTime = now + idx * 0.04;
 
-    oscGain.gain.setValueAtTime(0.12, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(baseFreqs[idx], noteTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreqs[idx] * 1.2, noteTime + 0.12);
 
-    osc.connect(oscGain);
-    oscGain.connect(this.ctx.destination);
+      oscGain.gain.setValueAtTime(0.14, noteTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.12);
 
-    osc.start(now);
-    osc.stop(now + duration);
+      osc.connect(oscGain);
+      oscGain.connect(this.ctx.destination);
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.12);
+    }
   }
 
   // 2. Full Crunch (4-line Tetris Jackpot Fanfare with Gentle Harmonies)
@@ -169,79 +171,54 @@ class SoundEngine {
     });
   }
 
-  // 3. Realistic Soothing Plastic Lay's Packet Landing SFX (Soft Foil Crinkle + Air Cushion Thud)
+  // 3. Piece Landing/Placement (Tactile, bouncy, cartoonish soft "plop" crinkle-thud)
   playBagLanding() {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.16;
+    const duration = 0.14;
 
-    // A. Soft Foil Plastic Crinkle Layer (Staggered micro-bursts for realistic packet rustle)
-    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      const t = i / bufferSize;
-      const envelope = Math.exp(-t * 8) + 0.4 * Math.exp(-Math.pow(t - 0.25, 2) * 50) + 0.2 * Math.exp(-Math.pow(t - 0.5, 2) * 80);
-      const crackle = (Math.random() * 2 - 1);
-      output[i] = crackle * envelope;
-    }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    // Bandpass filter for a smooth, warm plastic packet sound
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(3200, now);
-    filter.frequency.exponentialRampToValueAtTime(1800, now + duration);
-    filter.Q.setValueAtTime(1.0, now);
-
-    const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.18, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(this.ctx.destination);
-    noise.start(now);
-
-    // B. Puffed Chip Bag Air-Cushion Thud (Warm sub-bass air puff when packet lands)
-    const subOsc = this.ctx.createOscillator();
-    const subGain = this.ctx.createGain();
-
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(150, now);
-    subOsc.frequency.exponentialRampToValueAtTime(38, now + duration);
-
-    subGain.gain.setValueAtTime(0.22, now);
-    subGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    subOsc.connect(subGain);
-    subGain.connect(this.ctx.destination);
-
-    subOsc.start(now);
-    subOsc.stop(now + duration);
-
-    // C. Soft Plastic Pop Accent (Damped warm pop of Lay's bag foil)
+    // A. Springy / Bouncy Cartoonish Pitch Plop (260Hz -> 170Hz -> 100Hz)
     const popOsc = this.ctx.createOscillator();
     const popGain = this.ctx.createGain();
 
     popOsc.type = 'triangle';
-    popOsc.frequency.setValueAtTime(420, now);
-    popOsc.frequency.exponentialRampToValueAtTime(160, now + 0.05);
+    popOsc.frequency.setValueAtTime(260, now);
+    popOsc.frequency.exponentialRampToValueAtTime(170, now + 0.05);
+    popOsc.frequency.exponentialRampToValueAtTime(100, now + duration);
 
-    popGain.gain.setValueAtTime(0.12, now);
-    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    popGain.gain.setValueAtTime(0.22, now);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     popOsc.connect(popGain);
     popGain.connect(this.ctx.destination);
-
     popOsc.start(now);
-    popOsc.stop(now + 0.05);
+    popOsc.stop(now + duration);
+
+    // B. Gentle Crisp Plastic Foil Tap Accent
+    const bufSz = Math.floor(this.ctx.sampleRate * 0.04);
+    const buf = this.ctx.createBuffer(1, bufSz, this.ctx.sampleRate);
+    const dat = buf.getChannelData(0);
+    for (let k = 0; k < bufSz; k++) {
+      dat[k] = (Math.random() * 2 - 1) * Math.exp(-k / (bufSz * 0.25));
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(2400, now);
+
+    const nGain = this.ctx.createGain();
+    nGain.gain.setValueAtTime(0.08, now);
+    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+    noise.connect(filter);
+    filter.connect(nGain);
+    nGain.connect(this.ctx.destination);
+    noise.start(now);
   }
 
   // 3b. Legacy playDrop wrapper
@@ -377,47 +354,79 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
-  // 4. Piece Rotate Tick (Soothing Plastic Flick)
+  // 3d. Light Crisp Plastic Packet Rustle / Crinkle SFX (Movement)
+  playMoveDown() {
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    if (now - (this.lastMoveTime || 0) < 0.045) return; // Non-fatiguing cooldown
+    this.lastMoveTime = now;
+
+    const duration = 0.055; // 55ms crisp plastic rustle
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / bufferSize;
+      output[i] = (Math.random() * 2 - 1) * Math.exp(-t * 12);
+    }
+
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(4200 + Math.random() * 600, now);
+    filter.Q.setValueAtTime(1.4, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.06, now); // Subtle non-fatiguing volume
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noiseSource.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noiseSource.start(now);
+  }
+
+  // 4. Piece Rotate Tick (Crisp Plastic Foil Twist)
   playRotate() {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    if (now - (this.lastRotateTime || 0) < 0.05) return;
+    this.lastRotateTime = now;
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(280, now + 0.035);
+    const duration = 0.065;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
 
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.035);
-
-    // Micro plastic crinkle click
-    const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * 0.025), this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let k = 0; k < data.length; k++) {
-      data[k] = (Math.random() * 2 - 1) * Math.exp(-k / (data.length * 0.2));
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / bufferSize;
+      output[i] = (Math.random() * 2 - 1) * Math.exp(-t * 10);
     }
+
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
-    const nFilter = this.ctx.createBiquadFilter();
-    nFilter.type = 'bandpass';
-    nFilter.frequency.setValueAtTime(4000, now);
-    const nGain = this.ctx.createGain();
-    nGain.gain.setValueAtTime(0.1, now);
-    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
 
-    noise.connect(nFilter);
-    nFilter.connect(nGain);
-    nGain.connect(this.ctx.destination);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(4800, now);
+    filter.Q.setValueAtTime(1.2, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
     noise.start(now);
   }
 
