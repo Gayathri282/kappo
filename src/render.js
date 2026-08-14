@@ -47,12 +47,12 @@ export class CanvasRenderer {
     const availW = section ? section.getBoundingClientRect().width : container.getBoundingClientRect().width;
     const availH = section ? section.getBoundingClientRect().height : container.getBoundingClientRect().height;
 
-    // Fit square 1:1 cells within available width and screen height (13 rows max)
+    // Fit grid cells cleanly within available width (10 cols) and height (16 rows matching left HUD sidebar)
     const maxCellWFromWidth  = availW / GRID_COLS;
     const maxCellWFromHeight = availH > 0 ? availH / GRID_ROWS : maxCellWFromWidth;
 
     const cellW = Math.max(16, Math.floor(Math.min(maxCellWFromWidth, maxCellWFromHeight)));
-    const cellH = cellW; // FORCE 1:1 PERFECT SQUARE CELLS!
+    const cellH = cellW; // 1:1 Square cells matching edge-to-edge block rendering
 
     this.cellWidth  = cellW;
     this.cellHeight = cellH;
