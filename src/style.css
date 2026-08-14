@@ -209,28 +209,44 @@ html, body {
   100% { transform: translateY(0px) rotate(14deg); }
 }
 
-/* Main App Shell */
+/* Main App Shell (Fixed Dynamic Viewport Container - 100dvh) */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  max-width: 1300px;
+  max-height: 100dvh;
+  width: 100%;
+  max-width: 500px;
   margin: 0 auto;
-  padding: 2px 6px;
+  padding: 2px 4px;
   justify-content: space-between;
   align-items: center;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
 }
 
-/* Top Header Bar (Exact Reference Image Styling) */
+/* Top Header Bar with Horizontal HUD Bar (Fixed Top Region) */
 .game-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 4px 0 4px;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.header-main-row {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  background: transparent;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .brand-badge {
@@ -301,12 +317,12 @@ html, body {
   background: #05070e;
   border: 2px solid rgba(0, 195, 255, 0.4);
   border-radius: 12px;
-  padding: 5px 16px;
+  padding: 4px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 0 15px rgba(0, 195, 255, 0.3);
-  min-width: 130px;
+  min-width: 120px;
 }
 
 .score-top-row {
@@ -317,7 +333,7 @@ html, body {
 
 .stat-lbl {
   font-family: var(--font-heading);
-  font-size: 0.58rem;
+  font-size: 0.55rem;
   font-weight: 800;
   color: #E2E8F0;
   letter-spacing: 1px;
@@ -325,7 +341,7 @@ html, body {
 
 .stat-val-main {
   font-family: var(--font-mono);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 900;
   color: #FFD700 !important;
   text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
@@ -337,15 +353,15 @@ html, body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 10px;
+  gap: 8px;
   border-top: 1px solid rgba(0, 195, 255, 0.25);
-  margin-top: 3px;
-  padding-top: 3px;
+  margin-top: 2px;
+  padding-top: 2px;
 }
 
 .best-lbl {
   font-family: var(--font-heading);
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   font-weight: 800;
   color: #00C3FF;
   letter-spacing: 0.8px;
@@ -353,7 +369,7 @@ html, body {
 
 .best-val-main {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: #FFFFFF;
 }
@@ -361,21 +377,112 @@ html, body {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-.pause-pill-btn {
+.sound-pill-btn, .pause-pill-btn {
   background: #05070e;
   border: 2px solid rgba(0, 195, 255, 0.4);
   border-radius: 12px;
-  width: 44px;
-  height: 48px;
+  width: 42px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(0, 195, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 195, 255, 0.3);
   transition: all 0.2s ease;
+}
+
+.sound-icon {
+  font-size: 1.1rem;
+}
+
+/* Compact Horizontal Top HUD Bar */
+.header-hud-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(5, 7, 14, 0.88);
+  border: 1.5px solid rgba(0, 195, 255, 0.35);
+  border-radius: 12px;
+  padding: 4px 12px;
+  box-shadow: 0 0 12px rgba(0, 195, 255, 0.2);
+}
+
+.hud-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-pill-lbl {
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #8E9BAE;
+  letter-spacing: 0.8px;
+}
+
+.hud-pill-val {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFD700;
+}
+
+.val-cyan {
+  color: #00C3FF;
+}
+
+.goal-pill {
+  flex: 1;
+  max-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goal-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 195, 255, 0.3);
+}
+
+.goal-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #00FF88);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.goal-counter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #00FF88;
+}
+
+.next-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.next-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 195, 255, 0.3);
+  border-radius: 6px;
+  padding: 1px 4px;
 }
 
 .pause-icon {
@@ -665,7 +772,23 @@ html, body {
   color: var(--text-muted);
 }
 
-/* PLAYFIELD CONTAINER & CANVAS (Warm Golden Border Light Theme) */
+/* Middle Game Layout Region (Flexible Space Between Header and Controls) */
+.game-layout,
+.full-width-layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
 .playfield-section {
   display: flex;
   justify-content: center;
@@ -675,6 +798,9 @@ html, body {
   flex: 1;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* 1. Grid Layout to 10 Columns */
@@ -709,14 +835,12 @@ html, body {
   display: block;
 }
 
-/* 3. Matrix Container (10 Cols x 13 Rows, 1:1.35 Cell Ratio) */
+/* 3. Matrix Container (Dynamic Cols & Rows) */
 .game-matrix-container,
 .playfield-container {
   position: relative;
-  width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  aspect-ratio: 10 / 17.5; /* 10 cols x (13 rows * 1.35) */
   background: #03050e !important;
   opacity: 1.0 !important;
   border: 3px solid #00C3FF;
@@ -1000,32 +1124,59 @@ html, body {
   letter-spacing: 1px;
 }
 
-/* BOTTOM TOUCH CONTROLS DECK (Exact Reference Square Buttons) */
+/* BOTTOM TOUCH CONTROLS DECK (Fixed Flush to Bottom of Viewport) */
 .touch-controls-deck {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 12px;
-  padding: 6px 12px;
-  margin-top: 6px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px calc(6px + env(safe-area-inset-bottom, 0px)) 12px;
+  background: rgba(3, 5, 14, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 195, 255, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
   flex-shrink: 0;
+  z-index: 50;
+}
+
+.deck-left {
+  margin-right: auto;
+  flex: 0 0 auto;
+}
+
+.deck-right {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.deck-center-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 0 0 auto;
 }
 
 .control-btn-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  flex: 1;
+  gap: 2px;
 }
 
 .touch-action-btn {
-  width: 62px;
-  height: 62px;
+  width: 52px;
+  height: 52px;
   background: #050814;
   border: 2px solid #00C3FF;
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -47,6 +47,7 @@ const finalBestEl = document.getElementById('final-best-val');
 // Buttons
 const btnStart = document.getElementById('btn-start');
 const btnSound = document.getElementById('btn-sound');
+const btnMusic = document.getElementById('btn-music');
 const btnPause = document.getElementById('btn-pause');
 const btnHelp = document.getElementById('btn-help');
 const btnResume = document.getElementById('btn-resume');
@@ -106,10 +107,17 @@ updateHUD();
 
 // Resize Handler for Mobile & Desktop Canvas Scaling
 function handleResize() {
-  renderer.resizeToContainer(playfieldContainer);
+  renderer.resizeToContainer(playfieldContainer, game);
   particles.resize(gameCanvas.width / renderer.dpr, gameCanvas.height / renderer.dpr);
 }
 window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(handleResize, 100);
+});
+if (window.ResizeObserver && playfieldContainer) {
+  const ro = new ResizeObserver(() => handleResize());
+  ro.observe(playfieldContainer);
+}
 handleResize();
 
 // Keyboard DAS State
@@ -119,7 +127,7 @@ const arrRate = 40;
 
 // Action Helpers
 function checkLandingClamp() {
-  if (!game.currentPiece || game.gameOver) return;
+  if (!game.currentPiece || game.gameOver || game.isClearing) return;
   const landingRow = game.getGhostY();
   if (pieceVisualRow >= landingRow) {
     pieceVisualRow = landingRow;
@@ -127,13 +135,6 @@ function checkLandingClamp() {
     sound.playBagLanding();
     game.lockPiece();
     processLineClears();
-    if (!game.gameOver) {
-      game.spawnPiece();
-      if (game.currentPiece) {
-        lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}`;
-        pieceVisualRow = game.currentPiece.y;
-      }
-    }
   }
 }
 
@@ -253,64 +254,160 @@ function checkBrandFactsMilestone() {
   }
 }
 
+let clearingState = null;
+
 function processLineClears() {
-  const result = game.clearLines();
-  if (result.count > 0) {
-    const flavorColors = FLAVORS.map(f => f.mainColor);
-    
-    // 1. Sequential plastic packet pop SFX & particles across columns
-    sound.playSequentialPacketPops(GRID_COLS, 35);
-    const cellW = renderer.cellWidth || renderer.cellSize;
-    const cellH = renderer.cellHeight || Math.round(cellW * 1.55);
-    particles.spawnLineClearFX(result.lines, cellH, cellW, flavorColors);
-    
-    // 2. Candy Crush chain reaction explosion on filled row and nearby row blocks!
-    if (result.blastedCells && result.blastedCells.length > 0) {
-      particles.spawnCandyCrushBlastFX(result.blastedCells, cellW, cellH);
-    }
-
-    touchController.vibrate(30 + result.count * 15);
-
-    if (result.monoCount > 0) {
-      sound.playMonoCrunch(result.monoCount, result.monoFlavor);
-      particles.spawnMonoFlavorFX(result.clearedDetails, renderer.cellSize, renderer.cellSize);
-
-      let bannerText = "";
-      if (result.monoCount === 1) {
-        const flavorName = result.monoFlavor ? result.monoFlavor.name : "Full Batch";
-        bannerText = `Full Batch Clear: ${flavorName}!`;
-      } else if (result.monoCount === 2) {
-        bannerText = "Double Batch Clear! ⚡⚡";
-      } else if (result.monoCount === 3) {
-        bannerText = "Triple Batch Clear! 🔥⚡";
-      } else {
-        bannerText = "Full Batch Jackpot! 🏆🔥";
+  const detect = game.detectLineClears();
+  if (detect.count > 0) {
+    game.isClearing = true;
+    game.poppingCells = new Map();
+    clearingState = {
+      detect: detect,
+      currentStep: 0,
+      stepDelay: 45, // 45ms per step
+      lastStepTime: performance.now(),
+      brokenCells: new Set()
+    };
+    game.brokenCells = clearingState.brokenCells;
+  } else {
+    if (!game.gameOver) {
+      game.spawnPiece();
+      if (game.gameOver) {
+        handleGameOver();
+      } else if (game.currentPiece) {
+        activePieceRef = game.currentPiece;
+        pieceVisualRow = game.currentPiece.y;
       }
-      triggerEventBanner(bannerText);
-    } else if (result.count >= 4) {
-      sound.playFullCrunch();
-      particles.spawnFullCrunchFX();
-      triggerEventBanner("⚡ FULL CRUNCH! ⚡");
     } else {
-      sound.playCrunch(result.count);
-      const labels = ["", "CANDY CRUNCH POP!", "DOUBLE CANDY POP!", "TRIPLE CANDY POP!"];
-      triggerEventBanner(labels[result.count] || "CANDY CRUNCH BLAST!");
+      handleGameOver();
     }
+  }
+  updateHUD();
+}
 
-    if (result.leveledUp) {
-      sound.playLevelUp();
-      showToast(`BATCH LEVEL ${game.level} REACHED!`, '🚀');
+function updateLineClearAnimation(time) {
+  if (!clearingState || !game.isClearing) return;
+
+  if (clearingState.currentStep < clearingState.detect.maxSteps) {
+    if (time - clearingState.lastStepTime >= clearingState.stepDelay) {
+      clearingState.lastStepTime = time;
+
+      let stepHasBreaks = false;
+      const cellW = renderer.cellWidth || renderer.cellSize;
+      const cellH = renderer.cellHeight || Math.round(cellW * 1.35);
+
+      clearingState.detect.rowSequences.forEach(rowSeq => {
+        if (clearingState.currentStep < rowSeq.steps.length) {
+          const colsToBreak = rowSeq.steps[clearingState.currentStep];
+          colsToBreak.forEach(col => {
+            const key = `${rowSeq.row}_${col}`;
+            if (!clearingState.brokenCells.has(key)) {
+              clearingState.brokenCells.add(key);
+              stepHasBreaks = true;
+
+              const cellVal = game.grid[rowSeq.row] ? game.grid[rowSeq.row][col] : null;
+              const flavor = cellVal ? cellVal.flavor : null;
+              const mainColor = flavor ? flavor.mainColor : '#FACC15';
+
+              if (game.poppingCells && flavor) {
+                game.poppingCells.set(key, {
+                  popStartTime: time,
+                  flavor: flavor
+                });
+              }
+
+              // Particle confetti pop burst
+              for (let i = 0; i < 4; i++) {
+                particles.particles.push({
+                  x: (col + 0.5) * cellW,
+                  y: (rowSeq.row + 0.5) * cellH,
+                  vx: (Math.random() - 0.5) * 5,
+                  vy: (Math.random() - 0.6) * 6,
+                  gravity: 0.2,
+                  size: Math.random() * 5 + 2,
+                  color: mainColor,
+                  rotation: Math.random() * Math.PI * 2,
+                  vRot: (Math.random() - 0.5) * 0.3,
+                  life: 1.0,
+                  decay: Math.random() * 0.04 + 0.03,
+                  shape: 'chip'
+                });
+              }
+            }
+          });
+        }
+      });
+
+      if (stepHasBreaks) {
+        sound.playBubblePop(clearingState.currentStep);
+      }
+
+      clearingState.currentStep++;
+      if (clearingState.currentStep >= clearingState.detect.maxSteps) {
+        clearingState.completionStartTime = time;
+      }
     }
-
-    if (game.score > bestScore) {
-      bestScore = game.score;
-      localStorage.setItem('kappo_best_stack', bestScore.toString());
-    }
-
-    checkBrandFactsMilestone();
   }
 
-  updateHUD();
+  const allStepsDispatched = clearingState.currentStep >= clearingState.detect.maxSteps;
+  const popFinished = allStepsDispatched && (time - (clearingState.completionStartTime || clearingState.lastStepTime)) >= 180;
+
+  if (popFinished) {
+    const result = game.finishClearLines(
+      clearingState.detect.lines,
+      clearingState.detect.clearedDetails,
+      clearingState.detect.allClearedKeys,
+      clearingState.detect.chainCells
+    );
+
+    game.isClearing = false;
+    game.brokenCells = null;
+    game.poppingCells = null;
+    const finishedDetails = clearingState.detect.clearedDetails;
+    clearingState = null;
+
+    if (result.count > 0) {
+      if (result.chainCount > 0) {
+        showToast(`CHAIN MATCH! +${result.chainCount} EXTRA PACKETS!`, '⚡');
+      }
+
+      if (result.monoCount > 0) {
+        sound.playMonoCrunch(result.monoCount, result.monoFlavor);
+        particles.spawnMonoFlavorFX(finishedDetails, renderer.cellSize, renderer.cellSize);
+        let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
+        triggerEventBanner(bannerText);
+      } else if (result.count >= 4) {
+        sound.playFullCrunch();
+        particles.spawnFullCrunchFX();
+        triggerEventBanner("⚡ FULL CRUNCH! ⚡");
+      } else {
+        sound.playCrunch(result.count);
+      }
+
+      if (result.leveledUp) {
+        sound.playLevelUp();
+        showToast(`BATCH LEVEL ${game.level} REACHED!`, '🚀');
+      }
+
+      if (game.score > bestScore) {
+        bestScore = game.score;
+        localStorage.setItem('kappo_best_stack', bestScore.toString());
+      }
+      checkBrandFactsMilestone();
+    }
+
+    if (!game.gameOver) {
+      game.spawnPiece();
+      if (game.gameOver) {
+        handleGameOver();
+      } else if (game.currentPiece) {
+        activePieceRef = game.currentPiece;
+        pieceVisualRow = game.currentPiece.y;
+      }
+    } else {
+      handleGameOver();
+    }
+  }
 }
 
 function triggerEventBanner(text) {
@@ -334,6 +431,11 @@ function updateHUD() {
   if (levelValEl) levelValEl.textContent = levelStr;
   if (levelHeaderEl) levelHeaderEl.textContent = game.level;
 
+  const linesStr = String(game.lines);
+  if (linesValEl) linesValEl.textContent = linesStr;
+  const linesHeaderEl = document.getElementById('lines-val-header');
+  if (linesHeaderEl) linesHeaderEl.textContent = linesStr;
+
   // Survival Timer Format (MM:SS)
   const minutes = Math.floor(game.survivalTime / 60);
   const seconds = Math.floor(game.survivalTime % 60);
@@ -347,7 +449,7 @@ function updateHUD() {
   const headerBestEl = document.getElementById('high-score-val-header');
   if (headerBestEl) headerBestEl.textContent = bestStr;
 
-  // Goal Progress (Inspired by LAY STACKS UI - Image 5)
+  // Goal Progress
   const goalTarget = 10;
   const currentGoalLines = game.lines % goalTarget;
   const goalPercent = Math.min(100, Math.floor((currentGoalLines / goalTarget) * 100));
@@ -371,6 +473,17 @@ function updateSoundButtonUI() {
   }
 }
 
+function updateMusicButtonUI() {
+  if (!btnMusic) return;
+  const icon = btnMusic.querySelector('.music-icon');
+  if (icon) {
+    icon.textContent = sound.isMusicMuted() ? '🔇' : '🎵';
+  }
+}
+
+updateSoundButtonUI();
+updateMusicButtonUI();
+
 // Render Update Loop
 function update(time = 0) {
   if (!lastTime) lastTime = time;
@@ -386,50 +499,44 @@ function update(time = 0) {
       showToast(`FALL SPEED INCREASED! (LEVEL ${game.level})`, '⚡');
     }
 
-    handleKeyHolding(time);
+    if (game.isClearing) {
+      updateLineClearAnimation(time);
+    } else {
+      handleKeyHolding(time);
 
-    // 2. Per-frame continuous true free-fall physics with pre-render boundary & stack clamping
-    if (game.currentPiece) {
-      const piece = game.currentPiece;
+      // 2. Per-frame continuous true free-fall physics
+      if (game.currentPiece) {
+        const piece = game.currentPiece;
 
-      // Only initialize pieceVisualRow when a brand NEW piece spawns
-      if (activePieceRef !== piece) {
-        activePieceRef = piece;
-        pieceVisualRow = piece.y;
-      }
-
-      // Calculate exact maximum allowed landing row for current column(s) & multi-cell shape
-      const landingRow = game.getGhostY();
-
-      const rowsPerSec = game.getFallSpeedRowsPerSec();
-      const nextVisualRow = pieceVisualRow + rowsPerSec * deltaSeconds;
-
-      // Pre-frame collision & boundary check
-      if (nextVisualRow >= landingRow) {
-        // CLAMP TO EXACT LANDING ROW BEFORE RENDERING (0px clipping, 0px gap!)
-        pieceVisualRow = landingRow;
-        piece.y = landingRow;
-
-        sound.playBagLanding();
-        game.lockPiece();
-        processLineClears();
-
-        if (!game.gameOver) {
-          game.spawnPiece();
-          if (game.currentPiece) {
-            activePieceRef = game.currentPiece;
-            pieceVisualRow = game.currentPiece.y;
-          }
+        if (activePieceRef !== piece) {
+          activePieceRef = piece;
+          pieceVisualRow = piece.y;
         }
-      } else {
-        // Continuous smooth descent (strictly capped below landingRow)
-        pieceVisualRow = nextVisualRow;
-        piece.y = Math.floor(pieceVisualRow);
-      }
-    }
 
-    if (game.gameOver) {
-      handleGameOver();
+        const landingRow = game.getGhostY();
+        const rowsPerSec = game.getFallSpeedRowsPerSec();
+        const nextVisualRow = pieceVisualRow + rowsPerSec * deltaSeconds;
+
+        if (nextVisualRow >= landingRow) {
+          pieceVisualRow = landingRow;
+          piece.y = landingRow;
+
+          sound.playBagLanding();
+          game.lockPiece();
+          if (game.gameOver) {
+            handleGameOver();
+          } else {
+            processLineClears();
+          }
+        } else {
+          pieceVisualRow = nextVisualRow;
+          piece.y = Math.floor(pieceVisualRow);
+        }
+      }
+
+      if (game.gameOver) {
+        handleGameOver();
+      }
     }
   }
 
@@ -476,6 +583,8 @@ function startGame() {
   gameOverModal.classList.add('hidden');
   pauseModal.classList.add('hidden');
 
+  sound.startBGM();
+
   updateHUD();
   showToast("Crunch Stack Started!", '📦');
 }
@@ -483,15 +592,18 @@ function startGame() {
 function pauseGame() {
   if (!gameStarted || game.gameOver) return;
   game.paused = true;
+  sound.pauseBGM();
   pauseModal.classList.remove('hidden');
 }
 
 function resumeGame() {
   game.paused = false;
+  sound.resumeBGM();
   pauseModal.classList.add('hidden');
 }
 
 function handleGameOver() {
+  sound.stopBGM();
   sound.playGameOver();
   finalScoreEl.textContent = game.score.toLocaleString();
   finalLevelEl.textContent = game.level;
@@ -666,6 +778,13 @@ if (btnSound) {
   btnSound.addEventListener('click', () => {
     sound.toggleMute();
     updateSoundButtonUI();
+  });
+}
+
+if (btnMusic) {
+  btnMusic.addEventListener('click', () => {
+    sound.toggleMusic();
+    updateMusicButtonUI();
   });
 }
 

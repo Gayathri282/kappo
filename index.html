@@ -24,77 +24,78 @@
   <!-- Main Mobile-First App Shell -->
   <div class="app-container">
     
-    <!-- Top Header Bar (Kappo Stacks Exact Reference Layout) -->
+    <!-- Top Header Bar with Integrated Horizontal HUD -->
     <header class="game-header">
-      <div class="brand-badge">
-        <div class="kappo-logo-shield">
-          <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
+      <div class="header-main-row">
+        <div class="brand-badge">
+          <div class="kappo-logo-shield">
+            <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
+          </div>
+          <div class="brand-titles">
+            <h1 class="brand-title"><span class="title-kappo">KAPPO</span> <span class="title-stacks">STACKS</span></h1>
+            <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
+          </div>
         </div>
-        <div class="brand-titles">
-          <h1 class="brand-title"><span class="title-kappo">KAPPO</span> <span class="title-stacks">STACKS</span></h1>
-          <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
+
+        <!-- Holographic Scoreboard Box -->
+        <div class="header-score-box">
+          <div class="score-top-row">
+            <span class="stat-lbl">SCORE</span>
+            <span id="score-val-header" class="stat-val-main">0</span>
+          </div>
+          <div class="score-bottom-row">
+            <span class="best-lbl">BEST</span>
+            <span id="high-score-val-header" class="best-val-main">0</span>
+          </div>
+        </div>
+
+        <!-- Header Actions: Sound, Music & Pause -->
+        <div class="header-actions">
+          <button id="btn-sound" class="icon-btn sound-pill-btn" title="Toggle Sound SFX" aria-label="Toggle Sound SFX">
+            <span class="sound-icon">🔊</span>
+          </button>
+          <button id="btn-music" class="icon-btn sound-pill-btn" title="Toggle Music" aria-label="Toggle Music">
+            <span class="music-icon">🎵</span>
+          </button>
+          <button id="btn-pause" class="icon-btn pause-pill-btn" title="Pause Game" aria-label="Pause Game">
+            <span class="pause-icon">❚❚</span>
+          </button>
         </div>
       </div>
 
-      <!-- Holographic Scoreboard Box -->
-      <div class="header-score-box">
-        <div class="score-top-row">
-          <span class="stat-lbl">SCORE</span>
-          <span id="score-val-header" class="stat-val-main">0</span>
+      <!-- Compact Top Horizontal Stats HUD Bar -->
+      <div class="header-hud-bar">
+        <div class="hud-pill level-pill">
+          <span class="hud-pill-lbl">LEVEL</span>
+          <span id="level-val" class="hud-pill-val val-gold">01</span>
         </div>
-        <div class="score-bottom-row">
-          <span class="best-lbl">BEST</span>
-          <span id="high-score-val-header" class="best-val-main">0</span>
-        </div>
-      </div>
 
-      <!-- Pause Button -->
-      <div class="header-actions">
-        <button id="btn-pause" class="icon-btn pause-pill-btn" title="Pause Game" aria-label="Pause Game">
-          <span class="pause-icon">❚❚</span>
-        </button>
+        <div class="hud-pill lines-pill">
+          <span class="hud-pill-lbl">LINES</span>
+          <span id="lines-val-header" class="hud-pill-val val-cyan">0</span>
+        </div>
+
+        <div class="hud-pill goal-pill">
+          <span class="hud-pill-lbl">GOAL</span>
+          <div class="goal-progress-bar">
+            <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
+          </div>
+          <span id="goal-progress-txt-desktop" class="goal-counter">0/10</span>
+        </div>
+
+        <div class="hud-pill next-pill">
+          <span class="hud-pill-lbl">NEXT</span>
+          <div class="next-canvas-wrap">
+            <canvas id="next-canvas" width="70" height="32"></canvas>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Main Layout Grid (Left HUD Sidebar + Right 10x20 Play Matrix) -->
-    <main class="game-layout desktop-layout-wrapper">
+    <!-- Main Layout Grid (Expanded Full-Width Play Matrix Section) -->
+    <main class="game-layout full-width-layout">
 
-      <!-- LEFT SIDEBAR HUD (Solid Glowing Container Frame) -->
-      <aside class="sidebar sidebar-left">
-        <div class="hud-outer-frame">
-          <!-- Module 1: LEVEL -->
-          <div class="hud-module level-module">
-            <span class="hud-label">LEVEL</span>
-            <span id="level-val" class="hud-val val-gold">01</span>
-          </div>
-
-          <!-- Module 2: TIME -->
-          <div class="hud-module time-module">
-            <span class="hud-label">TIME</span>
-            <span id="time-val" class="hud-val val-green">00:00</span>
-          </div>
-
-          <!-- Module 3: GOAL -->
-          <div class="hud-module goal-module">
-            <span class="hud-label">GOAL</span>
-            <div class="goal-subtext">CLEAR 10 LINES</div>
-            <div class="goal-progress-bar">
-              <div id="goal-bar-fill-desktop" class="goal-bar-fill" style="width: 0%;"></div>
-            </div>
-            <span id="goal-progress-txt-desktop" class="goal-counter">0/10</span>
-          </div>
-
-          <!-- Module 4: NEXT Queue -->
-          <div class="hud-module next-module">
-            <span class="hud-label hud-heading">NEXT</span>
-            <div class="canvas-wrapper next-wrapper">
-              <canvas id="next-canvas" width="110" height="240"></canvas>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- RIGHT COLUMN: Main 10x20 Play Matrix Section -->
+      <!-- Main 10x20 Play Matrix Section -->
       <section class="playfield-section">
         <div id="playfield-container" class="playfield-container game-matrix-container grid-container">
           <!-- Canvas layer for pieces & dark playfield grid -->
@@ -125,31 +126,35 @@
 
     </main>
 
-    <!-- BOTTOM TOUCH CONTROLS DECK (Exact 4 Action Buttons) -->
+    <!-- BOTTOM TOUCH CONTROLS DECK (Left far-left, Rotate center, Right far-right) -->
     <div id="touch-controls-deck" class="touch-controls-deck">
-      <div class="control-btn-wrapper">
+      <div class="control-btn-wrapper deck-left">
         <button id="btn-touch-left" class="touch-action-btn" aria-label="Move Left">
           <span class="btn-arrow">←</span>
         </button>
         <span class="btn-caption">LEFT</span>
       </div>
-      <div class="control-btn-wrapper">
+
+      <div class="deck-center-group">
+        <div class="control-btn-wrapper deck-rotate">
+          <button id="btn-touch-rotate" class="touch-action-btn rotate-btn" aria-label="Rotate">
+            <span class="btn-arrow">↻</span>
+          </button>
+          <span class="btn-caption">ROTATE</span>
+        </div>
+        <div class="control-btn-wrapper deck-turbo">
+          <button id="btn-touch-turbo" class="touch-action-btn turbo-btn" aria-label="Soft Drop">
+            <span class="btn-arrow">⚡</span>
+          </button>
+          <span class="btn-caption">DROP</span>
+        </div>
+      </div>
+
+      <div class="control-btn-wrapper deck-right">
         <button id="btn-touch-right" class="touch-action-btn" aria-label="Move Right">
           <span class="btn-arrow">→</span>
         </button>
         <span class="btn-caption">RIGHT</span>
-      </div>
-      <div class="control-btn-wrapper">
-        <button id="btn-touch-turbo" class="touch-action-btn turbo-btn" aria-label="Turbo Speed">
-          <span class="btn-arrow">⚡</span>
-        </button>
-        <span class="btn-caption">TURBO</span>
-      </div>
-      <div class="control-btn-wrapper">
-        <button id="btn-touch-rotate" class="touch-action-btn rotate-btn" aria-label="Rotate">
-          <span class="btn-arrow">↻</span>
-        </button>
-        <span class="btn-caption">ROTATE</span>
       </div>
     </div>
 

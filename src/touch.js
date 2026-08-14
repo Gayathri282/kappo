@@ -88,11 +88,15 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    // Direct Mouse Click inside Playgrid Container -> Rotate Piece (desktop mouse only)
+    // Direct Mouse Press & Touch Hold inside Playgrid Container for Speed Boost
     if (playfieldContainer) {
+      playfieldContainer.addEventListener('mousedown', (e) => {
+        if (isInteractiveElement(e.target)) return;
+        if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
+      });
+
       playfieldContainer.addEventListener('click', (e) => {
         if (isInteractiveElement(e.target)) return;
-        // Ignore touch-synthesized click events to prevent double rotation on touch devices
         if ('ontouchstart' in window && e.detail !== 0 && e.pointerType !== 'mouse') return;
         const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
         if (pieceY <= 15) {
@@ -102,7 +106,11 @@ export class TouchController {
       });
     }
 
-    // Touch Start anywhere on screen
+    window.addEventListener('mouseup', () => {
+      if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(false);
+    });
+
+    // Touch Start anywhere on screen (activates speed boost on hold)
     document.addEventListener('touchstart', (e) => {
       if (isInteractiveElement(e.target)) return;
       if (e.touches.length > 0) {
@@ -111,6 +119,11 @@ export class TouchController {
         this.touchStartY = touch.clientY;
         this.lastColumnStep = touch.clientX;
         this.touchStartTime = Date.now();
+
+        // Increase fall speed while touch is held on screen/board area
+        if (this.handlers.onSpeedBoost) {
+          this.handlers.onSpeedBoost(true);
+        }
       }
     }, { passive: true });
 
@@ -134,8 +147,17 @@ export class TouchController {
       }
     }, { passive: true });
 
+    // Touch Cancel / Release clears speed boost
+    const endTouchBoost = () => {
+      if (this.handlers.onSpeedBoost) {
+        this.handlers.onSpeedBoost(false);
+      }
+    };
+    document.addEventListener('touchcancel', endTouchBoost, { passive: true });
+
     // Touch End (Screen Taps & Swipes)
     document.addEventListener('touchend', (e) => {
+      endTouchBoost();
       if (isInteractiveElement(e.target)) return;
       if (e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];

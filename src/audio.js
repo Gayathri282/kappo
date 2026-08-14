@@ -7,6 +7,10 @@ class SoundEngine {
   constructor() {
     this.ctx = null;
     this.muted = localStorage.getItem('kappo_muted') === 'true';
+    this.musicMuted = localStorage.getItem('kappo_music_muted') === 'true';
+    this.bgmInterval = null;
+    this.bgmPlaying = false;
+    this.bgmStep = 0;
   }
 
   initContext() {
@@ -29,6 +33,103 @@ class SoundEngine {
 
   isMuted() {
     return this.muted;
+  }
+
+  toggleMusic() {
+    this.musicMuted = !this.musicMuted;
+    localStorage.setItem('kappo_music_muted', this.musicMuted);
+    if (this.musicMuted) {
+      this.stopBGM();
+    } else {
+      this.startBGM();
+    }
+    return this.musicMuted;
+  }
+
+  isMusicMuted() {
+    return this.musicMuted;
+  }
+
+  // Upbeat, playful, bouncy background music loop using Web Audio API (Moderate tempo ~125 BPM)
+  startBGM() {
+    if (this.musicMuted || this.bgmPlaying) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    this.bgmStep = 0;
+    const melody = [523.25, 659.25, 783.99, 659.25, 880.00, 783.99, 659.25, 523.25, 587.33, 659.25, 783.99, 1046.50, 880.00, 783.99, 659.25, 587.33];
+    const bass = [130.81, 130.81, 164.81, 164.81, 196.00, 196.00, 146.83, 146.83];
+
+    const playNextBGMNote = () => {
+      if (this.musicMuted || !this.bgmPlaying || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      const melFreq = melody[this.bgmStep % melody.length];
+      const bassFreq = bass[Math.floor(this.bgmStep / 2) % bass.length];
+      this.bgmStep++;
+
+      // Bouncy melody note
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(melFreq, now);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1600, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.035, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.18);
+
+      // Playful bass note (every 2 steps)
+      if (this.bgmStep % 2 === 1) {
+        const bassOsc = this.ctx.createOscillator();
+        const bassGain = this.ctx.createGain();
+
+        bassOsc.type = 'sine';
+        bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+        bassGain.gain.setValueAtTime(0.001, now);
+        bassGain.gain.linearRampToValueAtTime(0.03, now + 0.04);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        bassOsc.connect(bassGain);
+        bassGain.connect(this.ctx.destination);
+
+        bassOsc.start(now);
+        bassOsc.stop(now + 0.22);
+      }
+    };
+
+    this.bgmPlaying = true;
+    playNextBGMNote();
+    this.bgmInterval = setInterval(() => playNextBGMNote(), 240);
+  }
+
+  stopBGM() {
+    this.bgmPlaying = false;
+    if (this.bgmInterval) {
+      clearInterval(this.bgmInterval);
+      this.bgmInterval = null;
+    }
+  }
+
+  pauseBGM() {
+    this.stopBGM();
+  }
+
+  resumeBGM() {
+    if (!this.musicMuted) {
+      this.startBGM();
+    }
   }
 
   /* --- SOUND EFFECTS --- */
@@ -354,80 +455,102 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
-  // 3d. Light Crisp Plastic Packet Rustle / Crinkle SFX (Movement)
-  playMoveDown() {
+  // 3c. Light & Subtle Balloon Pop Sound (~65ms duration, soft gain)
+  playBubblePop(stepIndex = 0) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    if (now - (this.lastMoveTime || 0) < 0.045) return; // Non-fatiguing cooldown
+    const duration = 0.065;
+
+    const baseFreq = 480 + (stepIndex % 6) * 30;
+
+    const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, now + duration);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now);
+
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  // 3d. Soft Plastic Sliding / Squishing Sound (Chip bag pushed/squeezed, ~70ms, subtle)
+  playMove() {
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    if (now - (this.lastMoveTime || 0) < 0.04) return; // Non-fatiguing cooldown
     this.lastMoveTime = now;
 
-    const duration = 0.055; // 55ms crisp plastic rustle
+    const duration = 0.07; // 70ms soft plastic squish/slide
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
 
+    // Filtered noise simulating smooth plastic foil friction
     for (let i = 0; i < bufferSize; i++) {
       const t = i / bufferSize;
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-t * 12);
+      const env = Math.sin(t * Math.PI) * Math.exp(-t * 4); // Soft attack & smooth decay
+      output[i] = (Math.random() * 2 - 1) * env;
     }
 
     const noiseSource = this.ctx.createBufferSource();
     noiseSource.buffer = buffer;
 
+    // Low-pass/band-pass filter to sound soft & squishy (no harsh crinkle tick)
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(4200 + Math.random() * 600, now);
-    filter.Q.setValueAtTime(1.4, now);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1400, now);
+    filter.frequency.exponentialRampToValueAtTime(700, now + duration);
 
     const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.06, now); // Subtle non-fatiguing volume
+    noiseGain.gain.setValueAtTime(0.07, now);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     noiseSource.connect(filter);
     filter.connect(noiseGain);
     noiseGain.connect(this.ctx.destination);
     noiseSource.start(now);
+
+    // Subtle low pitch squish (trapped air inside packet squeezing)
+    const squishOsc = this.ctx.createOscillator();
+    const squishGain = this.ctx.createGain();
+    squishOsc.type = 'sine';
+    squishOsc.frequency.setValueAtTime(160, now);
+    squishOsc.frequency.exponentialRampToValueAtTime(80, now + duration);
+
+    squishGain.gain.setValueAtTime(0.05, now);
+    squishGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    squishOsc.connect(squishGain);
+    squishGain.connect(this.ctx.destination);
+    squishOsc.start(now);
+    squishOsc.stop(now + duration);
   }
 
-  // 4. Piece Rotate Tick (Crisp Plastic Foil Twist)
+  // Legacy wrappers for move down & rotate using the soft plastic squish
+  playMoveDown() {
+    this.playMove();
+  }
+
   playRotate() {
-    if (this.muted) return;
-    this.initContext();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    if (now - (this.lastRotateTime || 0) < 0.05) return;
-    this.lastRotateTime = now;
-
-    const duration = 0.065;
-    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      const t = i / bufferSize;
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-t * 10);
-    }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(4800, now);
-    filter.Q.setValueAtTime(1.2, now);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.ctx.destination);
-    noise.start(now);
+    this.playMove();
   }
 
   // 5. Hold Piece Swoosh
