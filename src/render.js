@@ -86,16 +86,16 @@ export class CanvasRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
   }
 
-  // ─── Grid background (Uniform Dark Navy #05070e with Faint Grid Lines) ───
+  // ─── Grid background (Solid Opaque Dark #03050e with Faint Subtle Grid Lines) ───
   drawGrid(width, height) {
     this.ctx.clearRect(0, 0, width, height);
 
-    // Solid dark navy/black playfield container (#05070e)
-    this.ctx.fillStyle = '#05070e';
+    // 100% Solid Opaque Dark Navy/Black playfield container (#03050e - alpha 1.0, zero bleed-through)
+    this.ctx.fillStyle = '#03050e';
     this.ctx.fillRect(0, 0, width, height);
 
-    // Faint Glowing Cyan Grid Lines (Subtle & Blended like Image 2)
-    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.04)';
+    // Subtle Grid Lines (Blended into dark background)
+    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.05)';
     this.ctx.lineWidth = 1.0;
 
     for (let c = 0; c <= GRID_COLS; c++) {

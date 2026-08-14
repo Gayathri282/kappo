@@ -1,8 +1,8 @@
 /* ==========================================================================
    MOBILE DIRECT SCREEN TOUCH & CONTROLS ENGINE
-   - Left / Right Swiping and Tapping anywhere on screen (inside & outside grid)
-   - Rotation enabled until the second last row (row <= 15 for 17 rows)
-   - Dedicated ⚡ TURBO BOOST button for accelerated fall gravity
+   - Direct click/tap inside playgrid: Rotate Piece (working until second to last row)
+   - Left / Right Swiping & Tapping outside grid: Move Left / Right
+   - Swipe Up: Hold Piece
    ========================================================================== */
 
 export class TouchController {
@@ -28,12 +28,11 @@ export class TouchController {
     }
   }
 
-  // Attach Touch Controls Deck Action Buttons (LAY STACKS Style UI)
+  // Attach Touch Controls Deck Action Buttons
   initTouchControlDeck() {
     const btnLeft = document.getElementById('btn-touch-left');
     const btnRight = document.getElementById('btn-touch-right');
     const btnSoftDrop = document.getElementById('btn-touch-soft-drop');
-    const btnTurbo = document.getElementById('btn-touch-turbo');
     const btnRotate = document.getElementById('btn-touch-rotate');
 
     const bindButton = (btn, action) => {
@@ -54,13 +53,13 @@ export class TouchController {
     bindButton(btnLeft, () => this.handlers.onLeft());
     bindButton(btnRight, () => this.handlers.onRight());
     bindButton(btnSoftDrop, () => this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null);
-    bindButton(btnTurbo, () => this.handlers.onTurbo ? this.handlers.onTurbo() : (this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null));
     bindButton(btnRotate, () => this.handlers.onRotateCW());
   }
 
-  // Full Screen Direct Touch Allocation & Gestures (Works Inside & Outside Playgrid)
+  // Full Screen Direct Touch Allocation & Gestures
   initDirectTouchAllocation() {
     const mobileHoldBox = document.getElementById('hold-canvas-mobile');
+    const playfieldContainer = document.getElementById('playfield-container');
 
     // Tap Mobile Hold Box
     if (mobileHoldBox) {
@@ -73,8 +72,20 @@ export class TouchController {
 
     const isInteractiveElement = (target) => {
       if (!target) return false;
-      return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn');
+      return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
+
+    // Direct Click inside Playgrid Container -> Rotate Piece (working till second to last row)
+    if (playfieldContainer) {
+      playfieldContainer.addEventListener('click', (e) => {
+        if (isInteractiveElement(e.target)) return;
+        const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
+        if (pieceY <= 15) {
+          this.vibrate(10);
+          this.handlers.onRotateCW();
+        }
+      });
+    }
 
     // Touch Start anywhere on screen
     document.addEventListener('touchstart', (e) => {
@@ -108,7 +119,7 @@ export class TouchController {
       }
     }, { passive: true });
 
-    // Touch End (Left Zone / Right Zone Taps & Swipe Up for Hold)
+    // Touch End (Screen Taps & Swipes)
     document.addEventListener('touchend', (e) => {
       if (isInteractiveElement(e.target)) return;
       if (e.changedTouches.length > 0) {
@@ -131,35 +142,30 @@ export class TouchController {
           return;
         }
 
-        // 2. DIRECT TOUCH ZONES (< 18px movement within 240ms)
+        // 2. DIRECT TAP ZONES (< 18px movement within 240ms)
         if (absX < 18 && absY < 18 && duration < 240) {
-          const screenW = window.innerWidth;
-          const screenH = window.innerHeight;
+          const target = e.target;
+          const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
+          const allowTouchRotate = pieceY <= 15;
 
-          const normX = endX / screenW;
-          const normY = endY / screenH;
-
-          // Visual touch ripple feedback
-          if (this.particles) {
-            this.particles.spawnTouchRipple(endX, endY);
+          // If tap inside grid or canvas -> Rotate Piece directly!
+          if (playfieldContainer && (playfieldContainer.contains(target) || target.tagName === 'CANVAS')) {
+            if (allowTouchRotate) {
+              this.vibrate(10);
+              this.handlers.onRotateCW();
+            }
+            return;
           }
+
+          // If tap outside grid -> Left 50% moves left, Right 50% moves right
+          const screenW = window.innerWidth;
+          const normX = endX / screenW;
 
           this.vibrate(10);
 
-          const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
-          // Rotation enabled working till the second to last row (pieceY <= 15 for 17 rows)
-          const allowTouchRotate = pieceY <= 15;
-
-          // Upper 20% zone -> Rotate Piece Clockwise (Only when above second last row)
-          if (normY < 0.20 && allowTouchRotate) {
-            this.handlers.onRotateCW();
-          }
-          // Left 50% screen zone -> Move Left
-          else if (normX < 0.50) {
+          if (normX < 0.50) {
             this.handlers.onLeft();
-          }
-          // Right 50% screen zone -> Move Right
-          else {
+          } else {
             this.handlers.onRight();
           }
         }
