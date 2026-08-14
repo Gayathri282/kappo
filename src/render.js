@@ -304,23 +304,48 @@ export class CanvasRenderer {
     drawToCanvas(this.holdCanvasMobile,  16);
   }
 
-  // ─── Next queue preview ───────────────────────────────────────────────────
+  // ─── Next queue preview (3 distinct fixed-height preview slots) ───────────
   renderNextQueue(nextQueueTypes, createPieceFn) {
-    // Desktop: 3 upcoming pieces stacked vertically
+    // Desktop: 3 upcoming pieces in 3 distinct, bounded card slots
     if (this.nextCanvasDesktop) {
       const ctx = this.nextCanvasDesktop.getContext('2d');
-      ctx.clearRect(0, 0, this.nextCanvasDesktop.width, this.nextCanvasDesktop.height);
-      const miniCellW = 22;
+      const canvasW = this.nextCanvasDesktop.width;
+      const canvasH = this.nextCanvasDesktop.height;
+      ctx.clearRect(0, 0, canvasW, canvasH);
+
+      const slotCount = 3;
+      const slotGap = 6;
+      const slotWidth = canvasW - 8;
+      const slotHeight = Math.floor((canvasH - (slotCount - 1) * slotGap - 8) / slotCount);
+
+      const miniCellW = 18;
       const miniCellH = Math.round(miniCellW * PACKET_RATIO);
 
-      for (let i = 0; i < Math.min(3, nextQueueTypes.length); i++) {
+      for (let i = 0; i < Math.min(slotCount, nextQueueTypes.length); i++) {
         const piece = createPieceFn(nextQueueTypes[i]);
         const matrix = piece.matrix;
         const cols = matrix[0].length;
         const rows = matrix.length;
-        const blockGroupH = rows * miniCellH;
-        const startX = (this.nextCanvasDesktop.width - cols * miniCellW) / 2;
-        const startY = i * (blockGroupH + 10) + 6;
+
+        const slotLeft = 4;
+        const slotTop = 4 + i * (slotHeight + slotGap);
+
+        // 1. Render subtle dark card background with cyan border for each slot
+        ctx.save();
+        ctx.fillStyle = 'rgba(5, 7, 14, 0.85)';
+        ctx.strokeStyle = 'rgba(0, 195, 255, 0.30)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        this.drawRoundRectPath(ctx, slotLeft, slotTop, slotWidth, slotHeight, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Center upcoming piece inside its preview card slot
+        const pieceW = cols * miniCellW;
+        const pieceH = rows * miniCellH;
+        const startX = slotLeft + (slotWidth - pieceW) / 2;
+        const startY = slotTop + (slotHeight - pieceH) / 2;
 
         const flavorId = piece.flavor ? piece.flavor.id : 'salted';
         const img = PACKET_IMAGES[flavorId];
@@ -331,7 +356,7 @@ export class CanvasRenderer {
               const px = startX + c * miniCellW;
               const py = startY + r * miniCellH;
               if (img && img.complete && img.naturalWidth) {
-                ctx.drawImage(img, px, py, miniCellW, miniCellH);
+                ctx.drawImage(img, px, py, miniCellW + 0.8, miniCellH + 0.8);
               }
             }
           }
@@ -339,18 +364,22 @@ export class CanvasRenderer {
       }
     }
 
-    // Mobile: first upcoming piece only
+    // Mobile: first upcoming piece only (centered in card slot)
     if (this.nextCanvasMobile && nextQueueTypes.length > 0) {
       const ctx = this.nextCanvasMobile.getContext('2d');
-      ctx.clearRect(0, 0, this.nextCanvasMobile.width, this.nextCanvasMobile.height);
+      const canvasW = this.nextCanvasMobile.width;
+      const canvasH = this.nextCanvasMobile.height;
+      ctx.clearRect(0, 0, canvasW, canvasH);
+
       const miniCellW = 16;
       const miniCellH = Math.round(miniCellW * PACKET_RATIO);
       const piece = createPieceFn(nextQueueTypes[0]);
       const matrix = piece.matrix;
       const cols = matrix[0].length;
       const rows = matrix.length;
-      const startX = (this.nextCanvasMobile.width  - cols * miniCellW) / 2;
-      const startY = (this.nextCanvasMobile.height - rows * miniCellH) / 2;
+
+      const startX = (canvasW - cols * miniCellW) / 2;
+      const startY = (canvasH - rows * miniCellH) / 2;
 
       const flavorId = piece.flavor ? piece.flavor.id : 'salted';
       const img = PACKET_IMAGES[flavorId];
@@ -361,7 +390,7 @@ export class CanvasRenderer {
             const px = startX + c * miniCellW;
             const py = startY + r * miniCellH;
             if (img && img.complete && img.naturalWidth) {
-              ctx.drawImage(img, px, py, miniCellW, miniCellH);
+              ctx.drawImage(img, px, py, miniCellW + 0.8, miniCellH + 0.8);
             }
           }
         }

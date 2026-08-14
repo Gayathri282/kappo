@@ -379,7 +379,7 @@ function update(time = 0) {
     // 2. Per-frame continuous true free-fall physics with pre-render boundary & stack clamping
     if (game.currentPiece) {
       const piece = game.currentPiece;
-      const pieceId = `${piece.type}_${piece.flavor ? piece.flavor.id : 'salted'}`;
+      const pieceId = `${piece.type}_${piece.flavor ? piece.flavor.id : 'salted'}_rot${piece.rotation}_x${piece.x}`;
 
       if (lastPieceKey !== pieceId) {
         lastPieceKey = pieceId;
@@ -405,7 +405,7 @@ function update(time = 0) {
         if (!game.gameOver) {
           game.spawnPiece();
           if (game.currentPiece) {
-            lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}`;
+            lastPieceKey = `${game.currentPiece.type}_${game.currentPiece.flavor ? game.currentPiece.flavor.id : 'salted'}_rot${game.currentPiece.rotation}_x${game.currentPiece.x}`;
             pieceVisualRow = game.currentPiece.y;
           }
         }

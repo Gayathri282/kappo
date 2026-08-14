@@ -32,7 +32,7 @@ export class TouchController {
   initTouchControlDeck() {
     const btnLeft = document.getElementById('btn-touch-left');
     const btnRight = document.getElementById('btn-touch-right');
-    const btnSoftDrop = document.getElementById('btn-touch-soft-drop');
+    const btnTurbo = document.getElementById('btn-touch-turbo') || document.getElementById('btn-touch-soft-drop');
     const btnRotate = document.getElementById('btn-touch-rotate');
 
     const bindButton = (btn, action) => {
@@ -52,8 +52,21 @@ export class TouchController {
 
     bindButton(btnLeft, () => this.handlers.onLeft());
     bindButton(btnRight, () => this.handlers.onRight());
-    bindButton(btnSoftDrop, () => this.handlers.onSoftDrop ? this.handlers.onSoftDrop() : null);
     bindButton(btnRotate, () => this.handlers.onRotateCW());
+
+    if (btnTurbo) {
+      const setTurbo = (active, e) => {
+        if (e && e.cancelable) e.preventDefault();
+        if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(active);
+        if (active) btnTurbo.classList.add('active');
+        else btnTurbo.classList.remove('active');
+      };
+
+      btnTurbo.addEventListener('mousedown', (e) => setTurbo(true, e));
+      window.addEventListener('mouseup', () => setTurbo(false));
+      btnTurbo.addEventListener('touchstart', (e) => setTurbo(true, e), { passive: false });
+      window.addEventListener('touchend', () => setTurbo(false));
+    }
   }
 
   // Full Screen Direct Touch Allocation & Gestures
@@ -75,10 +88,12 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    // Direct Click inside Playgrid Container -> Rotate Piece (working till second to last row)
+    // Direct Mouse Click inside Playgrid Container -> Rotate Piece (desktop mouse only)
     if (playfieldContainer) {
       playfieldContainer.addEventListener('click', (e) => {
         if (isInteractiveElement(e.target)) return;
+        // Ignore touch-synthesized click events to prevent double rotation on touch devices
+        if ('ontouchstart' in window && e.detail !== 0 && e.pointerType !== 'mouse') return;
         const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
         if (pieceY <= 15) {
           this.vibrate(10);
