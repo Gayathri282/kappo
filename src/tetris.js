@@ -137,6 +137,7 @@ export class TetrisGame {
     this.lines = 0;
     this.level = 1;
     this.survivalTime = 0; // Survival time counter in seconds
+    this.scoreAccumulator = 0;
     this.gameOver = false;
     this.paused = false;
     this.isSpeedBoosted = false;
@@ -145,10 +146,25 @@ export class TetrisGame {
     this.spawnPiece();
   }
 
-  // Update survival timer & time-based gravity acceleration (speed of fall increases every 15s)
+  // Centralized score addition
+  addScore(points) {
+    if (this.gameOver || !points || points <= 0) return this.score;
+    this.score += points;
+    return this.score;
+  }
+
+  // Update survival timer & time-based gravity acceleration + continuous time score trickle
   updateTime(deltaSeconds) {
     if (this.gameOver || this.paused) return false;
     this.survivalTime += deltaSeconds;
+
+    // Continuous score trickle over time (+3 points/sec multiplied by level)
+    this.scoreAccumulator += deltaSeconds * 3 * Math.sqrt(this.level);
+    if (this.scoreAccumulator >= 1.0) {
+      const pts = Math.floor(this.scoreAccumulator);
+      this.scoreAccumulator -= pts;
+      this.addScore(pts);
+    }
 
     // Every 15 seconds, level increases & fall speed accelerates!
     const newLevel = Math.floor(this.survivalTime / 15) + 1;
@@ -420,7 +436,7 @@ export class TetrisGame {
         earnedScore = Math.floor(basePoints * bonusMultiplier);
       }
 
-      this.score += earnedScore;
+      this.addScore(earnedScore);
 
       // Update Batch Level every 10 lines
       const newLevel = Math.floor(this.lines / 10) + 1;
@@ -468,7 +484,7 @@ export class TetrisGame {
   getFallSpeedRowsPerSec() {
     const baseRowsPerSec = 1.4 + (this.level - 1) * 0.35;
     if (this.isSpeedBoosted) {
-      return baseRowsPerSec * 3.8; // Smooth 3.8x acceleration during turbo / soft drop
+      return baseRowsPerSec * 4.8; // Fast 4.8x acceleration during TURBO!
     }
     return baseRowsPerSec;
   }

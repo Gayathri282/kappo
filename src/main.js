@@ -55,8 +55,7 @@ const btnRestartPause = document.getElementById('btn-restart-pause');
 const btnCloseHelp = document.getElementById('btn-close-help');
 const btnGotIt = document.getElementById('btn-got-it');
 
-// Speed Boost Buttons
-const btnSpeedBoost = document.getElementById('btn-speed-boost');
+// Speed Boost Elements
 const btnSpeedBoostMobile = document.getElementById('btn-speed-boost-mobile');
 const btnSpeedBoostDesktop = document.getElementById('btn-speed-boost-desktop');
 
@@ -173,34 +172,34 @@ function holdAction() {
 }
 
 function setSpeedBoost(active) {
-  game.isSpeedBoosted = active;
-  [btnSpeedBoost, btnSpeedBoostMobile, btnSpeedBoostDesktop].forEach(btn => {
-    if (btn) {
-      if (active) btn.classList.add('active');
-      else btn.classList.remove('active');
-    }
-  });
+  game.isSpeedBoosted = !!active;
+  const turboBtn = document.getElementById('btn-touch-turbo') || document.getElementById('btn-touch-soft-drop');
+  if (turboBtn) {
+    if (active) turboBtn.classList.add('active');
+    else turboBtn.classList.remove('active');
+  }
 }
 
-// Attach Speed Boost Listeners (Hold & Toggle Support)
-[btnSpeedBoost, btnSpeedBoostMobile, btnSpeedBoostDesktop].forEach(btn => {
-  if (!btn) return;
-
-  btn.addEventListener('mousedown', () => setSpeedBoost(true));
+// Attach TURBO Speed Boost Listeners (Hold & Click Support)
+const btnSpeedBoost = document.getElementById('btn-touch-turbo') || document.getElementById('btn-touch-soft-drop');
+if (btnSpeedBoost) {
+  btnSpeedBoost.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    setSpeedBoost(true);
+  });
   window.addEventListener('mouseup', () => setSpeedBoost(false));
 
-  btn.addEventListener('touchstart', (e) => {
+  btnSpeedBoost.addEventListener('touchstart', (e) => {
     if (e.cancelable) e.preventDefault();
     setSpeedBoost(true);
   }, { passive: false });
-
   window.addEventListener('touchend', () => setSpeedBoost(false));
 
-  btn.addEventListener('click', () => {
-    // Toggle backup for quick clicks
+  btnSpeedBoost.addEventListener('click', (e) => {
+    if (e.cancelable) e.preventDefault();
     setSpeedBoost(!game.isSpeedBoosted);
   });
-});
+}
 
 // Touch Controls Engine with Direct Screen Touch Zones & Bottom Deck Buttons
 const touchController = new TouchController({
@@ -209,9 +208,8 @@ const touchController = new TouchController({
   onRotateCW: () => rotateCWAction(),
   onRotateCCW: () => rotateCCWAction(),
   onHold: () => holdAction(),
-  onSoftDrop: () => {
-    if (game.softDrop()) sound.playMoveDown();
-  },
+  onSpeedBoost: (active) => setSpeedBoost(active),
+  onSoftDrop: () => setSpeedBoost(true),
   getPieceY: () => (game.currentPiece ? game.currentPiece.y : 0)
 }, particles);
 
