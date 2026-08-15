@@ -66,14 +66,14 @@ export class CanvasRenderer {
     const availH = Math.max(160, Math.floor(viewportH - headerH - controlsH - 12));
 
     // 2. Calculate columns & cell width from available screen width (min 10 cols, max 18 cols)
-    const targetCellW = 38;
+    const targetCellW = 32;
     let naturalCols = Math.floor(availW / targetCellW);
     let cols = Math.max(10, Math.min(18, naturalCols));
 
     const cellW = availW / cols;
 
-    // 3. Cell height calculation: target ~40px for maximum vertical row density
-    const minComfortableCellH = 40;
+    // 3. Cell height calculation: target ~34px for maximum vertical row density
+    const minComfortableCellH = 34;
     let cellH = Math.max(minComfortableCellH, Math.round(cellW * PACKET_RATIO));
 
     const safetyBuffer = 8; // minimal 8px total vertical buffer
@@ -228,11 +228,13 @@ export class CanvasRenderer {
   }
 
   // ─── Render main playfield with continuous free-fall smooth Y motion ───────────
-  renderPlayfield(game, shakeOffset = { x: 0, y: 0 }, continuousRow = null) {
-    const width  = this.canvas.width  / this.dpr;
-    const height = this.canvas.height / this.dpr;
-    const cols = game.cols || 8;
-    const rows = game.rows || 14;
+  renderPlayfield(game, shakeOffset = { x: 0, y: 0 }, continuousRow = null, settleAnimationState = null) {
+    if (!this.ctx) return;
+
+    const cols = game.cols;
+    const rows = game.rows;
+    const width = this.boardWidth;
+    const height = this.boardHeight;
 
     this.ctx.save();
     this.ctx.translate(shakeOffset.x, shakeOffset.y);
@@ -249,10 +251,29 @@ export class CanvasRenderer {
 
     const now = performance.now();
 
+    let activeSettleKeys = null;
+    let isSettlingActive = false;
+
+    if (settleAnimationState) {
+      const elapsed = now - settleAnimationState.startTime;
+      const duration = settleAnimationState.duration || 200;
+      if (elapsed < duration) {
+        isSettlingActive = true;
+        activeSettleKeys = new Set(settleAnimationState.blocks.map(b => `${b.targetRow}_${b.col}`));
+      } else {
+        settleAnimationState.isDone = true;
+      }
+    }
+
     // 1. Locked blocks (Top-to-bottom row order for natural overlapping seam z-index)
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const key = `${r}_${c}`;
+
+        // Skip static rendering for cells currently mid-settle drop animation
+        if (isSettlingActive && activeSettleKeys && activeSettleKeys.has(key)) {
+          continue;
+        }
 
         // Check if cell is in active balloon-pop break animation
         if (game.poppingCells && game.poppingCells.has(key)) {
@@ -288,6 +309,21 @@ export class CanvasRenderer {
           this.drawTile(this.ctx, c, r, this.cellWidth, cell.flavor, false, false);
         }
       }
+    }
+
+    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks
+    if (isSettlingActive && settleAnimationState && settleAnimationState.blocks) {
+      const elapsed = now - settleAnimationState.startTime;
+      const duration = settleAnimationState.duration || 200;
+      const progress = Math.min(1.0, elapsed / duration);
+      // Natural gravity ease-in (quadratic acceleration)
+      const easeInGravity = progress * progress;
+
+      settleAnimationState.blocks.forEach(b => {
+        const visualRow = b.startRow + easeInGravity * b.dropDistance;
+        const visualY = visualRow * this.cellHeight;
+        this.drawTile(this.ctx, b.col, 0, this.cellWidth, b.flavor, false, false, 1.0, 0, 0, null, visualY);
+      });
     }
 
     if (game.currentPiece && !game.gameOver) {

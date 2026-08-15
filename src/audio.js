@@ -11,6 +11,11 @@ class SoundEngine {
     this.bgmInterval = null;
     this.bgmPlaying = false;
     this.bgmStep = 0;
+
+    this.rustleBreakBuffer = null;
+    this.crumbleLandingBuffer = null;
+    this.chipsPacketRowPopBuffer = null;
+    this.samplesLoading = false;
   }
 
   initContext() {
@@ -22,6 +27,45 @@ class SoundEngine {
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
+    }
+    this.loadAudioSamples();
+  }
+
+  async loadAudioSamples() {
+    if (this.samplesLoading || !this.ctx) return;
+    this.samplesLoading = true;
+
+    try {
+      const res1 = await fetch('/assets/chip_rustle_break.mp3');
+      if (res1.ok) {
+        const buf1 = await res1.arrayBuffer();
+        this.rustleBreakBuffer = await this.ctx.decodeAudioData(buf1);
+        console.log('[AudioEngine] Successfully loaded & decoded /assets/chip_rustle_break.mp3');
+      }
+    } catch (e) {
+      console.warn('[AudioEngine] Could not decode chip_rustle_break.mp3:', e);
+    }
+
+    try {
+      const res2 = await fetch('/assets/chip_crumble_landing.mp3');
+      if (res2.ok) {
+        const buf2 = await res2.arrayBuffer();
+        this.crumbleLandingBuffer = await this.ctx.decodeAudioData(buf2);
+        console.log('[AudioEngine] Successfully loaded & decoded /assets/chip_crumble_landing.mp3');
+      }
+    } catch (e) {
+      console.warn('[AudioEngine] Could not decode chip_crumble_landing.mp3:', e);
+    }
+
+    try {
+      const res3 = await fetch('/assets/freesound_community-chips-packet-63796.mp3');
+      if (res3.ok) {
+        const buf3 = await res3.arrayBuffer();
+        this.chipsPacketRowPopBuffer = await this.ctx.decodeAudioData(buf3);
+        console.log('[AudioEngine] Successfully loaded & decoded /assets/freesound_community-chips-packet-63796.mp3');
+      }
+    } catch (e) {
+      console.warn('[AudioEngine] Could not decode freesound_community-chips-packet-63796.mp3:', e);
     }
   }
 
@@ -272,61 +316,82 @@ class SoundEngine {
     });
   }
 
-  // 3. Piece Landing/Placement (Authentic light plastic chip bag crinkle thud & air-cushion rustle)
+  // 2b. Row-Break Loop (freesound_community-chips-packet-63796.mp3)
+  startRowBreakRustleLoop() {
+    console.log('row-clear sound: chips-packet-63796');
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx || !this.chipsPacketRowPopBuffer) return;
+
+    this.stopRowBreakRustleLoop();
+
+    try {
+      this.rowPopLoopSource = this.ctx.createBufferSource();
+      this.rowPopLoopSource.buffer = this.chipsPacketRowPopBuffer;
+      this.rowPopLoopSource.loop = true;
+
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0.45;
+
+      this.rowPopLoopSource.connect(gain);
+      gain.connect(this.ctx.destination);
+      this.rowPopLoopSource.start(0);
+    } catch (e) {
+      console.warn('[AudioEngine] Could not start chips-packet-63796 row clear loop:', e);
+    }
+  }
+
+  stopRowBreakRustleLoop() {
+    if (this.rowPopLoopSource) {
+      console.log('[AudioEngine] Stopping row-clear sound loop');
+      try {
+        this.rowPopLoopSource.stop();
+        this.rowPopLoopSource.disconnect();
+      } catch (e) {}
+      this.rowPopLoopSource = null;
+    }
+  }
+
+  // 1. Piece Placement Sound: High volume placement sound (gain 0.85) using chip_rustle_break.mp3
   playBagLanding() {
+    console.log('placement sound: chip-rustle-break (volume 0.85)');
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
-    const now = this.ctx.currentTime;
-
-    // A. Soft low air-cushion bag thud (120Hz -> 45Hz sine)
-    const thudOsc = this.ctx.createOscillator();
-    const thudGain = this.ctx.createGain();
-
-    thudOsc.type = 'sine';
-    thudOsc.frequency.setValueAtTime(120, now);
-    thudOsc.frequency.exponentialRampToValueAtTime(45, now + 0.09);
-
-    thudGain.gain.setValueAtTime(0.18, now);
-    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-
-    thudOsc.connect(thudGain);
-    thudGain.connect(this.ctx.destination);
-    thudOsc.start(now);
-    thudOsc.stop(now + 0.09);
-
-    // B. Authentic Plastic Chip Bag Foil Crinkle Rustle (Bandpass noise 2.5kHz - 6kHz)
-    const sampleRate = this.ctx.sampleRate;
-    const bufferSize = Math.floor(sampleRate * 0.08);
-    const buffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      const t = i / sampleRate;
-      const envelope = Math.exp(-t * 45);
-      const crackle = (Math.random() > 0.6 ? (Math.random() * 2 - 1) : 0);
-      data[i] = crackle * envelope;
+    if (this.rustleBreakBuffer) {
+      try {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.rustleBreakBuffer;
+        const gain = this.ctx.createGain();
+        gain.gain.value = 0.85; // High volume headroom
+        src.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(0);
+      } catch (e) {
+        console.warn('[AudioEngine] Could not play placement sound:', e);
+      }
     }
+  }
 
-    const noiseSource = this.ctx.createBufferSource();
-    noiseSource.buffer = buffer;
+  // 2. Row Collapse / Settling Fall Sound (49603404-packets-of-chips-crumbling-331803.mp3)
+  playRowCollapseSettle() {
+    console.log('row-collapse fall sound: 49603404-packets-of-chips-crumbling-331803.mp3');
+    if (this.muted) return;
+    this.initContext();
+    if (!this.ctx || !this.crumbleLandingBuffer) return;
 
-    const bandpass = this.ctx.createBiquadFilter();
-    bandpass.type = 'bandpass';
-    bandpass.frequency.setValueAtTime(3800, now);
-    bandpass.Q.setValueAtTime(1.8, now);
-
-    const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.15, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-    noiseSource.connect(bandpass);
-    bandpass.connect(noiseGain);
-    noiseGain.connect(this.ctx.destination);
-
-    noiseSource.start(now);
-    noiseSource.stop(now + 0.08);
+    try {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.crumbleLandingBuffer;
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0.45;
+      src.connect(gain);
+      gain.connect(this.ctx.destination);
+      src.start(0);
+    } catch (e) {
+      console.warn('[AudioEngine] Could not play row-collapse crumble sound:', e);
+    }
   }
 
   // 3b. Legacy playDrop wrapper
@@ -462,37 +527,52 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
-  // 3c. Light & Subtle Balloon Pop Sound (~65ms duration, soft gain)
+  // 3c. Fun & Bouncy Row Clear Pop Sound (Musical pentatonic arpeggio + juicy sparkle pitch jump)
   playBubblePop(stepIndex = 0) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.065;
+    const duration = 0.055; // 55ms tight burst matched to step delay
 
-    const baseFreq = 480 + (stepIndex % 6) * 30;
+    // Fun rising pentatonic scale (C5, D5, E5, G5, A5, C6, D6, E6, G6, A6)
+    const PENTATONIC_SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00];
+    const noteFreq = PENTATONIC_SCALE[stepIndex % PENTATONIC_SCALE.length];
 
+    // Main bouncy oscillator (triangle wave with 1.5x pitch sweep)
     const osc = this.ctx.createOscillator();
-    const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(baseFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, now + duration);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(noteFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(noteFreq * 1.48, now + duration);
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1200, now);
-
-    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.20, now + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    osc.connect(filter);
-    filter.connect(gain);
+    osc.connect(gain);
     gain.connect(this.ctx.destination);
-
     osc.start(now);
     osc.stop(now + duration);
+
+    // Cute juicy sparkle chime accent
+    const chime = this.ctx.createOscillator();
+    const chimeGain = this.ctx.createGain();
+
+    chime.type = 'sine';
+    chime.frequency.setValueAtTime(noteFreq * 2.4, now);
+    chime.frequency.exponentialRampToValueAtTime(noteFreq * 3.0, now + 0.035);
+
+    chimeGain.gain.setValueAtTime(0.001, now);
+    chimeGain.gain.linearRampToValueAtTime(0.08, now + 0.005);
+    chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+
+    chime.connect(chimeGain);
+    chimeGain.connect(this.ctx.destination);
+    chime.start(now);
+    chime.stop(now + 0.035);
   }
 
   // 3d. Soft Plastic Sliding / Squishing Sound (Chip bag pushed/squeezed, ~70ms, subtle)
@@ -612,28 +692,62 @@ class SoundEngine {
     });
   }
 
-  // 7. Game Over Collapse Sound
+  // 7. Rich Arcade Game Over Sound Sequence (Classic 4-step descending melody + pitch bend + sub-bass thud)
   playGameOver() {
+    console.log('[AudioEngine] Game Over -> playing 4-note descending arcade game-over sequence');
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.6);
+    // A. Classic Retro Arcade Descending 4-Tone Sequence (D#4 -> D4 -> C#4 -> C4 with sad pitch bend)
+    const notes = [311.13, 293.66, 277.18, 261.63];
+    const stepDuration = 0.18; // 180ms per note
 
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    notes.forEach((freq, i) => {
+      const startTime = now + i * stepDuration;
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+      osc.type = i === 3 ? 'sawtooth' : 'triangle';
+      osc.frequency.setValueAtTime(freq, startTime);
+      // Sad pitch bend on each note
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.91, startTime + stepDuration);
 
-    osc.start(now);
-    osc.stop(now + 0.6);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1400, startTime);
+      filter.frequency.exponentialRampToValueAtTime(400, startTime + stepDuration);
+
+      const gainVal = i === 3 ? 0.35 : 0.22;
+      gain.gain.setValueAtTime(gainVal, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + (i === 3 ? 0.45 : stepDuration));
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + (i === 3 ? 0.45 : stepDuration));
+    });
+
+    // B. Low Sub-Bass Decompression Thud (150Hz -> 35Hz over 0.8s)
+    const bassOsc = this.ctx.createOscillator();
+    const bassGain = this.ctx.createGain();
+
+    bassOsc.type = 'sine';
+    bassOsc.frequency.setValueAtTime(150, now);
+    bassOsc.frequency.exponentialRampToValueAtTime(35, now + 0.8);
+
+    bassGain.gain.setValueAtTime(0.28, now);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+    bassOsc.connect(bassGain);
+    bassGain.connect(this.ctx.destination);
+
+    bassOsc.start(now);
+    bassOsc.stop(now + 0.8);
   }
 }
 

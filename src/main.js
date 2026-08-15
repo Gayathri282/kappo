@@ -88,6 +88,7 @@ let lastTime = 0;
 let dropCounter = 0;
 let pieceVisualRow = 0;
 let activePieceRef = null;
+let settleAnimationState = null;
 let fallStallCheckTime = 0;
 let fallStallCheckY = 0;
 let gameStarted = false;
@@ -362,6 +363,15 @@ function updateLineClearAnimation(time) {
       clearingState.detect.chainCells
     );
 
+    if (result.settlingBlocks && result.settlingBlocks.length > 0) {
+      settleAnimationState = {
+        startTime: performance.now(),
+        duration: 240,
+        blocks: result.settlingBlocks
+      };
+      console.log(`[Animation Debug] Starting row settle drop for ${result.settlingBlocks.length} blocks over 240ms`);
+    }
+
     game.isClearing = false;
     game.brokenCells = null;
     game.poppingCells = null;
@@ -567,7 +577,7 @@ function update(time = 0) {
   updateHUD();
 
   const shakeOffset = particles.getShakeOffset();
-  renderer.renderPlayfield(game, shakeOffset, pieceVisualRow);
+  renderer.renderPlayfield(game, shakeOffset, pieceVisualRow, settleAnimationState);
   renderer.renderHold(game.holdPiece);
   renderer.renderNextQueue(game.nextQueue, (type) => game.createPiece(type));
 

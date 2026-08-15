@@ -568,9 +568,38 @@ export class TetrisGame {
     };
   }
 
+  computeSettlingTrajectory(clearedIndices, allClearedKeys) {
+    const settlingBlocks = [];
+    const clearedSet = new Set(clearedIndices || []);
+
+    for (let c = 0; c < this.cols; c++) {
+      let dropOffset = 0;
+      for (let r = this.rows - 1; r >= 0; r--) {
+        const key = `${r}_${c}`;
+        const isCellCleared = (allClearedKeys && allClearedKeys.has(key)) || clearedSet.has(r);
+
+        if (isCellCleared) {
+          dropOffset++;
+        } else if (this.grid[r] && this.grid[r][c] && dropOffset > 0) {
+          settlingBlocks.push({
+            col: c,
+            startRow: r,
+            targetRow: r + dropOffset,
+            dropDistance: dropOffset,
+            flavor: this.grid[r][c].flavor
+          });
+        }
+      }
+    }
+    return settlingBlocks;
+  }
+
   // Collapse clearing rows & apply score/level stats after break animation
   finishClearLines(clearedIndices, clearedDetails, allClearedKeys = null, chainCells = []) {
-    if (!clearedIndices || clearedIndices.length === 0) return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
+    if (!clearedIndices || clearedIndices.length === 0) return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false, settlingBlocks: [] };
+
+    // Compute settling trajectories BEFORE modifying grid data
+    const settlingBlocks = this.computeSettlingTrajectory(clearedIndices, allClearedKeys);
 
     const blastedCells = [];
 
@@ -627,7 +656,8 @@ export class TetrisGame {
       monoCount: monoCount,
       monoFlavor: monoCount > 0 ? monoDetails[0].flavor : null,
       earnedScore: earnedScore,
-      leveledUp: leveledUp
+      leveledUp: leveledUp,
+      settlingBlocks: settlingBlocks
     };
   }
 
