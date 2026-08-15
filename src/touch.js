@@ -28,11 +28,12 @@ export class TouchController {
     }
   }
 
-  // Attach Touch Controls Deck Action Buttons
+  // Attach Touch Controls Deck & Header Action Buttons
   initTouchControlDeck() {
     const btnLeft = document.getElementById('btn-touch-left');
     const btnRight = document.getElementById('btn-touch-right');
     const btnTurbo = document.getElementById('btn-touch-turbo') || document.getElementById('btn-touch-soft-drop');
+    const btnBoostHeader = document.getElementById('btn-boost-header');
     const btnRotate = document.getElementById('btn-touch-rotate');
 
     const bindButton = (btn, action) => {
@@ -54,19 +55,25 @@ export class TouchController {
     bindButton(btnRight, () => this.handlers.onRight());
     bindButton(btnRotate, () => this.handlers.onRotateCW());
 
-    if (btnTurbo) {
-      const setTurbo = (active, e) => {
+    const bindBoost = (btn) => {
+      if (!btn) return;
+      const setBoost = (active, e) => {
         if (e && e.cancelable) e.preventDefault();
         if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(active);
-        if (active) btnTurbo.classList.add('active');
-        else btnTurbo.classList.remove('active');
+        if (active) btn.classList.add('active');
+        else btn.classList.remove('active');
       };
 
-      btnTurbo.addEventListener('mousedown', (e) => setTurbo(true, e));
-      window.addEventListener('mouseup', () => setTurbo(false));
-      btnTurbo.addEventListener('touchstart', (e) => setTurbo(true, e), { passive: false });
-      window.addEventListener('touchend', () => setTurbo(false));
-    }
+      btn.addEventListener('mousedown', (e) => setBoost(true, e));
+      btn.addEventListener('mouseup', () => setBoost(false));
+      btn.addEventListener('mouseleave', () => setBoost(false));
+      btn.addEventListener('touchstart', (e) => setBoost(true, e), { passive: false });
+      btn.addEventListener('touchend', () => setBoost(false));
+      btn.addEventListener('touchcancel', () => setBoost(false));
+    };
+
+    bindBoost(btnTurbo);
+    bindBoost(btnBoostHeader);
   }
 
   // Full Screen Direct Touch Allocation & Gestures
@@ -88,29 +95,16 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    // Direct Mouse Press & Touch Hold inside Playgrid Container for Speed Boost
+    // Single click/tap inside Playgrid Container -> Rotate Piece CW!
     if (playfieldContainer) {
-      playfieldContainer.addEventListener('mousedown', (e) => {
-        if (isInteractiveElement(e.target)) return;
-        if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
-      });
-
       playfieldContainer.addEventListener('click', (e) => {
         if (isInteractiveElement(e.target)) return;
-        if ('ontouchstart' in window && e.detail !== 0 && e.pointerType !== 'mouse') return;
-        const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
-        if (pieceY <= 15) {
-          this.vibrate(10);
-          this.handlers.onRotateCW();
-        }
+        this.vibrate(10);
+        this.handlers.onRotateCW();
       });
     }
 
-    window.addEventListener('mouseup', () => {
-      if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(false);
-    });
-
-    // Touch Start anywhere on screen (activates speed boost on hold)
+    // Touch Start anywhere on screen
     document.addEventListener('touchstart', (e) => {
       if (isInteractiveElement(e.target)) return;
       if (e.touches.length > 0) {
@@ -119,11 +113,6 @@ export class TouchController {
         this.touchStartY = touch.clientY;
         this.lastColumnStep = touch.clientX;
         this.touchStartTime = Date.now();
-
-        // Increase fall speed while touch is held on screen/board area
-        if (this.handlers.onSpeedBoost) {
-          this.handlers.onSpeedBoost(true);
-        }
       }
     }, { passive: true });
 
@@ -147,17 +136,8 @@ export class TouchController {
       }
     }, { passive: true });
 
-    // Touch Cancel / Release clears speed boost
-    const endTouchBoost = () => {
-      if (this.handlers.onSpeedBoost) {
-        this.handlers.onSpeedBoost(false);
-      }
-    };
-    document.addEventListener('touchcancel', endTouchBoost, { passive: true });
-
     // Touch End (Screen Taps & Swipes)
     document.addEventListener('touchend', (e) => {
-      endTouchBoost();
       if (isInteractiveElement(e.target)) return;
       if (e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
@@ -182,15 +162,11 @@ export class TouchController {
         // 2. DIRECT TAP ZONES (< 18px movement within 240ms)
         if (absX < 18 && absY < 18 && duration < 240) {
           const target = e.target;
-          const pieceY = this.handlers.getPieceY ? this.handlers.getPieceY() : 0;
-          const allowTouchRotate = pieceY <= 15;
 
-          // If tap inside grid or canvas -> Rotate Piece directly!
+          // If tap inside grid or canvas -> Rotate Piece CW!
           if (playfieldContainer && (playfieldContainer.contains(target) || target.tagName === 'CANVAS')) {
-            if (allowTouchRotate) {
-              this.vibrate(10);
-              this.handlers.onRotateCW();
-            }
+            this.vibrate(10);
+            this.handlers.onRotateCW();
             return;
           }
 

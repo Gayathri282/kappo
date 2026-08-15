@@ -380,7 +380,7 @@ html, body {
   gap: 8px;
 }
 
-.sound-pill-btn, .pause-pill-btn {
+.sound-pill-btn, .pause-pill-btn, .boost-pill-btn {
   background: #05070e;
   border: 2px solid rgba(0, 195, 255, 0.4);
   border-radius: 12px;
@@ -395,7 +395,19 @@ html, body {
   transition: all 0.2s ease;
 }
 
-.sound-icon {
+.boost-pill-btn {
+  border-color: rgba(255, 215, 0, 0.6);
+  color: #FFD700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+}
+
+.boost-pill-btn.active, .boost-pill-btn:active {
+  background: rgba(255, 215, 0, 0.35);
+  border-color: #FFA502;
+  transform: scale(0.95);
+}
+
+.sound-icon, .boost-icon {
   font-size: 1.1rem;
 }
 
@@ -1147,13 +1159,15 @@ html, body {
 }
 
 .deck-left {
-  margin-right: auto;
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .deck-right {
-  margin-left: auto;
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .deck-center-group {

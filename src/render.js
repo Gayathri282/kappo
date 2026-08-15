@@ -72,12 +72,13 @@ export class CanvasRenderer {
 
     const cellW = availW / cols;
 
-    // 3. Cell height is slightly taller than wide (1.10x ratio)
-    let cellH = Math.round(cellW * PACKET_RATIO);
+    // 3. Cell height calculation: target ~40px for maximum vertical row density
+    const minComfortableCellH = 40;
+    let cellH = Math.max(minComfortableCellH, Math.round(cellW * PACKET_RATIO));
 
     const safetyBuffer = 8; // minimal 8px total vertical buffer
 
-    // 4. Calculate row count naturally from available screen height (availH)
+    // 4. Maximize row count naturally from available screen height (availH)
     let rows = Math.floor(availH / cellH);
 
     // Height Safety Loop Verification: Ensure header + board + controls strictly fits viewportH

@@ -272,54 +272,61 @@ class SoundEngine {
     });
   }
 
-  // 3. Piece Landing/Placement (Tactile, bouncy, cartoonish soft "plop" crinkle-thud)
+  // 3. Piece Landing/Placement (Authentic light plastic chip bag crinkle thud & air-cushion rustle)
   playBagLanding() {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.14;
 
-    // A. Springy / Bouncy Cartoonish Pitch Plop (260Hz -> 170Hz -> 100Hz)
-    const popOsc = this.ctx.createOscillator();
-    const popGain = this.ctx.createGain();
+    // A. Soft low air-cushion bag thud (120Hz -> 45Hz sine)
+    const thudOsc = this.ctx.createOscillator();
+    const thudGain = this.ctx.createGain();
 
-    popOsc.type = 'triangle';
-    popOsc.frequency.setValueAtTime(260, now);
-    popOsc.frequency.exponentialRampToValueAtTime(170, now + 0.05);
-    popOsc.frequency.exponentialRampToValueAtTime(100, now + duration);
+    thudOsc.type = 'sine';
+    thudOsc.frequency.setValueAtTime(120, now);
+    thudOsc.frequency.exponentialRampToValueAtTime(45, now + 0.09);
 
-    popGain.gain.setValueAtTime(0.22, now);
-    popGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    thudGain.gain.setValueAtTime(0.18, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
-    popOsc.connect(popGain);
-    popGain.connect(this.ctx.destination);
-    popOsc.start(now);
-    popOsc.stop(now + duration);
+    thudOsc.connect(thudGain);
+    thudGain.connect(this.ctx.destination);
+    thudOsc.start(now);
+    thudOsc.stop(now + 0.09);
 
-    // B. Gentle Crisp Plastic Foil Tap Accent
-    const bufSz = Math.floor(this.ctx.sampleRate * 0.04);
-    const buf = this.ctx.createBuffer(1, bufSz, this.ctx.sampleRate);
-    const dat = buf.getChannelData(0);
-    for (let k = 0; k < bufSz; k++) {
-      dat[k] = (Math.random() * 2 - 1) * Math.exp(-k / (bufSz * 0.25));
+    // B. Authentic Plastic Chip Bag Foil Crinkle Rustle (Bandpass noise 2.5kHz - 6kHz)
+    const sampleRate = this.ctx.sampleRate;
+    const bufferSize = Math.floor(sampleRate * 0.08);
+    const buffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.exp(-t * 45);
+      const crackle = (Math.random() > 0.6 ? (Math.random() * 2 - 1) : 0);
+      data[i] = crackle * envelope;
     }
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buf;
 
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.setValueAtTime(2400, now);
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = buffer;
 
-    const nGain = this.ctx.createGain();
-    nGain.gain.setValueAtTime(0.08, now);
-    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    const bandpass = this.ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.setValueAtTime(3800, now);
+    bandpass.Q.setValueAtTime(1.8, now);
 
-    noise.connect(filter);
-    filter.connect(nGain);
-    nGain.connect(this.ctx.destination);
-    noise.start(now);
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.15, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    noiseSource.connect(bandpass);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+
+    noiseSource.start(now);
+    noiseSource.stop(now + 0.08);
   }
 
   // 3b. Legacy playDrop wrapper

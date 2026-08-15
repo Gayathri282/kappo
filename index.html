@@ -49,8 +49,11 @@
           </div>
         </div>
 
-        <!-- Header Actions: Sound, Music & Pause -->
+        <!-- Header Actions: Boost, Sound, Music & Pause -->
         <div class="header-actions">
+          <button id="btn-boost-header" class="icon-btn boost-pill-btn" title="Hold for Speed Boost" aria-label="Speed Boost">
+            <span class="boost-icon">⚡</span>
+          </button>
           <button id="btn-sound" class="icon-btn sound-pill-btn" title="Toggle Sound SFX" aria-label="Toggle Sound SFX">
             <span class="sound-icon">🔊</span>
           </button>
@@ -126,7 +129,7 @@
 
     </main>
 
-    <!-- BOTTOM TOUCH CONTROLS DECK (Left far-left, Rotate center, Right far-right) -->
+    <!-- BOTTOM TOUCH CONTROLS DECK (Left far-left, Rotate exact center, Right far-right) -->
     <div id="touch-controls-deck" class="touch-controls-deck">
       <div class="control-btn-wrapper deck-left">
         <button id="btn-touch-left" class="touch-action-btn" aria-label="Move Left">
@@ -141,12 +144,6 @@
             <span class="btn-arrow">↻</span>
           </button>
           <span class="btn-caption">ROTATE</span>
-        </div>
-        <div class="control-btn-wrapper deck-turbo">
-          <button id="btn-touch-turbo" class="touch-action-btn turbo-btn" aria-label="Soft Drop">
-            <span class="btn-arrow">⚡</span>
-          </button>
-          <span class="btn-caption">DROP</span>
         </div>
       </div>
 
