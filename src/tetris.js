@@ -188,13 +188,16 @@ export class TetrisGame {
   updateTime(deltaSeconds) {
     if (this.gameOver || this.paused) return false;
     this.survivalTime += deltaSeconds;
+    this.timeSinceLastPlacement = (this.timeSinceLastPlacement || 0) + deltaSeconds;
 
-    // Minor background time trickle (+1 point every 4 seconds, barely noticeable minute-to-minute)
-    this.scoreAccumulator += deltaSeconds * 0.25;
-    if (this.scoreAccumulator >= 1.0) {
-      const pts = Math.floor(this.scoreAccumulator);
-      this.scoreAccumulator -= pts;
-      this.addScore(pts);
+    // Minor background time trickle (+1 point every 4s), capped if no piece locked in last 12s
+    if (this.timeSinceLastPlacement <= 12.0) {
+      this.scoreAccumulator += deltaSeconds * 0.25;
+      if (this.scoreAccumulator >= 1.0) {
+        const pts = Math.floor(this.scoreAccumulator);
+        this.scoreAccumulator -= pts;
+        this.addScore(pts);
+      }
     }
 
     // Every 15 seconds, level increases & fall speed accelerates!
@@ -446,6 +449,7 @@ export class TetrisGame {
       this.gameOver = true;
     }
 
+    this.timeSinceLastPlacement = 0;
     this.currentPiece = null;
     this.isLocking = false;
   }

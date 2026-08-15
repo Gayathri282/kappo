@@ -88,6 +88,8 @@ let lastTime = 0;
 let dropCounter = 0;
 let pieceVisualRow = 0;
 let activePieceRef = null;
+let fallStallCheckTime = 0;
+let fallStallCheckY = 0;
 let gameStarted = false;
 let bestScore = parseInt(localStorage.getItem('kappo_best_stack') || '0', 10);
 let lastFactScoreMilestone = 0;
@@ -140,36 +142,44 @@ function checkLandingClamp() {
 
 function moveLeftAction() {
   if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
+  const oldY = game.currentPiece.y;
   if (game.moveLeft()) {
     sound.playRotate();
-    pieceVisualRow = game.currentPiece.y;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function moveRightAction() {
   if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
+  const oldY = game.currentPiece.y;
   if (game.moveRight()) {
     sound.playRotate();
-    pieceVisualRow = game.currentPiece.y;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function rotateCWAction() {
   if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
+  const oldY = game.currentPiece.y;
   if (game.rotate(1)) {
     sound.playRotate();
-    pieceVisualRow = game.currentPiece.y;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
 
 function rotateCCWAction() {
   if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
+  const oldY = game.currentPiece.y;
   if (game.rotate(-1)) {
     sound.playRotate();
-    pieceVisualRow = game.currentPiece.y;
+    const dy = game.currentPiece.y - oldY;
+    if (dy !== 0) pieceVisualRow += dy;
     checkLandingClamp();
   }
 }
@@ -523,6 +533,18 @@ function update(time = 0) {
         } else {
           pieceVisualRow = nextVisualRow;
           piece.y = Math.floor(pieceVisualRow);
+
+          // 500ms Fall-Stall Runtime Audit Check
+          if (time - fallStallCheckTime >= 500) {
+            if (activePieceRef === piece && pieceVisualRow < landingRow) {
+              const deltaY = pieceVisualRow - fallStallCheckY;
+              if (deltaY < 0.05) {
+                console.warn(`[Tetris Physics Warning] Free-fall stalled! pieceVisualRow advanced only ${deltaY.toFixed(3)} rows in 500ms.`);
+              }
+            }
+            fallStallCheckTime = time;
+            fallStallCheckY = pieceVisualRow;
+          }
         }
       } else if (!game.isClearing && !game.isLocking) {
         // Recovery guard: guarantee game never freezes without an active piece
