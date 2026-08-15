@@ -95,10 +95,13 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    // Single click/tap inside Playgrid Container -> Rotate Piece CW!
+    let lastTouchRotateTime = 0;
+
+    // Single click inside Playgrid Container (Mouse/Desktop)
     if (playfieldContainer) {
       playfieldContainer.addEventListener('click', (e) => {
         if (isInteractiveElement(e.target)) return;
+        if (Date.now() - lastTouchRotateTime < 400) return;
         this.vibrate(10);
         this.handlers.onRotateCW();
       });
@@ -165,6 +168,7 @@ export class TouchController {
 
           // If tap inside grid or canvas -> Rotate Piece CW!
           if (playfieldContainer && (playfieldContainer.contains(target) || target.tagName === 'CANVAS')) {
+            lastTouchRotateTime = Date.now();
             this.vibrate(10);
             this.handlers.onRotateCW();
             return;

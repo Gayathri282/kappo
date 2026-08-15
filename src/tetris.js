@@ -171,6 +171,7 @@ export class TetrisGame {
     this.gameOver = false;
     this.paused = false;
     this.isSpeedBoosted = false;
+    this.isLocking = false;
 
     this.initQueue();
     this.spawnPiece();
@@ -309,17 +310,22 @@ export class TetrisGame {
   }
 
   rotate(dir = 1) {
-    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (this.gameOver || this.paused || this.isClearing || this.isLocking || !this.currentPiece) return false;
 
     const piece = this.currentPiece;
     if (piece.type === 'O') return false; // O piece doesn't rotate
 
+    // Deep clone initial state for 100% safe fallback rollback
+    const origX = piece.x;
+    const origY = piece.y;
+    const origMatrix = piece.matrix.map(row => [...row]);
+    const origRotation = piece.rotation;
+
     const rotatedMatrix = this.rotateMatrix(piece.matrix, dir);
-    const oldRotation = piece.rotation;
-    const newRotation = (oldRotation + dir + 4) % 4;
+    const newRotation = (origRotation + dir + 4) % 4;
 
     // SRS Wall kick test + Extended Floor Kick offsets so rotation works all the way down to the last grid!
-    const kickIndex = dir > 0 ? oldRotation : newRotation;
+    const kickIndex = dir > 0 ? origRotation : newRotation;
     const kickTable = piece.type === 'I' ? KICK_OFFSETS_I : KICK_OFFSETS_JLSTZ;
     const baseOffsets = kickTable[kickIndex] || [[0, 0]];
 
@@ -332,22 +338,39 @@ export class TetrisGame {
 
     for (let i = 0; i < extendedOffsets.length; i++) {
       const [dx, dy] = extendedOffsets[i];
-      const testX = piece.x + (dir > 0 ? dx : -dx);
-      const testY = piece.y + (dir > 0 ? -dy : dy);
+      const testX = origX + (dir > 0 ? dx : -dx);
+      const testY = origY + (dir > 0 ? -dy : dy);
 
       if (!this.checkCollision(testX, testY, rotatedMatrix)) {
         piece.matrix = rotatedMatrix;
         piece.x = testX;
         piece.y = testY;
         piece.rotation = newRotation;
+
+        // Post-rotation Integrity Guard: Verify state is 100% valid & collision-free
+        if (this.checkCollision(piece.x, piece.y, piece.matrix)) {
+          console.warn('[Tetris] Post-rotation collision detected! Reverting rotation state.');
+          piece.x = origX;
+          piece.y = origY;
+          piece.matrix = origMatrix;
+          piece.rotation = origRotation;
+          return false;
+        }
+
         return true;
       }
     }
+
+    // No valid wall-kick offset found: silently reject and guarantee exact rollback
+    piece.x = origX;
+    piece.y = origY;
+    piece.matrix = origMatrix;
+    piece.rotation = origRotation;
     return false;
   }
 
   softDrop() {
-    if (this.gameOver || this.paused || !this.currentPiece) return false;
+    if (this.gameOver || this.paused || this.isClearing || this.isLocking || !this.currentPiece) return false;
     if (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
       this.currentPiece.y++;
       this.score += 1;
@@ -358,7 +381,7 @@ export class TetrisGame {
   }
 
   hardDrop() {
-    if (this.gameOver || this.paused || !this.currentPiece) return 0;
+    if (this.gameOver || this.paused || this.isClearing || this.isLocking || !this.currentPiece) return 0;
     let dropDistance = 0;
     while (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
       this.currentPiece.y++;
@@ -370,7 +393,7 @@ export class TetrisGame {
   }
 
   hold() {
-    if (this.gameOver || this.paused || !this.canHold || !this.currentPiece) return false;
+    if (this.gameOver || this.paused || !this.canHold || this.isClearing || this.isLocking || !this.currentPiece) return false;
 
     const currentType = this.currentPiece.type;
     if (this.holdPiece === null) {
@@ -395,9 +418,10 @@ export class TetrisGame {
   }
 
   lockPiece() {
+    if (this.isLocking || !this.currentPiece) return;
+    this.isLocking = true;
     const piece = this.currentPiece;
     this.lastPlacedCells = [];
-    if (!piece) return;
     let lockedAboveTop = false;
 
     for (let r = 0; r < piece.matrix.length; r++) {
@@ -423,6 +447,7 @@ export class TetrisGame {
     }
 
     this.currentPiece = null;
+    this.isLocking = false;
   }
 
   // Detect completed rows & compute dynamic BFS flood-fill same-flavor chain-clear

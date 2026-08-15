@@ -139,45 +139,37 @@ function checkLandingClamp() {
 }
 
 function moveLeftAction() {
-  if (!game.currentPiece || game.gameOver) return;
-  const oldY = game.currentPiece.y;
+  if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
   if (game.moveLeft()) {
     sound.playRotate();
-    const dy = game.currentPiece.y - oldY;
-    if (dy !== 0) pieceVisualRow += dy;
+    pieceVisualRow = game.currentPiece.y;
     checkLandingClamp();
   }
 }
 
 function moveRightAction() {
-  if (!game.currentPiece || game.gameOver) return;
-  const oldY = game.currentPiece.y;
+  if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
   if (game.moveRight()) {
     sound.playRotate();
-    const dy = game.currentPiece.y - oldY;
-    if (dy !== 0) pieceVisualRow += dy;
+    pieceVisualRow = game.currentPiece.y;
     checkLandingClamp();
   }
 }
 
 function rotateCWAction() {
-  if (!game.currentPiece || game.gameOver) return;
-  const oldY = game.currentPiece.y;
+  if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
   if (game.rotate(1)) {
     sound.playRotate();
-    const dy = game.currentPiece.y - oldY;
-    if (dy !== 0) pieceVisualRow += dy;
+    pieceVisualRow = game.currentPiece.y;
     checkLandingClamp();
   }
 }
 
 function rotateCCWAction() {
-  if (!game.currentPiece || game.gameOver) return;
-  const oldY = game.currentPiece.y;
+  if (!game.currentPiece || game.gameOver || game.isClearing || game.isLocking) return;
   if (game.rotate(-1)) {
     sound.playRotate();
-    const dy = game.currentPiece.y - oldY;
-    if (dy !== 0) pieceVisualRow += dy;
+    pieceVisualRow = game.currentPiece.y;
     checkLandingClamp();
   }
 }
@@ -532,6 +524,16 @@ function update(time = 0) {
           pieceVisualRow = nextVisualRow;
           piece.y = Math.floor(pieceVisualRow);
         }
+      } else if (!game.isClearing && !game.isLocking) {
+        // Recovery guard: guarantee game never freezes without an active piece
+        console.warn('[Tetris] No active piece found during gameplay loop. Spawning replacement piece.');
+        game.spawnPiece();
+        if (game.gameOver) {
+          handleGameOver();
+        } else if (game.currentPiece) {
+          activePieceRef = game.currentPiece;
+          pieceVisualRow = game.currentPiece.y;
+        }
       }
 
       if (game.gameOver) {
@@ -800,13 +802,14 @@ if (btnResume) btnResume.addEventListener('click', resumeGame);
 if (btnRestart) btnRestart.addEventListener('click', startGame);
 if (btnRestartPause) btnRestartPause.addEventListener('click', startGame);
 
-// Question Mark Icon Button (❓) -> Shows Instructions Modal
-if (btnHelp) btnHelp.addEventListener('click', openTutorialModal);
-
-// SHOW INSTRUCTIONS MODAL FIRST ON LOAD IF PRESENT
-if (tutorialModal) {
-  openTutorialModal();
-}
+// Auto-Pause when Screen/Tab loses visibility or device screen turns off
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || document.visibilityState === 'hidden') {
+    if (gameStarted && !game.paused && !game.gameOver) {
+      pauseGame();
+    }
+  }
+});
 
 // Run Loop
 requestAnimationFrame(update);
