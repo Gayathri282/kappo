@@ -1,10 +1,10 @@
 /* ==========================================================================
    TETRIS ENGINE - KAPPO CRUNCH STACK
-   7x14 Grid (7 cols wide x 14 rows high), SRS Rotation System, Wall Kicks, 7-Bag Randomizer
+   9x16 Grid (9 cols wide x 16 rows high), SRS Rotation System, Wall Kicks, 7-Bag Randomizer
    ========================================================================== */
 
-export const GRID_COLS = 10;
-export const GRID_ROWS = 22;
+export const GRID_COLS = 9;
+export const GRID_ROWS = 16;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
@@ -99,9 +99,9 @@ const KICK_OFFSETS_I = [
 ];
 
 export class TetrisGame {
-  constructor(initialCols = 10, initialRows = 22) {
-    this.cols = 10;
-    this.rows = 22;
+  constructor(initialCols = 9, initialRows = 16) {
+    this.cols = 9;
+    this.rows = 16;
     this.grid = this.createGrid();
     this.bag = [];
     this.currentPiece = null;
@@ -122,9 +122,9 @@ export class TetrisGame {
     this.spawnPiece();
   }
 
-  setDimensions(cols = 10, rows = 22) {
-    this.cols = 10;
-    this.rows = 22;
+  setDimensions(cols = 9, rows = 16) {
+    this.cols = 9;
+    this.rows = 16;
   }
 
   createGrid() {
@@ -238,18 +238,21 @@ export class TetrisGame {
   }
 
   checkCollision(px, py, matrix) {
+    const intX = Math.floor(px);
+    const intY = Math.floor(py);
+
     for (let r = 0; r < matrix.length; r++) {
       for (let c = 0; c < matrix[r].length; c++) {
         if (matrix[r][c]) {
-          const gridX = px + c;
-          const gridY = py + r;
+          const gridX = intX + c;
+          const gridY = intY + r;
 
           // Boundary checks
           if (gridX < 0 || gridX >= this.cols || gridY >= this.rows) {
             return true;
           }
           // Grid block collision (ignore above top grid)
-          if (gridY >= 0 && this.grid[gridY][gridX] !== null) {
+          if (gridY >= 0 && this.grid[gridY] && this.grid[gridY][gridX] !== null) {
             return true;
           }
         }
@@ -392,7 +395,7 @@ export class TetrisGame {
 
   getGhostY() {
     if (!this.currentPiece) return 0;
-    let ghostY = this.currentPiece.y;
+    let ghostY = Math.floor(this.currentPiece.y);
     while (!this.checkCollision(this.currentPiece.x, ghostY + 1, this.currentPiece.matrix)) {
       ghostY++;
     }
@@ -403,14 +406,20 @@ export class TetrisGame {
     if (this.isLocking || !this.currentPiece) return;
     this.isLocking = true;
     const piece = this.currentPiece;
+
+    // Lock piece at exact integer ghost landing row
+    piece.y = this.getGhostY();
+    const intX = Math.floor(piece.x);
+    const intY = Math.floor(piece.y);
+
     this.lastPlacedCells = [];
     let lockedAboveTop = false;
 
     for (let r = 0; r < piece.matrix.length; r++) {
       for (let c = 0; c < piece.matrix[r].length; c++) {
         if (piece.matrix[r][c]) {
-          const gridX = piece.x + c;
-          const gridY = piece.y + r;
+          const gridX = intX + c;
+          const gridY = intY + r;
           if (gridY < 0) {
             lockedAboveTop = true;
           } else if (gridY < this.rows && gridX >= 0 && gridX < this.cols) {

@@ -231,195 +231,85 @@ const touchController = new TouchController({
   getPieceY: () => (game.currentPiece ? game.currentPiece.y : 0)
 }, particles);
 
-// Toast Manager
-function showToast(text, icon = '🥔') {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerHTML = `
-    <span class="toast-icon">${icon}</span>
-    <span class="toast-text">${text}</span>
-  `;
-  toastContainer.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-10px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
-
 function checkBrandFactsMilestone() {
-  if (game.score >= lastFactScoreMilestone + 1000 && game.score > 0) {
-    lastFactScoreMilestone = Math.floor(game.score / 1000) * 1000;
-    const fact = BRAND_FACTS[Math.floor(Math.random() * BRAND_FACTS.length)];
-    showToast(fact, '🌟');
-  }
+  // Toast notifications disabled per specs
 }
-
-let clearingState = null;
 
 function processLineClears() {
   const detect = game.detectLineClears();
   if (detect.count > 0) {
-    game.isClearing = true;
-    game.poppingCells = new Map();
-    clearingState = {
-      detect: detect,
-      currentStep: 0,
-      stepDelay: 45, // 45ms per step
-      lastStepTime: performance.now(),
-      brokenCells: new Set()
-    };
-    game.brokenCells = clearingState.brokenCells;
-  } else {
-    if (!game.gameOver) {
-      game.spawnPiece();
-      if (game.gameOver) {
-        handleGameOver();
-      } else if (game.currentPiece) {
-        activePieceRef = game.currentPiece;
-        pieceVisualRow = game.currentPiece.y;
-      }
-    } else {
-      handleGameOver();
-    }
-  }
-  updateHUD();
-}
+    const result = game.finishClearLines(
+      detect.lines,
+      detect.clearedDetails,
+      detect.allClearedKeys,
+      detect.chainCells
+    );
 
-function updateLineClearAnimation(time) {
-  if (!clearingState || !game.isClearing) return;
+    const cellW = renderer.cellWidth || renderer.cellSize;
+    const cellH = renderer.cellHeight || Math.round(cellW * 1.10);
 
-  if (clearingState.currentStep < clearingState.detect.maxSteps) {
-    if (time - clearingState.lastStepTime >= clearingState.stepDelay) {
-      clearingState.lastStepTime = time;
-
-      let stepHasBreaks = false;
-      const cellW = renderer.cellWidth || renderer.cellSize;
-      const cellH = renderer.cellHeight || Math.round(cellW * 1.35);
-
-      clearingState.detect.rowSequences.forEach(rowSeq => {
-        if (clearingState.currentStep < rowSeq.steps.length) {
-          const colsToBreak = rowSeq.steps[clearingState.currentStep];
-          colsToBreak.forEach(col => {
-            const key = `${rowSeq.row}_${col}`;
-            if (!clearingState.brokenCells.has(key)) {
-              clearingState.brokenCells.add(key);
-              stepHasBreaks = true;
-
-              const cellVal = game.grid[rowSeq.row] ? game.grid[rowSeq.row][col] : null;
-              const flavor = cellVal ? cellVal.flavor : null;
-              const mainColor = flavor ? flavor.mainColor : '#FACC15';
-
-              if (game.poppingCells && flavor) {
-                game.poppingCells.set(key, {
-                  popStartTime: time,
-                  flavor: flavor
-                });
-              }
-
-              // Particle confetti pop burst
-              for (let i = 0; i < 4; i++) {
-                particles.particles.push({
-                  x: (col + 0.5) * cellW,
-                  y: (rowSeq.row + 0.5) * cellH,
-                  vx: (Math.random() - 0.5) * 5,
-                  vy: (Math.random() - 0.6) * 6,
-                  gravity: 0.2,
-                  size: Math.random() * 5 + 2,
-                  color: mainColor,
-                  rotation: Math.random() * Math.PI * 2,
-                  vRot: (Math.random() - 0.5) * 0.3,
-                  life: 1.0,
-                  decay: Math.random() * 0.04 + 0.03,
-                  shape: 'chip'
-                });
-              }
-            }
+    // Instant particle confetti pop burst for cleared cells
+    if (detect.allClearedKeys) {
+      detect.allClearedKeys.forEach(key => {
+        const [rStr, cStr] = key.split('_');
+        const r = parseInt(rStr, 10);
+        const c = parseInt(cStr, 10);
+        for (let i = 0; i < 4; i++) {
+          particles.particles.push({
+            x: (c + 0.5) * cellW,
+            y: (r + 0.5) * cellH,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.6) * 7,
+            gravity: 0.22,
+            size: Math.random() * 6 + 2,
+            color: '#FACC15',
+            rotation: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 0.3,
+            life: 1.0,
+            decay: Math.random() * 0.04 + 0.03,
+            shape: 'chip'
           });
         }
       });
-
-      if (stepHasBreaks) {
-        sound.playBubblePop(clearingState.currentStep);
-      }
-
-      clearingState.currentStep++;
-      if (clearingState.currentStep >= clearingState.detect.maxSteps) {
-        clearingState.completionStartTime = time;
-      }
-    }
-  }
-
-  const allStepsDispatched = clearingState.currentStep >= clearingState.detect.maxSteps;
-  const popFinished = allStepsDispatched && (time - (clearingState.completionStartTime || clearingState.lastStepTime)) >= 180;
-
-  if (popFinished) {
-    const result = game.finishClearLines(
-      clearingState.detect.lines,
-      clearingState.detect.clearedDetails,
-      clearingState.detect.allClearedKeys,
-      clearingState.detect.chainCells
-    );
-
-    if (result.settlingBlocks && result.settlingBlocks.length > 0) {
-      settleAnimationState = {
-        startTime: performance.now(),
-        duration: 240,
-        blocks: result.settlingBlocks
-      };
-      console.log(`[Animation Debug] Starting row settle drop for ${result.settlingBlocks.length} blocks over 240ms`);
     }
 
-    game.isClearing = false;
-    game.brokenCells = null;
-    game.poppingCells = null;
-    const finishedDetails = clearingState.detect.clearedDetails;
-    clearingState = null;
-
-    if (result.count > 0) {
-      if (result.chainCount > 0) {
-        showToast(`CHAIN MATCH! +${result.chainCount} EXTRA PACKETS!`, '⚡');
-      }
-
-      if (result.monoCount > 0) {
-        sound.playMonoCrunch(result.monoCount, result.monoFlavor);
-        particles.spawnMonoFlavorFX(finishedDetails, renderer.cellSize, renderer.cellSize);
-        let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
-        triggerEventBanner(bannerText);
-      } else if (result.count >= 4) {
-        sound.playFullCrunch();
-        particles.spawnFullCrunchFX();
-        triggerEventBanner("⚡ FULL CRUNCH! ⚡");
-      } else {
-        sound.playCrunch(result.count);
-      }
-
-      if (result.leveledUp) {
-        sound.playLevelUp();
-        showToast(`BATCH LEVEL ${game.level} REACHED!`, '🚀');
-      }
-
-      if (game.score > bestScore) {
-        bestScore = game.score;
-        localStorage.setItem('kappo_best_stack', bestScore.toString());
-      }
-      checkBrandFactsMilestone();
-    }
-
-    if (!game.gameOver) {
-      game.spawnPiece();
-      if (game.gameOver) {
-        handleGameOver();
-      } else if (game.currentPiece) {
-        activePieceRef = game.currentPiece;
-        pieceVisualRow = game.currentPiece.y;
-      }
+    if (result.monoCount > 0) {
+      sound.playMonoCrunch(result.monoCount, result.monoFlavor);
+      particles.spawnMonoFlavorFX(detect.clearedDetails, renderer.cellSize, renderer.cellSize);
+      let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
+      triggerEventBanner(bannerText);
+    } else if (result.count >= 4) {
+      sound.playFullCrunch();
+      particles.spawnFullCrunchFX();
+      triggerEventBanner("⚡ FULL CRUNCH! ⚡");
     } else {
-      handleGameOver();
+      sound.playCrunch(result.count);
     }
+
+    if (result.leveledUp) {
+      sound.playLevelUp();
+      triggerEventBanner(`LEVEL ${game.level}!`);
+    }
+
+    if (game.score > bestScore) {
+      bestScore = game.score;
+      localStorage.setItem('kappo_best_stack', bestScore.toString());
+    }
+    checkBrandFactsMilestone();
   }
+
+  if (!game.gameOver) {
+    game.spawnPiece();
+    if (game.gameOver) {
+      handleGameOver();
+    } else if (game.currentPiece) {
+      activePieceRef = game.currentPiece;
+      pieceVisualRow = game.currentPiece.y;
+    }
+  } else {
+    handleGameOver();
+  }
+  updateHUD();
 }
 
 function triggerEventBanner(text) {
@@ -508,13 +398,10 @@ function update(time = 0) {
     const leveledUp = game.updateTime(deltaSeconds);
     if (leveledUp) {
       sound.playLevelUp();
-      showToast(`FALL SPEED INCREASED! (LEVEL ${game.level})`, '⚡');
+      triggerEventBanner(`LEVEL ${game.level}!`);
     }
 
-    if (game.isClearing) {
-      updateLineClearAnimation(time);
-    } else {
-      handleKeyHolding(time);
+    handleKeyHolding(time);
 
       // 2. Per-frame continuous true free-fall physics
       if (game.currentPiece) {
@@ -571,7 +458,6 @@ function update(time = 0) {
       if (game.gameOver) {
         handleGameOver();
       }
-    }
   }
 
   updateHUD();
@@ -620,7 +506,6 @@ function startGame() {
   sound.startBGM();
 
   updateHUD();
-  showToast("Crunch Stack Started!", '📦');
 }
 
 function pauseGame() {

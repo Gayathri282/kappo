@@ -898,7 +898,8 @@ body {
 .game-matrix-container,
 .playfield-container {
   position: relative;
-  max-width: 100%;
+  width: calc(100% - 16px) !important;
+  max-width: 600px;
   margin: 0 auto;
   background: #03050e !important;
   opacity: 1.0 !important;
@@ -908,6 +909,7 @@ body {
   overflow: hidden;
   touch-action: none;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 /* 3. Handle Layout Spacing (20% Sidebar, 75% Board Section, Stretch Height Alignment) */
@@ -1233,12 +1235,9 @@ body {
   letter-spacing: 1px;
 }
 
-/* BOTTOM TOUCH CONTROLS DECK (Fixed Flush to Bottom of Viewport) */
+/* BOTTOM TOUCH CONTROLS DECK (In-flow flex child at bottom of app-container) */
 .touch-controls-deck {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
@@ -1630,7 +1629,7 @@ body {
 /* Toast Notifications */
 .toast-container {
   position: fixed;
-  top: 70px;
+  top: 110px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1831,11 +1830,11 @@ body {
   }
 }
 
-/* Grid Container & Cell Proportions (10 columns wide x 20 rows high) */
+/* Grid Container & Cell Proportions (9 columns wide x 16 rows high) */
 .grid-container,
 .playfield-container {
-  grid-template-columns: repeat(10, 1fr) !important;
-  /* Exactly 10 columns */
+  grid-template-columns: repeat(9, 1fr) !important;
+  /* Exactly 9 columns */
 }
 
 .grid-cell {

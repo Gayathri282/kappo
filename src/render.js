@@ -43,7 +43,7 @@ export class CanvasRenderer {
     this.lastPieceKey = null;
   }
 
-  // ─── Resize to fit parent container (Fixed 22 rows × 10 cols) ───────────────
+  // ─── Resize to fit parent container (Strictly 9 cols × 16 rows) ───────────────
   resizeToContainer(container, game = null) {
     if (!container) return;
 
@@ -60,32 +60,32 @@ export class CanvasRenderer {
 
     // App container max width constraint
     const appContainer = document.querySelector('.app-container');
-    const maxAppW = appContainer ? appContainer.getBoundingClientRect().width : Math.min(viewportW, 500);
+    const maxAppW = appContainer ? appContainer.getBoundingClientRect().width : Math.min(viewportW, 600);
 
     // Measure layout space available between header and controls
     const layoutRect = gameLayout ? gameLayout.getBoundingClientRect() : { width: maxAppW, height: viewportH - headerH - controlsH };
     
-    // Reserve safety margin for borders and padding (6px border total + 6px safety gap = 12px)
-    const safetyBuffer = 12;
-    const availW = Math.max(100, Math.floor((layoutRect.width || (maxAppW - 8)) - safetyBuffer));
-    const availH = Math.max(100, Math.floor((layoutRect.height || (viewportH - headerH - controlsH)) - safetyBuffer));
+    // Reserve safety margin for borders and padding
+    const availH = Math.max(100, Math.floor((layoutRect.height || (viewportH - headerH - controlsH)) - 16));
 
-    // 2. Fixed grid dimensions: strictly 10 columns × 22 rows
-    const cols = 10;
-    const rows = 22;
+    // 2. Measure actual rendered width from CSS calc(100% - 16px) !important rule
+    const containerRect = container.getBoundingClientRect();
+    const measuredW = (containerRect.width && containerRect.width > 50) 
+      ? containerRect.width 
+      : Math.max(100, Math.floor((layoutRect.width || (maxAppW - 16)) - 16));
 
-    // 3. Cell size calculation: cellWidth = availableBoardWidth / 10, cellHeight = availableBoardHeight / 22
-    // Preserving chip packet visual proportions (~1.10 height-to-width ratio) while guaranteeing full viewport fit
-    let cellH = availH / rows;
-    let cellW = cellH / PACKET_RATIO;
+    // 3. Grid dimensions: strictly 9 columns wide × 16 rows high
+    const cols = game ? game.cols : 9;
+    const rows = game ? game.rows : 16;
 
-    // If width exceeds available width, scale down based on width constraint
-    if (cellW * cols > availW) {
-      cellW = availW / cols;
-      cellH = cellW * PACKET_RATIO;
-    }
+    // 4. Exact square cell ratio (both cell width & cell height scale together uniformly)
+    const PACKET_RATIO = 1.0;
 
-    // Safety guard: ensure total board height never exceeds available height
+    // Calculate dynamic cell size = availableGridWidth / 9
+    let cellW = measuredW / cols;
+    let cellH = cellW * PACKET_RATIO;
+
+    // Safety guard: ensure total board height never exceeds available layout height
     if (cellH * rows > availH) {
       cellH = availH / rows;
       cellW = cellH / PACKET_RATIO;
@@ -102,7 +102,7 @@ export class CanvasRenderer {
       game.setDimensions(cols, rows);
     }
 
-    container.style.width  = `${this.boardWidth}px`;
+    // Set height dynamically based on computed boardHeight; width is driven by CSS calc(100% - 16px) !important
     container.style.height = `${this.boardHeight}px`;
     container.style.overflow = 'hidden';
 
@@ -134,14 +134,14 @@ export class CanvasRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
   }
 
-  // ─── Grid background (Solid Opaque Dark #03050e with Faint Subtle Grid Lines) ───
-  drawGrid(width, height, cols = 10, rows = 22) {
+  // ─── Grid background (Solid Dark #03050e with Crisp Clear Grid Lines) ───
+  drawGrid(width, height, cols = 9, rows = 16) {
     this.ctx.clearRect(0, 0, width, height);
 
     this.ctx.fillStyle = '#03050e';
     this.ctx.fillRect(0, 0, width, height);
 
-    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.03)';
+    this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.14)';
     this.ctx.lineWidth = 1.0;
 
     for (let c = 0; c <= cols; c++) {
@@ -178,22 +178,19 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw one 3D neon packet block tile ("Stuffed" 1.08x scale overflow rendering) ─────
+  // ─── Draw 3D neon packet block tile (Exact 1:1 Cell Fit bound to computed cellSize) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
-    const cH = customCellH != null ? customCellH : (this.cellHeight || Math.round(cellSize * PACKET_RATIO));
+    const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
 
-    // Stuffed packet visual overflow: 108% scale factor (consistent 8% bulge on all sides)
-    const overflowScale = customScale != null ? customScale : (isGhost ? 1.0 : 1.08);
+    // Exact 1:1 fit bound to dynamic cell size (no overflow, no gaps)
+    const baseScale = customScale != null ? customScale : 1.0;
 
-    const blockW = cW * overflowScale;
-    const blockH = cH * overflowScale;
+    const blockW = Math.ceil(cW * baseScale);
+    const blockH = Math.ceil(cH * baseScale);
 
-    const extraW = (blockW - cW) / 2;
-    const extraH = (blockH - cH) / 2;
-
-    const px = (offsetX + x * cW) - extraW;
-    const py = (customPy != null ? customPy : (offsetY + y * cH)) - extraH;
+    const px = Math.floor(offsetX + x * cW);
+    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
 
     const flavorId = flavor ? flavor.id : 'salted';
     const img = PACKET_IMAGES[flavorId];
@@ -202,7 +199,7 @@ export class CanvasRenderer {
       if (img && img.complete && img.naturalWidth) {
         ctx.save();
         ctx.globalAlpha = 0.28;
-        ctx.drawImage(img, px + extraW, py + extraH, cW, cH);
+        ctx.drawImage(img, px, py, blockW, blockH);
         ctx.restore();
       }
       return;
@@ -214,10 +211,7 @@ export class CanvasRenderer {
       if (typeof ctx.filter !== 'undefined') {
         ctx.filter = 'none';
       }
-      if (isActiveFalling) {
-        ctx.shadowColor = 'rgba(255, 45, 85, 0.25)';
-        ctx.shadowBlur = 4;
-      }
+
       ctx.drawImage(img, px, py, blockW, blockH);
       ctx.restore();
     }
