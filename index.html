@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Kappo Stacks | Mobile Chips Block Puzzle</title>
-  <meta name="description" content="A Tetris-style falling-block puzzle game featuring Kappo chips, Kerala flavor skins, crunch combos, and high score progression!" />
+  <meta name="description"
+    content="A Tetris-style falling-block puzzle game featuring Kappo chips, Kerala flavor skins, crunch combos, and high score progression!" />
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
+
 <body>
   <!-- Full-Page Background Banner with Green Overlay -->
   <div class="bg-pattern" aria-hidden="true"></div>
@@ -23,7 +29,7 @@
 
   <!-- Main Mobile-First App Shell -->
   <div class="app-container">
-    
+
     <!-- Top Header Bar with Integrated Horizontal HUD -->
     <header class="game-header">
       <div class="header-main-row">
@@ -51,7 +57,8 @@
 
         <!-- Header Actions: Boost, Sound, Music & Pause -->
         <div class="header-actions">
-          <button id="btn-boost-header" class="icon-btn boost-pill-btn" title="Hold for Speed Boost" aria-label="Speed Boost">
+          <button id="btn-boost-header" class="icon-btn boost-pill-btn" title="Hold for Speed Boost"
+            aria-label="Speed Boost">
             <span class="boost-icon">⚡</span>
           </button>
           <button id="btn-sound" class="icon-btn sound-pill-btn" title="Toggle Sound SFX" aria-label="Toggle Sound SFX">
@@ -100,7 +107,9 @@
 
       <!-- Main 10x20 Play Matrix Section -->
       <section class="playfield-section">
+
         <div id="playfield-container" class="playfield-container game-matrix-container grid-container">
+          <!-- <img src="./public/assets/lays.jpeg" alt="" class="sample-image"> -->
           <!-- Canvas layer for pieces & dark playfield grid -->
           <canvas id="game-canvas" width="300" height="600"></canvas>
           <!-- Canvas overlay for line clear particle explosions -->
@@ -232,26 +241,26 @@
       <!-- Carousel Container -->
       <div class="carousel-wrapper">
         <div class="carousel-track" id="carousel-track">
-          
-          <!-- Slide 1: Touch Movement Zones -->
+
+          <!-- Slide 1: 3-Zone Touch Controls -->
           <div class="carousel-slide active" data-slide="0">
             <div class="slide-badge">STEP 1 OF 3</div>
-            <h3>👈 Touch & Drag Movement Zones 👉</h3>
+            <h3>👈 3-Zone Play Grid Touch Controls 👉</h3>
             <div class="slide-illustration zones-illustration">
               <div class="zone-box zone-left">
                 <span class="zone-icon">👈</span>
-                <span class="zone-label">TAP / DRAG LEFT</span>
+                <span class="zone-label">LEFT 1/3: MOVE LEFT</span>
               </div>
               <div class="zone-box zone-top">
-                <span class="zone-icon">↻</span>
-                <span class="zone-label">TAP TOP TO ROTATE</span>
+                <span class="zone-icon">⚡</span>
+                <span class="zone-label">CENTER 1/3: SPEED BOOST</span>
               </div>
               <div class="zone-box zone-right">
                 <span class="zone-icon">👉</span>
-                <span class="zone-label">TAP / DRAG RIGHT</span>
+                <span class="zone-label">RIGHT 1/3: MOVE RIGHT</span>
               </div>
             </div>
-            <p>Tap or drag on the <strong>Left Half</strong> or <strong>Right Half</strong> of the board to position falling chip packets seamlessly!</p>
+            <p>Tap the <strong>Left 1/3</strong> or <strong>Right 1/3</strong> of the board to move packets. Hold the <strong>Center 1/3</strong> to boost fall speed!</p>
           </div>
 
           <!-- Slide 2: Speed Boost Button -->
@@ -264,7 +273,8 @@
                 <span class="boost-hero-text">SPEED BOOST</span>
               </div>
             </div>
-            <p>Hold the <strong>⚡ Speed Boost</strong> button to temporarily accelerate gravity and drop packets faster!</p>
+            <p>Hold the <strong>⚡ Speed Boost</strong> button to temporarily accelerate gravity and drop packets faster!
+            </p>
           </div>
 
           <!-- Slide 3: Row Matching & Mono-Flavor Combos -->
@@ -280,7 +290,8 @@
                 <span class="pop-stamp">3X MULTIPLIER!</span>
               </div>
             </div>
-            <p>Fill complete horizontal rows to trigger a sequential packet crunch burst! Fill rows of the <strong>same flavor</strong> for massive 3x score multipliers!</p>
+            <p>Fill complete horizontal rows to trigger a sequential packet crunch burst! Fill rows of the <strong>same
+                flavor</strong> for massive 3x score multipliers!</p>
           </div>
 
         </div>
@@ -305,4 +316,5 @@
 
   <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>

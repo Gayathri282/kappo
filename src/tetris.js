@@ -4,7 +4,7 @@
    ========================================================================== */
 
 export const GRID_COLS = 10;
-export const GRID_ROWS = 13;
+export const GRID_ROWS = 22;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
@@ -99,9 +99,9 @@ const KICK_OFFSETS_I = [
 ];
 
 export class TetrisGame {
-  constructor(initialCols = 6, initialRows = 12) {
-    this.cols = initialCols;
-    this.rows = initialRows;
+  constructor(initialCols = 10, initialRows = 22) {
+    this.cols = 10;
+    this.rows = 22;
     this.grid = this.createGrid();
     this.bag = [];
     this.currentPiece = null;
@@ -122,30 +122,9 @@ export class TetrisGame {
     this.spawnPiece();
   }
 
-  setDimensions(cols, rows) {
-    if (cols === this.cols && rows === this.rows) return;
-    const oldCols = this.cols;
-    const oldRows = this.rows;
-    this.cols = cols;
-    this.rows = rows;
-
-    const newGrid = [];
-    for (let r = 0; r < rows; r++) {
-      const newRow = new Array(cols).fill(null);
-      const oldR = r - (rows - oldRows);
-      if (oldR >= 0 && oldR < oldRows && this.grid && this.grid[oldR]) {
-        for (let c = 0; c < Math.min(oldCols, cols); c++) {
-          newRow[c] = this.grid[oldR][c];
-        }
-      }
-      newGrid.push(newRow);
-    }
-    this.grid = newGrid;
-
-    if (this.currentPiece) {
-      const pCols = this.currentPiece.matrix[0].length;
-      this.currentPiece.x = Math.max(0, Math.min(cols - pCols, this.currentPiece.x));
-    }
+  setDimensions(cols = 10, rows = 22) {
+    this.cols = 10;
+    this.rows = 22;
   }
 
   createGrid() {

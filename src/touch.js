@@ -77,12 +77,13 @@ export class TouchController {
   }
 
   // Full Screen Direct Touch Allocation & Gestures
+  // 3-Zone Play Grid Direct Touch Allocation & Gestures
   initDirectTouchAllocation() {
     const mobileHoldBox = document.getElementById('hold-canvas-mobile');
     const playfieldContainer = document.getElementById('playfield-container');
 
     // Tap Mobile Hold Box
-    if (mobileHoldBox) {
+    if (mobileHoldBox && mobileHoldBox.parentElement) {
       mobileHoldBox.parentElement.addEventListener('touchstart', (e) => {
         if (e.cancelable) e.preventDefault();
         this.vibrate(12);
@@ -95,37 +96,94 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    let lastTouchRotateTime = 0;
+    let isCenterBoosting = false;
 
-    // Single click inside Playgrid Container (Mouse/Desktop)
+    const stopCenterBoost = () => {
+      if (isCenterBoosting) {
+        isCenterBoosting = false;
+        if (this.handlers.onSpeedBoost) {
+          this.handlers.onSpeedBoost(false);
+        }
+      }
+    };
+
+    const getZoneFromX = (clientX) => {
+      if (!playfieldContainer) return 1;
+      const rect = playfieldContainer.getBoundingClientRect();
+      const relX = clientX - rect.left;
+      const zoneWidth = rect.width / 3;
+      if (relX < zoneWidth) return 0; // Left zone
+      if (relX < zoneWidth * 2) return 1; // Center zone
+      return 2; // Right zone
+    };
+
+    // ── Mouse / Desktop Click & Press inside Playfield Container ──
     if (playfieldContainer) {
-      playfieldContainer.addEventListener('click', (e) => {
+      playfieldContainer.addEventListener('mousedown', (e) => {
         if (isInteractiveElement(e.target)) return;
-        if (Date.now() - lastTouchRotateTime < 400) return;
-        this.vibrate(10);
-        this.handlers.onRotateCW();
+        const zone = getZoneFromX(e.clientX);
+        if (zone === 0) {
+          this.vibrate(8);
+          this.handlers.onLeft();
+        } else if (zone === 1) {
+          this.vibrate(10);
+          isCenterBoosting = true;
+          if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
+        } else if (zone === 2) {
+          this.vibrate(8);
+          this.handlers.onRight();
+        }
       });
+
+      window.addEventListener('mouseup', () => stopCenterBoost());
     }
 
-    // Touch Start anywhere on screen
+    // ── Touch Start inside Playfield Container / Screen ──
     document.addEventListener('touchstart', (e) => {
       if (isInteractiveElement(e.target)) return;
+
       if (e.touches.length > 0) {
         const touch = e.touches[0];
         this.touchStartX = touch.clientX;
         this.touchStartY = touch.clientY;
         this.lastColumnStep = touch.clientX;
         this.touchStartTime = Date.now();
+
+        // Check if touch is on playfield container
+        if (playfieldContainer && playfieldContainer.contains(e.target)) {
+          const zone = getZoneFromX(touch.clientX);
+          if (zone === 0) {
+            this.vibrate(8);
+            this.handlers.onLeft();
+          } else if (zone === 1) {
+            this.vibrate(10);
+            isCenterBoosting = true;
+            if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
+          } else if (zone === 2) {
+            this.vibrate(8);
+            this.handlers.onRight();
+          }
+        }
       }
     }, { passive: true });
 
-    // Touch Dragging Finger across Left / Right Zones
+    // ── Touch Dragging Finger ──
     document.addEventListener('touchmove', (e) => {
       if (isInteractiveElement(e.target)) return;
+
       if (e.touches.length > 0) {
-        const currentX = e.touches[0].clientX;
+        const touch = e.touches[0];
+        const currentX = touch.clientX;
         const deltaXFromLast = currentX - this.lastColumnStep;
         const stepThreshold = 20; // pixels per column step
+
+        // If currently center boosting, check if finger dragged out of center zone
+        if (isCenterBoosting && playfieldContainer) {
+          const zone = getZoneFromX(currentX);
+          if (zone !== 1) {
+            stopCenterBoost();
+          }
+        }
 
         if (Math.abs(deltaXFromLast) >= stepThreshold) {
           this.vibrate(6);
@@ -139,17 +197,15 @@ export class TouchController {
       }
     }, { passive: true });
 
-    // Touch End (Screen Taps & Swipes)
-    document.addEventListener('touchend', (e) => {
+    // ── Touch End / Cancel ──
+    const handleTouchEnd = (e) => {
+      stopCenterBoost();
+
       if (isInteractiveElement(e.target)) return;
-      if (e.changedTouches.length > 0) {
+      if (e.changedTouches && e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
-
-        const endX = touch.clientX;
-        const endY = touch.clientY;
-
-        const deltaX = endX - this.touchStartX;
-        const deltaY = endY - this.touchStartY;
+        const deltaX = touch.clientX - this.touchStartX;
+        const deltaY = touch.clientY - this.touchStartY;
         const duration = Date.now() - this.touchStartTime;
 
         const absX = Math.abs(deltaX);
@@ -162,31 +218,23 @@ export class TouchController {
           return;
         }
 
-        // 2. DIRECT TAP ZONES (< 18px movement within 240ms)
+        // 2. Direct Tap handling outside playfield container (Left 50% / Right 50%)
         if (absX < 18 && absY < 18 && duration < 240) {
-          const target = e.target;
-
-          // If tap inside grid or canvas -> Rotate Piece CW!
-          if (playfieldContainer && (playfieldContainer.contains(target) || target.tagName === 'CANVAS')) {
-            lastTouchRotateTime = Date.now();
-            this.vibrate(10);
-            this.handlers.onRotateCW();
-            return;
-          }
-
-          // If tap outside grid -> Left 50% moves left, Right 50% moves right
-          const screenW = window.innerWidth;
-          const normX = endX / screenW;
-
-          this.vibrate(10);
-
-          if (normX < 0.50) {
-            this.handlers.onLeft();
-          } else {
-            this.handlers.onRight();
+          if (playfieldContainer && !playfieldContainer.contains(e.target)) {
+            const screenW = window.innerWidth;
+            const normX = touch.clientX / screenW;
+            this.vibrate(8);
+            if (normX < 0.50) {
+              this.handlers.onLeft();
+            } else {
+              this.handlers.onRight();
+            }
           }
         }
       }
-    }, { passive: true });
+    };
+
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
   }
 }

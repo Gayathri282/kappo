@@ -43,15 +43,16 @@ export class CanvasRenderer {
     this.lastPieceKey = null;
   }
 
-  // ─── Resize to fit parent container (Dynamic Cols & Rows) ───────────────
+  // ─── Resize to fit parent container (Fixed 22 rows × 10 cols) ───────────────
   resizeToContainer(container, game = null) {
     if (!container) return;
 
-    // 1. Measure header & control deck heights to reserve their space first
+    // 1. Measure header & control deck heights using actual measured heights via getBoundingClientRect()
     const headerEl = document.querySelector('.game-header');
     const controlsEl = document.getElementById('touch-controls-deck');
+    const gameLayout = document.querySelector('.game-layout') || container.parentElement;
 
-    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 85;
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 95;
     const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 70;
 
     const viewportW = window.innerWidth;
@@ -61,43 +62,41 @@ export class CanvasRenderer {
     const appContainer = document.querySelector('.app-container');
     const maxAppW = appContainer ? appContainer.getBoundingClientRect().width : Math.min(viewportW, 500);
 
-    const availW = Math.max(240, Math.floor(maxAppW - 12));
-    // availableHeightForBoard = 100dvh viewport - headerHeight - controlsHeight - spacing
-    const availH = Math.max(160, Math.floor(viewportH - headerH - controlsH - 12));
+    // Measure layout space available between header and controls
+    const layoutRect = gameLayout ? gameLayout.getBoundingClientRect() : { width: maxAppW, height: viewportH - headerH - controlsH };
+    
+    // Reserve safety margin for borders and padding (6px border total + 6px safety gap = 12px)
+    const safetyBuffer = 12;
+    const availW = Math.max(100, Math.floor((layoutRect.width || (maxAppW - 8)) - safetyBuffer));
+    const availH = Math.max(100, Math.floor((layoutRect.height || (viewportH - headerH - controlsH)) - safetyBuffer));
 
-    // 2. Calculate columns & cell width from available screen width (min 10 cols, max 18 cols)
-    const targetCellW = 32;
-    let naturalCols = Math.floor(availW / targetCellW);
-    let cols = Math.max(10, Math.min(18, naturalCols));
+    // 2. Fixed grid dimensions: strictly 10 columns × 22 rows
+    const cols = 10;
+    const rows = 22;
 
-    const cellW = availW / cols;
+    // 3. Cell size calculation: cellWidth = availableBoardWidth / 10, cellHeight = availableBoardHeight / 22
+    // Preserving chip packet visual proportions (~1.10 height-to-width ratio) while guaranteeing full viewport fit
+    let cellH = availH / rows;
+    let cellW = cellH / PACKET_RATIO;
 
-    // 3. Cell height calculation: target ~34px for maximum vertical row density
-    const minComfortableCellH = 34;
-    let cellH = Math.max(minComfortableCellH, Math.round(cellW * PACKET_RATIO));
-
-    const safetyBuffer = 8; // minimal 8px total vertical buffer
-
-    // 4. Maximize row count naturally from available screen height (availH)
-    let rows = Math.floor(availH / cellH);
-
-    // Height Safety Loop Verification: Ensure header + board + controls strictly fits viewportH
-    while (rows > 8 && (headerH + (rows * cellH) + controlsH + safetyBuffer) > viewportH) {
-      rows--;
+    // If width exceeds available width, scale down based on width constraint
+    if (cellW * cols > availW) {
+      cellW = availW / cols;
+      cellH = cellW * PACKET_RATIO;
     }
 
-    // Sensible floor to prevent an unusably short game (never below 8 rows)
-    if (rows < 8) {
-      rows = 8;
-      cellH = Math.max(16, Math.floor((viewportH - headerH - controlsH - safetyBuffer) / 8));
+    // Safety guard: ensure total board height never exceeds available height
+    if (cellH * rows > availH) {
+      cellH = availH / rows;
+      cellW = cellH / PACKET_RATIO;
     }
 
     this.cellWidth  = cellW;
     this.cellHeight = cellH;
     this.cellSize   = cellW;
 
-    this.boardWidth  = cellW * cols;
-    this.boardHeight = cellH * rows;
+    this.boardWidth  = Math.floor(cellW * cols);
+    this.boardHeight = Math.floor(cellH * rows);
 
     if (game && typeof game.setDimensions === 'function') {
       game.setDimensions(cols, rows);
@@ -105,16 +104,13 @@ export class CanvasRenderer {
 
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
+    container.style.overflow = 'hidden';
 
-    // Distribute small leftover remainder as equal padding on both sides
-    const leftoverW = availW - this.boardWidth;
-    if (leftoverW > 0) {
-      container.style.marginLeft = `${Math.floor(leftoverW / 2)}px`;
-      container.style.marginRight = `${Math.ceil(leftoverW / 2)}px`;
-    } else {
-      container.style.marginLeft = 'auto';
-      container.style.marginRight = 'auto';
-    }
+    // Center board horizontally and vertically in available space
+    container.style.marginLeft = 'auto';
+    container.style.marginRight = 'auto';
+    container.style.marginTop = 'auto';
+    container.style.marginBottom = 'auto';
 
     this.offsetX = 0;
     this.offsetY = 0;
@@ -139,7 +135,7 @@ export class CanvasRenderer {
   }
 
   // ─── Grid background (Solid Opaque Dark #03050e with Faint Subtle Grid Lines) ───
-  drawGrid(width, height, cols = 8, rows = 14) {
+  drawGrid(width, height, cols = 10, rows = 22) {
     this.ctx.clearRect(0, 0, width, height);
 
     this.ctx.fillStyle = '#03050e';
