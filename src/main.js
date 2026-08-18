@@ -231,33 +231,70 @@ const touchController = new TouchController({
   getPieceY: () => (game.currentPiece ? game.currentPiece.y : 0)
 }, particles);
 
+let lineClearAnimState = null;
+
 function checkBrandFactsMilestone() {
   // Toast notifications disabled per specs
 }
 
 function processLineClears() {
   const detect = game.detectLineClears();
-  if (detect.count > 0) {
-    const result = game.finishClearLines(
-      detect.lines,
-      detect.clearedDetails,
-      detect.allClearedKeys,
-      detect.chainCells
-    );
+  if (detect.count === 0) {
+    if (!game.gameOver) {
+      game.spawnPiece();
+      if (game.gameOver) {
+        handleGameOver();
+      } else if (game.currentPiece) {
+        activePieceRef = game.currentPiece;
+        pieceVisualRow = game.currentPiece.y;
+      }
+    } else {
+      handleGameOver();
+    }
+    updateHUD();
+    return;
+  }
 
-    const cellW = renderer.cellWidth || renderer.cellSize;
-    const cellH = renderer.cellHeight || Math.round(cellW * 1.10);
+  // 1. Enter line-clearing state for sequential sweep wipe animation
+  game.isClearing = true;
+  game.currentPiece = null;
 
-    // Instant particle confetti pop burst for cleared cells
-    if (detect.allClearedKeys) {
-      detect.allClearedKeys.forEach(key => {
-        const [rStr, cStr] = key.split('_');
-        const r = parseInt(rStr, 10);
-        const c = parseInt(cStr, 10);
+  lineClearAnimState = {
+    detect: detect,
+    step: 0,
+    maxSteps: detect.maxSteps,
+    stepDelay: 60, // 60ms stagger per cell sweep step across rows
+    lastStepTime: performance.now(),
+    brokenCells: new Set(),
+    poppingCells: new Map(),
+    phase: 'SWEEP' // 'SWEEP' -> 'SETTLE' -> 'DONE'
+  };
+
+  game.brokenCells = lineClearAnimState.brokenCells;
+  game.poppingCells = lineClearAnimState.poppingCells;
+
+  advanceLineClearSweepStep();
+}
+
+function advanceLineClearSweepStep() {
+  if (!lineClearAnimState) return;
+
+  const { detect, step } = lineClearAnimState;
+  const cellW = renderer.cellWidth || renderer.cellSize;
+  const cellH = renderer.cellHeight || Math.round(cellW * 1.10);
+
+  detect.rowSequences.forEach(seq => {
+    if (seq.steps[step]) {
+      seq.steps[step].forEach(c => {
+        const key = `${seq.row}_${c}`;
+        lineClearAnimState.brokenCells.add(key);
+        lineClearAnimState.poppingCells.set(key, performance.now());
+
+        // Spawn particle confetti burst per cell step
         for (let i = 0; i < 4; i++) {
           particles.particles.push({
             x: (c + 0.5) * cellW,
-            y: (r + 0.5) * cellH,
+            y: (seq.row + 0.5) * cellH,
             vx: (Math.random() - 0.5) * 6,
             vy: (Math.random() - 0.6) * 7,
             gravity: 0.22,
@@ -272,44 +309,84 @@ function processLineClears() {
         }
       });
     }
+  });
 
-    if (result.monoCount > 0) {
-      sound.playMonoCrunch(result.monoCount, result.monoFlavor);
-      particles.spawnMonoFlavorFX(detect.clearedDetails, renderer.cellSize, renderer.cellSize);
-      let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
-      triggerEventBanner(bannerText);
-    } else if (result.count >= 4) {
-      sound.playFullCrunch();
-      particles.spawnFullCrunchFX();
-      triggerEventBanner("⚡ FULL CRUNCH! ⚡");
+  sound.playBubblePop(step);
+}
+
+function updateLineClearAnimation(now) {
+  if (!lineClearAnimState || lineClearAnimState.phase !== 'SWEEP') return;
+
+  if (now - lineClearAnimState.lastStepTime >= lineClearAnimState.stepDelay) {
+    lineClearAnimState.step++;
+    lineClearAnimState.lastStepTime = now;
+
+    if (lineClearAnimState.step < lineClearAnimState.maxSteps) {
+      advanceLineClearSweepStep();
     } else {
-      sound.playCrunch(result.count);
-    }
+      // 2. Sequential sweep wipe finished! Execute grid clear & start smooth gravity drop
+      lineClearAnimState.phase = 'SETTLE';
+      const detect = lineClearAnimState.detect;
 
-    if (result.leveledUp) {
-      sound.playLevelUp();
-      triggerEventBanner(`LEVEL ${game.level}!`);
-    }
+      const result = game.finishClearLines(
+        detect.lines,
+        detect.clearedDetails,
+        detect.allClearedKeys,
+        detect.chainCells
+      );
 
-    if (game.score > bestScore) {
-      bestScore = game.score;
-      localStorage.setItem('kappo_best_stack', bestScore.toString());
+      // Start smooth 240ms gravity drop settling transition
+      settleAnimationState = {
+        startTime: now,
+        duration: 240, // 240ms smooth fall-down transition
+        blocks: result.settlingBlocks
+      };
+
+      if (result.monoCount > 0) {
+        sound.playMonoCrunch(result.monoCount, result.monoFlavor);
+        particles.spawnMonoFlavorFX(detect.clearedDetails, renderer.cellSize, renderer.cellSize);
+        let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
+        triggerEventBanner(bannerText);
+      } else if (result.count >= 4) {
+        sound.playFullCrunch();
+        particles.spawnFullCrunchFX();
+        triggerEventBanner("⚡ FULL CRUNCH! ⚡");
+      } else {
+        sound.playCrunch(result.count);
+      }
+
+      if (result.leveledUp) {
+        sound.playLevelUp();
+        triggerEventBanner(`LEVEL ${game.level}!`);
+      }
+
+      if (game.score > bestScore) {
+        bestScore = game.score;
+        localStorage.setItem('kappo_best_stack', bestScore.toString());
+      }
+
+      checkBrandFactsMilestone();
+      updateHUD();
+
+      // Clear animation references & resume gameplay piece spawning
+      lineClearAnimState = null;
+      game.isClearing = false;
+      game.brokenCells = null;
+      game.poppingCells = null;
+
+      if (!game.gameOver) {
+        game.spawnPiece();
+        if (game.gameOver) {
+          handleGameOver();
+        } else if (game.currentPiece) {
+          activePieceRef = game.currentPiece;
+          pieceVisualRow = game.currentPiece.y;
+        }
+      } else {
+        handleGameOver();
+      }
     }
-    checkBrandFactsMilestone();
   }
-
-  if (!game.gameOver) {
-    game.spawnPiece();
-    if (game.gameOver) {
-      handleGameOver();
-    } else if (game.currentPiece) {
-      activePieceRef = game.currentPiece;
-      pieceVisualRow = game.currentPiece.y;
-    }
-  } else {
-    handleGameOver();
-  }
-  updateHUD();
 }
 
 function triggerEventBanner(text) {
@@ -403,8 +480,10 @@ function update(time = 0) {
 
     handleKeyHolding(time);
 
-      // 2. Per-frame continuous true free-fall physics
-      if (game.currentPiece) {
+    // 2. Line Clear Sweep Animation Handling
+    if (game.isClearing && lineClearAnimState) {
+      updateLineClearAnimation(time);
+    } else if (game.currentPiece) {
         const piece = game.currentPiece;
 
         if (activePieceRef !== piece) {

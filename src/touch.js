@@ -77,7 +77,7 @@ export class TouchController {
   }
 
   // Full Screen Direct Touch Allocation & Gestures
-  // 3-Zone Play Grid Direct Touch Allocation & Gestures
+  // 3-Zone Play Grid Direct Touch Allocation, Touch-and-Hold Soft Drop & Swipe Gestures
   initDirectTouchAllocation() {
     const mobileHoldBox = document.getElementById('hold-canvas-mobile');
     const playfieldContainer = document.getElementById('playfield-container');
@@ -96,11 +96,18 @@ export class TouchController {
       return target.closest('button, a, .touch-controls-deck, .modal-backdrop, .header-actions, .pause-pill-btn, #start-overlay, #game-over-modal, #pause-modal');
     };
 
-    let isCenterBoosting = false;
+    let holdTimer = null;
+    let isHoldingSpeedBoost = false;
+    const JITTER_THRESHOLD = 14; // pixels movement tolerance
+    const HOLD_THRESHOLD_MS = 180; // 180ms touch-and-hold threshold
 
-    const stopCenterBoost = () => {
-      if (isCenterBoosting) {
-        isCenterBoosting = false;
+    const stopHoldSpeedBoost = () => {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+      if (isHoldingSpeedBoost) {
+        isHoldingSpeedBoost = false;
         if (this.handlers.onSpeedBoost) {
           this.handlers.onSpeedBoost(false);
         }
@@ -122,20 +129,18 @@ export class TouchController {
       playfieldContainer.addEventListener('mousedown', (e) => {
         if (isInteractiveElement(e.target)) return;
         const zone = getZoneFromX(e.clientX);
-        if (zone === 0) {
-          this.vibrate(8);
-          this.handlers.onLeft();
-        } else if (zone === 1) {
+        this.touchStartX = e.clientX;
+        this.touchStartY = e.clientY;
+        this.touchStartTime = Date.now();
+
+        holdTimer = setTimeout(() => {
           this.vibrate(10);
-          isCenterBoosting = true;
+          isHoldingSpeedBoost = true;
           if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
-        } else if (zone === 2) {
-          this.vibrate(8);
-          this.handlers.onRight();
-        }
+        }, HOLD_THRESHOLD_MS);
       });
 
-      window.addEventListener('mouseup', () => stopCenterBoost());
+      window.addEventListener('mouseup', () => stopHoldSpeedBoost());
     }
 
     // ── Touch Start inside Playfield Container / Screen ──
@@ -149,43 +154,45 @@ export class TouchController {
         this.lastColumnStep = touch.clientX;
         this.touchStartTime = Date.now();
 
-        // Check if touch is on playfield container
+        stopHoldSpeedBoost();
+
+        // Start hold-to-drop timer if touch is inside playfield container
         if (playfieldContainer && playfieldContainer.contains(e.target)) {
-          const zone = getZoneFromX(touch.clientX);
-          if (zone === 0) {
-            this.vibrate(8);
-            this.handlers.onLeft();
-          } else if (zone === 1) {
+          holdTimer = setTimeout(() => {
             this.vibrate(10);
-            isCenterBoosting = true;
+            isHoldingSpeedBoost = true;
             if (this.handlers.onSpeedBoost) this.handlers.onSpeedBoost(true);
-          } else if (zone === 2) {
-            this.vibrate(8);
-            this.handlers.onRight();
-          }
+          }, HOLD_THRESHOLD_MS);
         }
       }
     }, { passive: true });
 
-    // ── Touch Dragging Finger ──
+    // ── Touch Dragging Finger & Swiping ──
     document.addEventListener('touchmove', (e) => {
       if (isInteractiveElement(e.target)) return;
 
       if (e.touches.length > 0) {
         const touch = e.touches[0];
         const currentX = touch.clientX;
-        const deltaXFromLast = currentX - this.lastColumnStep;
-        const stepThreshold = 20; // pixels per column step
+        const currentY = touch.clientY;
 
-        // If currently center boosting, check if finger dragged out of center zone
-        if (isCenterBoosting && playfieldContainer) {
-          const zone = getZoneFromX(currentX);
-          if (zone !== 1) {
-            stopCenterBoost();
+        const totalDist = Math.hypot(currentX - this.touchStartX, currentY - this.touchStartY);
+
+        // Cancel hold timer if finger moves beyond jitter threshold (swipe detected!)
+        if (totalDist > JITTER_THRESHOLD) {
+          if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
           }
         }
 
+        const deltaXFromLast = currentX - this.lastColumnStep;
+        const stepThreshold = 22; // pixels per horizontal column step
+
         if (Math.abs(deltaXFromLast) >= stepThreshold) {
+          // If finger is swiping horizontally, stop hold speed boost so swipe & hold stay 100% independent
+          stopHoldSpeedBoost();
+
           this.vibrate(6);
           if (deltaXFromLast > 0) {
             this.handlers.onRight();
@@ -199,28 +206,39 @@ export class TouchController {
 
     // ── Touch End / Cancel ──
     const handleTouchEnd = (e) => {
-      stopCenterBoost();
+      const duration = Date.now() - this.touchStartTime;
+      const wasHolding = isHoldingSpeedBoost;
+
+      stopHoldSpeedBoost();
 
       if (isInteractiveElement(e.target)) return;
       if (e.changedTouches && e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
         const deltaX = touch.clientX - this.touchStartX;
         const deltaY = touch.clientY - this.touchStartY;
-        const duration = Date.now() - this.touchStartTime;
 
         const absX = Math.abs(deltaX);
         const absY = Math.abs(deltaY);
 
         // 1. Swipe Up -> Hold Piece (📦)
-        if (deltaY < -40 && absY > absX) {
+        if (deltaY < -35 && absY > absX) {
           this.vibrate(12);
           this.handlers.onHold();
           return;
         }
 
-        // 2. Direct Tap handling outside playfield container (Left 50% / Right 50%)
-        if (absX < 18 && absY < 18 && duration < 240) {
-          if (playfieldContainer && !playfieldContainer.contains(e.target)) {
+        // 2. Tap Gesture (short duration, minimal movement, not a hold-to-drop)
+        if (!wasHolding && absX < JITTER_THRESHOLD && absY < JITTER_THRESHOLD && duration < HOLD_THRESHOLD_MS) {
+          if (playfieldContainer && playfieldContainer.contains(e.target)) {
+            const zone = getZoneFromX(touch.clientX);
+            this.vibrate(8);
+            if (zone === 0) {
+              this.handlers.onLeft();
+            } else if (zone === 2) {
+              this.handlers.onRight();
+            }
+          } else {
+            // Direct Tap handling outside playfield container (Left 50% / Right 50%)
             const screenW = window.innerWidth;
             const normX = touch.clientX / screenW;
             this.vibrate(8);
