@@ -1,10 +1,11 @@
 /* ==========================================================================
    TETRIS ENGINE - KAPPO CRUNCH STACK
-   9x16 Grid (9 cols wide x 16 rows high), SRS Rotation System, Wall Kicks, 7-Bag Randomizer
+   7x15 Grid (7 cols wide x 15 rows high), SRS Rotation System, Wall Kicks, 7-Bag Randomizer
+   Bigger, clearly legible packet branding first!
    ========================================================================== */
 
-export const GRID_COLS = 9;
-export const GRID_ROWS = 16;
+export const GRID_COLS = 7;
+export const GRID_ROWS = 15;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
@@ -99,9 +100,9 @@ const KICK_OFFSETS_I = [
 ];
 
 export class TetrisGame {
-  constructor(initialCols = 9, initialRows = 16) {
-    this.cols = 9;
-    this.rows = 16;
+  constructor(initialCols = 7, initialRows = 15) {
+    this.cols = 7;
+    this.rows = 15;
     this.grid = this.createGrid();
     this.bag = [];
     this.currentPiece = null;
@@ -122,9 +123,9 @@ export class TetrisGame {
     this.spawnPiece();
   }
 
-  setDimensions(cols = 9, rows = 16) {
-    this.cols = 9;
-    this.rows = 16;
+  setDimensions(cols = 7, rows = 15) {
+    this.cols = 7;
+    this.rows = 15;
   }
 
   createGrid() {

@@ -178,24 +178,44 @@ class SoundEngine {
 
   /* --- SOUND EFFECTS --- */
 
-  // 1. Line Clear / Row Break Sound (Fun cartoonish plastic crunch + celebratory sparkle pop!)
+  // 1. Line Clear / Row Break Sound (Authentic Chips Packet Breaking Crunch + Foil Crinkle)
   playCrunch(linesCleared = 1) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.18 + linesCleared * 0.05;
 
-    // A. Crisp cartoon bubble-wrap crunch pop
+    // A. Real Chips Packet Audio Sample Break Burst (freesound chips packet / rustle break)
+    if (this.chipsPacketRowPopBuffer || this.rustleBreakBuffer) {
+      try {
+        const sampleBuf = this.chipsPacketRowPopBuffer || this.rustleBreakBuffer;
+        const src = this.ctx.createBufferSource();
+        src.buffer = sampleBuf;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.85, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+        src.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(now, 0, 0.35);
+      } catch (e) {
+        console.warn('[AudioEngine] Could not play chips packet break sample:', e);
+      }
+    }
+
+    // B. Procedural Crisp Chips Packet Foil Rustle & Crunchy Potato Chip Transients
+    const duration = 0.22 + linesCleared * 0.06;
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
 
     for (let i = 0; i < bufferSize; i++) {
       const t = i / bufferSize;
-      const env = Math.exp(-t * 8) + 0.4 * Math.exp(-Math.pow(t - 0.2, 2) * 50);
-      output[i] = (Math.random() * 2 - 1) * env;
+      const env = Math.exp(-t * 9) + 0.35 * Math.exp(-Math.pow(t - 0.12, 2) * 40);
+      const crackleSpike = Math.random() > 0.82 ? 2.8 : 0.7;
+      output[i] = (Math.random() * 2 - 1) * env * crackleSpike;
     }
 
     const noise = this.ctx.createBufferSource();
@@ -203,11 +223,11 @@ class SoundEngine {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(3600 + linesCleared * 300, now);
-    filter.Q.setValueAtTime(1.1, now);
+    filter.frequency.setValueAtTime(3800 + linesCleared * 250, now);
+    filter.Q.setValueAtTime(1.0, now);
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.20, now);
+    gain.gain.setValueAtTime(0.40, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     noise.connect(filter);
@@ -215,8 +235,8 @@ class SoundEngine {
     gain.connect(this.ctx.destination);
     noise.start(now);
 
-    // B. Bright celebratory sparkle pop notes (Fun mobile game reward feel!)
-    const baseFreqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    // C. Celebratory pitch chime accent
+    const baseFreqs = [523.25, 659.25, 783.99, 1046.50];
     const countToPlay = Math.min(4, linesCleared + 1);
 
     for (let idx = 0; idx < countToPlay; idx++) {
@@ -224,11 +244,11 @@ class SoundEngine {
       const oscGain = this.ctx.createGain();
       const noteTime = now + idx * 0.04;
 
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(baseFreqs[idx], noteTime);
       osc.frequency.exponentialRampToValueAtTime(baseFreqs[idx] * 1.2, noteTime + 0.12);
 
-      oscGain.gain.setValueAtTime(0.14, noteTime);
+      oscGain.gain.setValueAtTime(0.12, noteTime);
       oscGain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.12);
 
       osc.connect(oscGain);
@@ -527,52 +547,64 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
-  // 3c. Fun & Bouncy Row Clear Pop Sound (Musical pentatonic arpeggio + juicy sparkle pitch jump)
+  // 3c. Chips Packet Step Breaking Sound (Sample playback + plastic foil crinkle & chip crunch)
   playBubblePop(stepIndex = 0) {
     if (this.muted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const duration = 0.055; // 55ms tight burst matched to step delay
 
-    // Fun rising pentatonic scale (C5, D5, E5, G5, A5, C6, D6, E6, G6, A6)
-    const PENTATONIC_SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00];
-    const noteFreq = PENTATONIC_SCALE[stepIndex % PENTATONIC_SCALE.length];
+    // A. Play real chips packet audio sample if decoded
+    if (this.chipsPacketRowPopBuffer || this.rustleBreakBuffer) {
+      try {
+        const sampleBuf = this.chipsPacketRowPopBuffer || this.rustleBreakBuffer;
+        const src = this.ctx.createBufferSource();
+        src.buffer = sampleBuf;
 
-    // Main bouncy oscillator (triangle wave with 1.5x pitch sweep)
-    const osc = this.ctx.createOscillator();
+        const pitch = 0.95 + (stepIndex % 7) * 0.05;
+        src.playbackRate.setValueAtTime(pitch, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.75, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+        src.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        const offset = (stepIndex * 0.07) % Math.max(0.1, sampleBuf.duration - 0.15);
+        src.start(now, offset, 0.12);
+      } catch (e) {}
+    }
+
+    // B. Layered procedural foil crinkle & chip crunch transient
+    const duration = 0.06;
+    const bufSize = Math.floor(this.ctx.sampleRate * duration);
+    const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+    const output = buf.getChannelData(0);
+
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / bufSize;
+      const env = Math.exp(-t * 12);
+      const crackleSpike = Math.random() > 0.80 ? 2.5 : 0.6;
+      output[i] = (Math.random() * 2 - 1) * env * crackleSpike;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(2200 + stepIndex * 140, now);
+
     const gain = this.ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(noteFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(noteFreq * 1.48, now + duration);
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.20, now + 0.008);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    osc.connect(gain);
+    noise.connect(hp);
+    hp.connect(gain);
     gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + duration);
-
-    // Cute juicy sparkle chime accent
-    const chime = this.ctx.createOscillator();
-    const chimeGain = this.ctx.createGain();
-
-    chime.type = 'sine';
-    chime.frequency.setValueAtTime(noteFreq * 2.4, now);
-    chime.frequency.exponentialRampToValueAtTime(noteFreq * 3.0, now + 0.035);
-
-    chimeGain.gain.setValueAtTime(0.001, now);
-    chimeGain.gain.linearRampToValueAtTime(0.08, now + 0.005);
-    chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-
-    chime.connect(chimeGain);
-    chimeGain.connect(this.ctx.destination);
-    chime.start(now);
-    chime.stop(now + 0.035);
+    noise.start(now);
   }
 
   // 3d. Soft Plastic Sliding / Squishing Sound (Chip bag pushed/squeezed, ~70ms, subtle)

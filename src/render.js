@@ -1,7 +1,8 @@
 /* ==========================================================================
    CANVAS RENDER ENGINE - KAPPO CHIP PACKETS
-   Portrait packet blocks (7 cols × 15 rows), 1.55:1 height:width ratio
-   Authentic packet JPG images, retina DPR scaling, Hold & Next previews
+   10 cols × 20 rows, 1:1 square cells, 1:2 board aspect ratio
+   Authentic packet PNG images, retina DPR scaling, Hold & Next previews
+   JS is the SINGLE SOURCE OF TRUTH for all board/cell dimensions.
    ========================================================================== */
 
 import { GRID_COLS, GRID_ROWS } from './tetris.js';
@@ -21,8 +22,8 @@ Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   PACKET_IMAGES[flavorId] = img;
 });
 
-// Chip packet aspect ratio: 1:1.10 proportion (slightly taller than wide)
-const PACKET_RATIO = 1.10;
+// Cell aspect ratio: 1.0 = perfect square (cellWidth === cellHeight)
+const PACKET_RATIO = 1.0;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -34,61 +35,54 @@ export class CanvasRenderer {
     this.holdCanvasMobile = holdCanvasMobile;
     this.nextCanvasMobile = nextCanvasMobile;
 
-    this.cellWidth  = 50;
-    this.cellHeight = Math.round(50 * PACKET_RATIO);
-    this.cellSize   = 50; // backward compat alias
+    this.cellWidth  = 30;
+    this.cellHeight = 30; // Square cells: cellWidth === cellHeight
+    this.cellSize   = 30;
     this.dpr = window.devicePixelRatio || 1;
 
     this.visualPieceY = 0;
     this.lastPieceKey = null;
   }
 
-  // ─── Resize to fit parent container (Strictly 9 cols × 16 rows) ───────────────
+  // ─── Resize: JS is the SINGLE SOURCE OF TRUTH for board dimensions ───────
+  // Board = 7 cols × 15 rows (Large, clearly legible packet branding first)
+  // Width is computed directly from viewport — NOT read from CSS/DOM.
   resizeToContainer(container, game = null) {
     if (!container) return;
-
-    // 1. Measure header & control deck heights using actual measured heights via getBoundingClientRect()
-    const headerEl = document.querySelector('.game-header');
-    const controlsEl = document.getElementById('touch-controls-deck');
-    const gameLayout = document.querySelector('.game-layout') || container.parentElement;
-
-    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 95;
-    const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 70;
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    // App container max width constraint
-    const appContainer = document.querySelector('.app-container');
-    const maxAppW = appContainer ? appContainer.getBoundingClientRect().width : Math.min(viewportW, 600);
+    // 1. Measure header & control deck heights
+    const headerEl = document.querySelector('.game-header');
+    const controlsEl = document.getElementById('touch-controls-deck');
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 80;
+    const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 90;
 
-    // Measure layout space available between header and controls
-    const layoutRect = gameLayout ? gameLayout.getBoundingClientRect() : { width: maxAppW, height: viewportH - headerH - controlsH };
-    
-    // Reserve safety margin for borders and padding
-    const availH = Math.max(100, Math.floor((layoutRect.height || (viewportH - headerH - controlsH)) - 16));
+    // Available vertical space for the board (viewport minus header, controls, margins)
+    const verticalMargin = 20;
+    const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
-    // 2. Measure actual rendered width from CSS calc(100% - 16px) !important rule
-    const containerRect = container.getBoundingClientRect();
-    const measuredW = (containerRect.width && containerRect.width > 50) 
-      ? containerRect.width 
-      : Math.max(100, Math.floor((layoutRect.width || (maxAppW - 16)) - 16));
+    // 2. Compute target board width DIRECTLY from viewport (not from DOM measurement)
+    //    Mobile (≤768px): ~75% of viewport width, capped at 440px
+    //    Desktop (>768px): ~55% of viewport width, capped at 600px
+    const isMobile = viewportW <= 768;
+    const targetW = isMobile
+      ? Math.min(viewportW * 0.75, 440)
+      : Math.min(viewportW * 0.55, 600);
 
-    // 3. Grid dimensions: strictly 9 columns wide × 16 rows high
-    const cols = game ? game.cols : 9;
-    const rows = game ? game.rows : 16;
+    // 3. Grid dimensions: 7 columns × 15 rows for large chunky packet cells
+    const cols = game ? game.cols : GRID_COLS;
+    const rows = game ? game.rows : GRID_ROWS;
 
-    // 4. Exact square cell ratio (both cell width & cell height scale together uniformly)
-    const PACKET_RATIO = 1.0;
+    // 4. Chunky square logical cells: cellWidth === cellHeight
+    let cellW = targetW / cols;
+    let cellH = cellW; // SQUARE logical grid footprint
 
-    // Calculate dynamic cell size = availableGridWidth / 9
-    let cellW = measuredW / cols;
-    let cellH = cellW * PACKET_RATIO;
-
-    // Safety guard: ensure total board height never exceeds available layout height
+    // Height constraint: if board would exceed available height, scale down
     if (cellH * rows > availH) {
       cellH = availH / rows;
-      cellW = cellH / PACKET_RATIO;
+      cellW = cellH; // maintain square logical footprint
     }
 
     this.cellWidth  = cellW;
@@ -102,19 +96,17 @@ export class CanvasRenderer {
       game.setDimensions(cols, rows);
     }
 
-    // Set height dynamically based on computed boardHeight; width is driven by CSS calc(100% - 16px) !important
+    // 5. Set container dimensions via inline style
+    container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
     container.style.overflow = 'hidden';
-
-    // Center board horizontally and vertically in available space
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
-    container.style.marginTop = 'auto';
-    container.style.marginBottom = 'auto';
 
     this.offsetX = 0;
     this.offsetY = 0;
 
+    // 6. Set canvas resolution (retina-aware)
     this.canvas.width  = Math.floor(this.boardWidth  * this.dpr);
     this.canvas.height = Math.floor(this.boardHeight * this.dpr);
 
@@ -135,7 +127,7 @@ export class CanvasRenderer {
   }
 
   // ─── Grid background (Solid Dark #03050e with Crisp Clear Grid Lines) ───
-  drawGrid(width, height, cols = 9, rows = 16) {
+  drawGrid(width, height, cols = 7, rows = 15) {
     this.ctx.clearRect(0, 0, width, height);
 
     this.ctx.fillStyle = '#03050e';
@@ -178,19 +170,22 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D neon packet block tile (Exact 1:1 Cell Fit bound to computed cellSize) ─────
+  // ─── Draw 3D neon packet block tile (Large Legible Packets - 1.45x height ratio) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
 
-    // Exact 1:1 fit bound to dynamic cell size (no overflow, no gaps)
+    // Large legible packet scaling: width fills cell (1.02x), height scales to 1.45x for tall chip bag art
     const baseScale = customScale != null ? customScale : 1.0;
+    const packetH = cH * 1.45;
 
-    const blockW = Math.ceil(cW * baseScale);
-    const blockH = Math.ceil(cH * baseScale);
+    const blockW = Math.ceil(cW * 1.02 * baseScale);
+    const blockH = Math.ceil(packetH * baseScale);
 
     const px = Math.floor(offsetX + x * cW);
-    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
+    // Overflow into upper cell visually while keeping base aligned to bottom of grid row
+    const defaultPy = offsetY + y * cH - (blockH - cH);
+    const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
     const flavorId = flavor ? flavor.id : 'salted';
     const img = PACKET_IMAGES[flavorId];
