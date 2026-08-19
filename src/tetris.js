@@ -555,57 +555,26 @@ export class TetrisGame {
     // Detailed diagnostic logging for exact row state analysis
     clearedIndices.forEach(r => {
       const occStr = this.grid[r].map(c => c ? c.flavor.id.substring(0, 4) : '---').join('|');
-      console.log(`[Line Clear Audit] Full Row Detected at Row ${r}: [${occStr}]`);
-
-      // Audit adjacent row directly above
-      if (r > 0) {
-        const aboveFull = this.grid[r - 1].every(c => c !== null);
-        const aboveStr = this.grid[r - 1].map(c => c ? c.flavor.id.substring(0, 4) : '---').join('|');
-        console.log(`[Line Clear Audit] Neighbor Row Above (Row ${r - 1}): Full=${aboveFull}, Contents: [${aboveStr}]`);
-      }
-      // Audit adjacent row directly below
-      if (r < this.rows - 1) {
-        const belowFull = this.grid[r + 1].every(c => c !== null);
-        const belowStr = this.grid[r + 1].map(c => c ? c.flavor.id.substring(0, 4) : '---').join('|');
-        console.log(`[Line Clear Audit] Neighbor Row Below (Row ${r + 1}): Full=${belowFull}, Contents: [${belowStr}]`);
-      }
+      console.log(`[CLEAR TRIGGER AUDIT] Verified 100% Full Row at Row ${r}: [${occStr}]`);
     });
 
     const allClearedKeys = new Set();
     const chainCells = [];
 
-    // Add all cells of the completed rows to allClearedKeys
+    // Add ONLY cells belonging to verified 100% completed full rows
     clearedIndices.forEach(r => {
       for (let c = 0; c < this.cols; c++) {
         allClearedKeys.add(`${r}_${c}`);
       }
     });
 
-    // CHAIN CLEAR TRIGGER: ONLY if at least one completed row is 100% uniform (isMono)!
     const monoClears = clearedDetails.filter(d => d.isMono);
-
     if (monoClears.length > 0) {
-      // Find all matching packet flavors from uniform cleared rows
-      const monoFlavorIds = new Set(monoClears.map(d => d.flavor ? d.flavor.id : null).filter(Boolean));
-      console.log(`[Line Clear Audit] Mono-Flavor Full Batch Triggered! Flavors: ${Array.from(monoFlavorIds).join(', ')}`);
-
-      // Search ENTIRE board for any blocks matching these uniform flavors!
-      for (let r = 0; r < this.rows; r++) {
-        for (let c = 0; c < this.cols; c++) {
-          const key = `${r}_${c}`;
-          if (!allClearedKeys.has(key)) {
-            const cell = this.grid[r][c];
-            if (cell && cell.flavor && monoFlavorIds.has(cell.flavor.id)) {
-              allClearedKeys.add(key);
-              chainCells.push({ r, c, flavor: cell.flavor });
-              console.log(`[Line Clear Audit] Mono Chain Match: Cleared cell at Row ${r}, Col ${c} (Flavor: ${cell.flavor.id})`);
-            }
-          }
-        }
-      }
+      const monoFlavorIds = Array.from(new Set(monoClears.map(d => d.flavor ? d.flavor.id : null).filter(Boolean)));
+      console.log(`[CLEAR TRIGGER AUDIT] Mono-Flavor Full Batch Bonus Row Clear! Flavors: ${monoFlavorIds.join(', ')}`);
     }
 
-    // Build staggered break sequences (covering full rows + chain cells)
+    // Build staggered break sequences (covering full rows)
     const rowSequences = [];
     const lastPlaced = this.lastPlacedCells || [];
 
