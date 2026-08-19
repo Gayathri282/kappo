@@ -4,8 +4,8 @@
    Bigger, clearly legible packet branding first!
    ========================================================================== */
 
-export const GRID_COLS = 7;
-export const GRID_ROWS = 15;
+export const GRID_COLS = 8;
+export const GRID_ROWS = 14;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [
@@ -100,9 +100,9 @@ const KICK_OFFSETS_I = [
 ];
 
 export class TetrisGame {
-  constructor(initialCols = 7, initialRows = 15) {
-    this.cols = 7;
-    this.rows = 15;
+  constructor(initialCols = GRID_COLS, initialRows = GRID_ROWS) {
+    this.cols = initialCols;
+    this.rows = initialRows;
     this.grid = this.createGrid();
     this.bag = [];
     this.currentPiece = null;
@@ -123,9 +123,12 @@ export class TetrisGame {
     this.spawnPiece();
   }
 
-  setDimensions(cols = 7, rows = 15) {
-    this.cols = 7;
-    this.rows = 15;
+  setDimensions(cols = GRID_COLS, rows = GRID_ROWS) {
+    if (this.cols !== cols || this.rows !== rows) {
+      this.cols = cols;
+      this.rows = rows;
+      this.grid = this.createGrid();
+    }
   }
 
   createGrid() {

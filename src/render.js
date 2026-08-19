@@ -189,10 +189,10 @@ export class CanvasRenderer {
     // 2. Compute target board width DIRECTLY from viewport (not from DOM measurement)
     const isMobile = viewportW <= 768;
     const targetW = isMobile
-      ? Math.min(viewportW * 0.75, 440)
-      : Math.min(viewportW * 0.55, 600);
+      ? Math.min(viewportW * 0.85, 500)
+      : Math.min(viewportW * 0.60, 640);
 
-    // 3. Grid dimensions: 7 columns × 15 rows
+    // 3. Grid dimensions: 8 columns x 14 rows for optimal Tetris grid density
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
@@ -250,7 +250,7 @@ export class CanvasRenderer {
   }
 
   // ─── Grid background (Solid Dark #03050e with Crisp Clear Grid Lines) ───
-  drawGrid(width, height, cols = 7, rows = 15) {
+  drawGrid(width, height, cols = GRID_COLS, rows = GRID_ROWS) {
     this.ctx.clearRect(0, 0, width, height);
 
     this.ctx.fillStyle = '#03050e';
