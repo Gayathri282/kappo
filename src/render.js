@@ -248,12 +248,14 @@ export class CanvasRenderer {
     const animatingCellKeys = new Set();
     const activeAnimBlocks = [];
 
-    if (settleAnimationState && settleAnimationState.blocks) {
-      settleAnimationState.blocks.forEach(b => {
-        const blockDuration = b.duration || settleAnimationState.duration || 350;
-        const blockElapsed = now - settleAnimationState.startTime;
+    const activeSettle = game.settleAnimationState || settleAnimationState;
 
-        if (blockElapsed < blockDuration) {
+    if (activeSettle && activeSettle.blocks) {
+      activeSettle.blocks.forEach(b => {
+        const blockDuration = b.duration || activeSettle.duration || 350;
+        const blockElapsed = now - activeSettle.startTime;
+
+        if (blockElapsed >= 0 && blockElapsed < blockDuration) {
           // Block is actively in-flight: animation layer owns this block!
           activeAnimBlocks.push(b);
 
@@ -314,10 +316,10 @@ export class CanvasRenderer {
     }
 
     // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Exclusively drawing in-flight blocks)
-    if (activeAnimBlocks.length > 0) {
+    if (activeAnimBlocks.length > 0 && activeSettle) {
       activeAnimBlocks.forEach(b => {
-        const blockDuration = b.duration || settleAnimationState.duration || 350;
-        const blockElapsed = Math.min(blockDuration, Math.max(0, now - settleAnimationState.startTime));
+        const blockDuration = b.duration || activeSettle.duration || 350;
+        const blockElapsed = Math.min(blockDuration, Math.max(0, now - activeSettle.startTime));
         const progress = blockElapsed / blockDuration; // 0.0 to 1.0
         // Natural gravity ease-in acceleration (progress^1.8)
         const easeInGravity = Math.pow(progress, 1.8);

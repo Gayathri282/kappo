@@ -754,8 +754,27 @@ export class TetrisGame {
       });
     }
 
+    // Compute proportional fall duration per block matching active piece gravity speed BEFORE grid mutation
+    const rowsPerSec = this.getFallSpeedRowsPerSec();
+    const msPerRow = Math.max(320, Math.round(1000 / rowsPerSec));
+
+    let maxDuration = 350;
+    if (settlingBlocks && settlingBlocks.length > 0) {
+      settlingBlocks.forEach(b => {
+        b.duration = Math.round(b.dropDistance * msPerRow);
+      });
+      maxDuration = Math.max(350, ...settlingBlocks.map(b => b.duration));
+    }
+
     // Rescan board and compact occupied cells downward column-by-column
     this.collapseGrid();
+
+    // ATOMIC REGISTRATION: Mark blocks as animating AT THE EXACT SAME INSTANT grid data mutates
+    this.settleAnimationState = {
+      startTime: performance.now(),
+      duration: maxDuration,
+      blocks: settlingBlocks
+    };
 
     const count = clearedIndices.length;
     this.lines += count;
