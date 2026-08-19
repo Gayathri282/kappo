@@ -7,10 +7,8 @@
 
 import { GRID_COLS, GRID_ROWS } from './tetris.js';
 
-// Preload exact Kappo packet PNG images and dynamically crop white padding for true aspect ratio sizing
+// Preload exact Kappo packet PNG images
 const PACKET_IMAGES = {};
-const TRIMMED_PACKET_CANVASES = {};
-const PACKET_ASPECT_RATIOS = {};
 
 const FLAVOR_IMAGE_MAP = {
   salted:   '/assets/packet_salted.png',
@@ -19,72 +17,8 @@ const FLAVOR_IMAGE_MAP = {
   dynamite: '/assets/packet_dynamite.png',
 };
 
-function trimImageWhitespace(flavorId, img) {
-  try {
-    const tempCanvas = document.createElement('canvas');
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
-    if (!w || !h) return;
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0);
-
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
-
-    let minX = w, minY = h, maxX = 0, maxY = 0;
-    let foundNonWhite = false;
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const idx = (y * w + x) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const a = data[idx + 3];
-
-        // Check if pixel is NOT background white or transparent
-        const isWhite = (r > 240 && g > 240 && b > 240) || a < 15;
-        if (!isWhite) {
-          foundNonWhite = true;
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
-      }
-    }
-
-    if (!foundNonWhite) {
-      minX = 0; minY = 0; maxX = w - 1; maxY = h - 1;
-    }
-
-    const cropW = Math.max(1, maxX - minX + 1);
-    const cropH = Math.max(1, maxY - minY + 1);
-
-    const trimmedCanvas = document.createElement('canvas');
-    trimmedCanvas.width = cropW;
-    trimmedCanvas.height = cropH;
-    const trimmedCtx = trimmedCanvas.getContext('2d');
-    trimmedCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
-
-    TRIMMED_PACKET_CANVASES[flavorId] = trimmedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = cropH / cropW;
-    console.log(`[Packet Image Trimmed] Flavor: ${flavorId}, Natural: ${w}x${h}, Trimmed: ${cropW}x${cropH}, Aspect Ratio (H/W): ${(cropH / cropW).toFixed(3)}`);
-  } catch (e) {
-    console.warn(`[Packet Image Trim Warning] Could not trim ${flavorId}:`, e);
-    if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = img.naturalHeight / img.naturalWidth;
-    }
-  }
-}
-
 Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   const img = new Image();
-  img.onload = () => {
-    trimImageWhitespace(flavorId, img);
-  };
   img.src = src;
   PACKET_IMAGES[flavorId] = img;
 });
@@ -169,10 +103,10 @@ export class CanvasRenderer {
       game.setDimensions(cols, rows);
     }
 
-    // 5. Set container dimensions via inline style
+    // 5. Set container dimensions via inline style (overflow: visible allows top packet overflow)
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
-    container.style.overflow = 'hidden';
+    container.style.overflow = 'visible';
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
 
@@ -243,30 +177,22 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (True Natural Aspect Ratio Packets) ─────
+  // ─── Draw 3D packet block tile (Complete Uncropped Packet Artwork) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
     const baseScale = customScale != null ? customScale : 1.0;
 
     const flavorId = flavor ? flavor.id : 'salted';
-    const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
-    const rawImg = PACKET_IMAGES[flavorId];
-    const spriteSource = trimmedCanvas || rawImg;
+    const img = PACKET_IMAGES[flavorId];
+    if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return;
 
-    // True natural height-to-width ratio of the packet (derived directly from cropped image bounds)
-    let aspectRatio = PACKET_ASPECT_RATIOS[flavorId];
-    if (!aspectRatio) {
-      if (rawImg && rawImg.naturalWidth && rawImg.naturalHeight) {
-        aspectRatio = rawImg.naturalHeight / rawImg.naturalWidth;
-      } else {
-        aspectRatio = 1.25; // Default natural portrait aspect ratio for chip bags
-      }
-    }
+    // True natural height-to-width ratio of the source image
+    const naturalAspect = img.naturalHeight / img.naturalWidth;
 
     // Width tied to cell width logic; height derived directly from image's true aspect ratio!
     const blockW = Math.ceil(cW * baseScale);
-    const blockH = Math.ceil(blockW * aspectRatio);
+    const blockH = Math.ceil(blockW * naturalAspect);
 
     const px = Math.floor(offsetX + x * cW);
     // Align base of packet inside grid cell foot, letting top overflow naturally per true aspect ratio
@@ -274,25 +200,20 @@ export class CanvasRenderer {
     const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
     if (isGhost) {
-      if (spriteSource) {
-        ctx.save();
-        ctx.globalAlpha = 0.28;
-        ctx.drawImage(spriteSource, px, py, blockW, blockH);
-        ctx.restore();
-      }
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.drawImage(img, px, py, blockW, blockH);
+      ctx.restore();
       return;
     }
 
-    if (spriteSource) {
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
-      if (typeof ctx.filter !== 'undefined') {
-        ctx.filter = 'none';
-      }
-
-      ctx.drawImage(spriteSource, px, py, blockW, blockH);
-      ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
+    if (typeof ctx.filter !== 'undefined') {
+      ctx.filter = 'none';
     }
+    ctx.drawImage(img, px, py, blockW, blockH);
+    ctx.restore();
   }
 
   // ─── Render main playfield with continuous free-fall smooth Y motion ───────────
@@ -309,10 +230,10 @@ export class CanvasRenderer {
 
     this.clear();
 
-    // Clip outer board boundary so stuffed packet overflow stays cleanly inside playfield
+    // Clip outer board boundary allowing top overflow up to -1.5x cell height so top row packets aren't clipped
     this.ctx.save();
     this.ctx.beginPath();
-    this.ctx.rect(0, 0, width, height);
+    this.ctx.rect(0, -this.cellHeight * 1.5, width, height + this.cellHeight * 1.5);
     this.ctx.clip();
 
     this.drawGrid(width, height, cols, rows);
@@ -331,7 +252,7 @@ export class CanvasRenderer {
 
         // 1. Continuous falling interpolation (Single source of truth per block)
         if (cell.animStartTime !== undefined && cell.startRow !== undefined && cell.targetRow !== undefined) {
-          const blockDuration = cell.animDuration || 650;
+          const blockDuration = cell.animDuration || 250;
           const blockElapsed = Math.max(0, now - cell.animStartTime);
           const progress = Math.min(1.0, blockElapsed / blockDuration);
           const easeInGravity = Math.pow(progress, 1.8);
@@ -382,58 +303,54 @@ export class CanvasRenderer {
       };
       const beamColors = FLAVOR_BEAM_COLORS[flavorId] || FLAVOR_BEAM_COLORS.salted;
 
-      // Real-time continuous free-fall Y pixel coordinate calculation
-      const visualRow = (typeof continuousRow === 'number' && !isNaN(continuousRow)) ? continuousRow : piece.y;
-      const activePieceBaseY = visualRow * this.cellHeight;
-
-      // 2a. Dynamic glowing vertical laser beam rising behind active falling piece
-      this.ctx.save();
+      // 1. Ghost Piece
+      const ghostY = game.getGhostY();
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
           if (piece.matrix[r][c]) {
-            const bx = (piece.x + c) * this.cellWidth;
-            const by = activePieceBaseY + r * this.cellHeight;
-            const gridX = piece.x + c;
-            const gridY = Math.floor(visualRow) + r;
+            const gx = piece.x + c;
+            const gy = ghostY + r;
+            if (gy >= 0) {
+              this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true);
+            }
+          }
+        }
+      }
 
-            // Only draw beam if space above piece is empty (never overlay yellow beam on occupied blocks)
-            if (by > 0 && (gridY < 0 || gridY >= game.rows || !game.grid[gridY] || game.grid[gridY][gridX] === null)) {
-              const maxBeamH = this.cellHeight * 2;
-              const beamH = Math.min(maxBeamH, by);
-              const startY = by - beamH;
+      // 2. Dynamic Laser Beam Drop Guide Line
+      const ghostYPixel = ghostY * this.cellHeight;
+      for (let r = 0; r < piece.matrix.length; r++) {
+        for (let c = 0; c < piece.matrix[r].length; c++) {
+          if (piece.matrix[r][c]) {
+            const colIndex = piece.x + c;
+            const beamX = colIndex * this.cellWidth;
+            const activeCellTopY = (piece.y + r) * this.cellHeight;
+            const beamHeight = ghostYPixel - activeCellTopY;
 
-              const beamGrad = this.ctx.createLinearGradient(bx, by, bx, startY);
-              beamGrad.addColorStop(0, beamColors.start);
+            if (beamHeight > 4) {
+              const beamGrad = this.ctx.createLinearGradient(beamX, activeCellTopY, beamX, ghostYPixel);
+              beamGrad.addColorStop(0.0, beamColors.start);
               beamGrad.addColorStop(0.5, beamColors.mid);
-              beamGrad.addColorStop(1, beamColors.end);
+              beamGrad.addColorStop(1.0, beamColors.end);
+
               this.ctx.fillStyle = beamGrad;
-              this.ctx.fillRect(bx, startY, this.cellWidth, beamH);
-            }
-          }
-        }
-      }
-      this.ctx.restore();
+              this.ctx.fillRect(beamX, activeCellTopY, this.cellWidth, beamHeight);
 
-      // 2b. Ghost piece (only render ghost landing preview on clean empty cells, never over occupied blocks)
-      if (!game.isClearing) {
-        const ghostY = game.getGhostY();
-        for (let r = 0; r < piece.matrix.length; r++) {
-          for (let c = 0; c < piece.matrix[r].length; c++) {
-            if (piece.matrix[r][c]) {
-              const gx = piece.x + c;
-              const gy = ghostY + r;
-              if (gy >= 0 && gy < game.rows && gx >= 0 && gx < game.cols) {
-                // Ensure target cell is empty before rendering ghost preview
-                if (game.grid[gy] && game.grid[gy][gx] === null) {
-                  this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true, false);
-                }
-              }
+              this.ctx.strokeStyle = beamColors.start;
+              this.ctx.lineWidth = 1.0;
+              this.ctx.beginPath();
+              this.ctx.moveTo(beamX + 0.5, activeCellTopY);
+              this.ctx.lineTo(beamX + 0.5, ghostYPixel);
+              this.ctx.moveTo(beamX + this.cellWidth - 0.5, activeCellTopY);
+              this.ctx.lineTo(beamX + this.cellWidth - 0.5, ghostYPixel);
+              this.ctx.stroke();
             }
           }
         }
       }
 
-      // 3. Active falling piece (rendered at exact per-frame continuous free-fall Y coordinate)
+      // 3. Active Falling Piece (Rendered with continuous free-fall smooth Y motion)
+      const activePieceBaseY = (continuousRow != null ? continuousRow : piece.y) * this.cellHeight;
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
           if (piece.matrix[r][c]) {
@@ -460,12 +377,11 @@ export class CanvasRenderer {
       if (!holdPiece) return;
 
       const flavorId = holdPiece.flavor ? holdPiece.flavor.id : 'salted';
-      const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
-      const rawImg = PACKET_IMAGES[flavorId];
-      const spriteSource = trimmedCanvas || rawImg;
+      const img = PACKET_IMAGES[flavorId];
+      if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return;
 
-      let aspectRatio = PACKET_ASPECT_RATIOS[flavorId] || (rawImg && rawImg.naturalWidth ? rawImg.naturalHeight / rawImg.naturalWidth : 1.25);
-      const miniCellH = Math.round(miniCellW * aspectRatio);
+      const naturalAspect = img.naturalHeight / img.naturalWidth;
+      const miniCellH = Math.round(miniCellW * naturalAspect);
       const matrix = holdPiece.matrix;
       const cols = matrix[0].length;
       const rows = matrix.length;
@@ -477,9 +393,7 @@ export class CanvasRenderer {
           if (matrix[r][c]) {
             const px = startX + c * miniCellW;
             const py = startY + r * miniCellH;
-            if (spriteSource) {
-              ctx.drawImage(spriteSource, px, py, miniCellW, miniCellH);
-            }
+            ctx.drawImage(img, px, py, miniCellW, miniCellH);
           }
         }
       }
@@ -503,17 +417,16 @@ export class CanvasRenderer {
       if (!piece) return;
 
       const flavorId = piece.flavor ? piece.flavor.id : 'salted';
-      const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
-      const rawImg = PACKET_IMAGES[flavorId];
-      const spriteSource = trimmedCanvas || rawImg;
+      const img = PACKET_IMAGES[flavorId];
+      if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return;
 
-      let aspectRatio = PACKET_ASPECT_RATIOS[flavorId] || (rawImg && rawImg.naturalWidth ? rawImg.naturalHeight / rawImg.naturalWidth : 1.25);
+      const naturalAspect = img.naturalHeight / img.naturalWidth;
       const matrix = piece.matrix;
       const cols = matrix[0].length;
       const rows = matrix.length;
 
-      const miniCellW = Math.min(Math.floor(canvasW / (cols + 0.5)), Math.floor(canvasH / (rows * aspectRatio)));
-      const miniCellH = Math.round(miniCellW * aspectRatio);
+      const miniCellW = Math.min(Math.floor(canvasW / (cols + 0.5)), Math.floor(canvasH / (rows * naturalAspect)));
+      const miniCellH = Math.round(miniCellW * naturalAspect);
 
       const startX = (canvasW - cols * miniCellW) / 2;
       const startY = (canvasH - rows * miniCellH) / 2;
@@ -523,9 +436,7 @@ export class CanvasRenderer {
           if (matrix[r][c]) {
             const px = startX + c * miniCellW;
             const py = startY + r * miniCellH;
-            if (spriteSource) {
-              ctx.drawImage(spriteSource, px, py, miniCellW + 0.8, miniCellH + 0.8);
-            }
+            ctx.drawImage(img, px, py, miniCellW + 0.8, miniCellH + 0.8);
           }
         }
       }
