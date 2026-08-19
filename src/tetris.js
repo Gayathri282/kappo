@@ -4,8 +4,8 @@
    Bigger, clearly legible packet branding first!
    ========================================================================== */
 
-export const GRID_COLS = 8;
-export const GRID_ROWS = 14;
+export const GRID_COLS = 6;
+export const GRID_ROWS = 12;
 
 // 4 User Kappo Flavors (Exclusive to user provided packet PNG images)
 export const FLAVORS = [

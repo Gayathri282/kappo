@@ -189,10 +189,10 @@ export class CanvasRenderer {
     // 2. Compute target board width DIRECTLY from viewport (not from DOM measurement)
     const isMobile = viewportW <= 768;
     const targetW = isMobile
-      ? Math.min(viewportW * 0.85, 500)
-      : Math.min(viewportW * 0.60, 640);
+      ? Math.min(viewportW * 0.90, 520)
+      : Math.min(viewportW * 0.65, 700);
 
-    // 3. Grid dimensions: 8 columns x 14 rows for optimal Tetris grid density
+    // 3. Grid dimensions: 6 columns x 12 rows for MAXIMUM packet legibility & brand visibility
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
