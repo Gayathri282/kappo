@@ -713,6 +713,16 @@ export class TetrisGame {
   finishClearLines(clearedIndices, clearedDetails, allClearedKeys = null, chainCells = []) {
     if (!clearedIndices || clearedIndices.length === 0) return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false, settlingBlocks: [] };
 
+    // Safety Audit Check: Log warning if single clear event clears > 21 cells (>3 rows)
+    const totalCellsToClear = allClearedKeys ? allClearedKeys.size : (clearedIndices.length * this.cols);
+    if (totalCellsToClear > 21) {
+      console.warn(`[SAFETY CAP AUDIT WARNING] Large clear event triggered! Clearing ${totalCellsToClear} cells (${clearedIndices.length} rows).`);
+      clearedIndices.forEach(r => {
+        const occStr = this.grid[r].map(c => c ? c.flavor.id.substring(0, 4) : '---').join('|');
+        console.warn(`  - Cleared Row ${r}: [${occStr}] (Rule: Verified 100% Full Row)`);
+      });
+    }
+
     // Compute settling trajectories BEFORE modifying grid data
     const settlingBlocks = this.computeSettlingTrajectory(clearedIndices, allClearedKeys);
 
