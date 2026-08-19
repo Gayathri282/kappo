@@ -186,11 +186,11 @@ export class CanvasRenderer {
     const verticalMargin = 20;
     const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
-    // 2. Compute target board width DIRECTLY from viewport (extra wide max-width for HUGE 9-column packets)
+    // 2. Compute target board width DIRECTLY from viewport (MAXIMUM playgrid width for huge cells & packets)
     const isMobile = viewportW <= 768;
     const targetW = isMobile
-      ? Math.min(viewportW * 0.98, 720)
-      : Math.min(viewportW * 0.80, 880);
+      ? Math.min(viewportW * 0.98, 800)
+      : Math.min(viewportW * 0.88, 1000);
 
     // 3. Grid dimensions: 9 columns x 15 rows for 9-column layout
     const cols = game ? game.cols : GRID_COLS;

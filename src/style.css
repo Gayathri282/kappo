@@ -248,7 +248,7 @@ body {
   height: 100dvh;
   max-height: 100dvh;
   width: 100%;
-  max-width: 588px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 4px 10px;
   justify-content: space-between;
@@ -1196,7 +1196,7 @@ body {
 .touch-controls-deck {
   position: relative;
   width: 100%;
-  max-width: 440px;
+  max-width: 800px;
   margin: 8px auto 0 auto !important;
   display: flex;
   align-items: center;
