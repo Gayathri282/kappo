@@ -120,18 +120,19 @@ function trimImageWhitespace(flavorId, img) {
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork using COVER fit so it completely fills the cell canvas in both dimensions with ZERO empty background space
-    const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
+    // Scale trimmed artwork using CONTAIN fit so 100% of the complete packet artwork (top crimp to bottom crimp) is fully visible inside every cell without cropping
+    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
     const drawX = (TARGET_CANVAS_W - drawW) / 2;
     const drawY = (TARGET_CANVAS_H - drawH) / 2;
 
+    normCtx.clearRect(0, 0, TARGET_CANVAS_W, TARGET_CANVAS_H);
     normCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
     PACKET_ASPECT_RATIOS[flavorId] = 1.0;
-    console.log(`[Strict No-Overlap Canvas] ${flavorId}: Standardized to 600x600px Cell Canvas (Zero Overlap, Cover Fit)`);
+    console.log(`[Full Packet Canvas] ${flavorId}: 100% complete packet artwork centered in 600x600px cell (Zero cropping)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
@@ -310,13 +311,12 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Strict 1:1 Cell Footprint with 101% coverage for zero subpixel gaps
-    const fillRatio = 1.01;
-    const blockW = Math.ceil(cW * fillRatio * baseScale);
-    const blockH = Math.ceil(cH * fillRatio * baseScale);
+    // Exact 1:1 Cell Footprint — 1 full complete packet per cell
+    const blockW = Math.ceil(cW * baseScale);
+    const blockH = Math.ceil(cH * baseScale);
 
-    const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
-    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH + (cH - blockH) / 2));
+    const px = Math.floor(offsetX + x * cW);
+    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
 
     const srcW = spriteSource.width || spriteSource.naturalWidth;
     const srcH = spriteSource.height || spriteSource.naturalHeight;
