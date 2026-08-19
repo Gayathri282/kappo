@@ -7,8 +7,11 @@
 
 import { GRID_COLS, GRID_ROWS } from './tetris.js';
 
-// Preload exact Kappo packet PNG images
+// Preload exact Kappo packet PNG images and dynamically crop white padding for true aspect ratio sizing
 const PACKET_IMAGES = {};
+const TRIMMED_PACKET_CANVASES = {};
+const PACKET_ASPECT_RATIOS = {};
+
 const FLAVOR_IMAGE_MAP = {
   salted:   '/assets/packet_salted.png',
   chilli:   '/assets/packet_chilli.png',
@@ -16,14 +19,75 @@ const FLAVOR_IMAGE_MAP = {
   dynamite: '/assets/packet_dynamite.png',
 };
 
+function trimImageWhitespace(flavorId, img) {
+  try {
+    const tempCanvas = document.createElement('canvas');
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (!w || !h) return;
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    let minX = w, minY = h, maxX = 0, maxY = 0;
+    let foundNonWhite = false;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+
+        // Check if pixel is NOT background white or transparent
+        const isWhite = (r > 240 && g > 240 && b > 240) || a < 15;
+        if (!isWhite) {
+          foundNonWhite = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (!foundNonWhite) {
+      minX = 0; minY = 0; maxX = w - 1; maxY = h - 1;
+    }
+
+    const cropW = Math.max(1, maxX - minX + 1);
+    const cropH = Math.max(1, maxY - minY + 1);
+
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = cropW;
+    trimmedCanvas.height = cropH;
+    const trimmedCtx = trimmedCanvas.getContext('2d');
+    trimmedCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+    TRIMMED_PACKET_CANVASES[flavorId] = trimmedCanvas;
+    PACKET_ASPECT_RATIOS[flavorId] = cropH / cropW;
+    console.log(`[Packet Image Trimmed] Flavor: ${flavorId}, Natural: ${w}x${h}, Trimmed: ${cropW}x${cropH}, Aspect Ratio (H/W): ${(cropH / cropW).toFixed(3)}`);
+  } catch (e) {
+    console.warn(`[Packet Image Trim Warning] Could not trim ${flavorId}:`, e);
+    if (img.naturalWidth && img.naturalHeight) {
+      PACKET_ASPECT_RATIOS[flavorId] = img.naturalHeight / img.naturalWidth;
+    }
+  }
+}
+
 Object.entries(FLAVOR_IMAGE_MAP).forEach(([flavorId, src]) => {
   const img = new Image();
+  img.onload = () => {
+    trimImageWhitespace(flavorId, img);
+  };
   img.src = src;
   PACKET_IMAGES[flavorId] = img;
 });
-
-// Cell aspect ratio: 1.0 = perfect square (cellWidth === cellHeight)
-const PACKET_RATIO = 1.0;
 
 export class CanvasRenderer {
   constructor(gameCanvas, holdCanvasDesktop, nextCanvasDesktop, holdCanvasMobile, nextCanvasMobile) {
@@ -179,43 +243,54 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D neon packet block tile (Clean Proportional Packets) ─────
+  // ─── Draw 3D packet block tile (True Natural Aspect Ratio Packets) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
-
-    // Clean proportional packet scaling: aligns crisp and solid inside cell footprint
     const baseScale = customScale != null ? customScale : 1.0;
-    const packetH = cH * 1.05;
 
-    const blockW = Math.ceil(cW * 1.0 * baseScale);
-    const blockH = Math.ceil(packetH * baseScale);
+    const flavorId = flavor ? flavor.id : 'salted';
+    const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
+    const rawImg = PACKET_IMAGES[flavorId];
+    const spriteSource = trimmedCanvas || rawImg;
+
+    // True natural height-to-width ratio of the packet (derived directly from cropped image bounds)
+    let aspectRatio = PACKET_ASPECT_RATIOS[flavorId];
+    if (!aspectRatio) {
+      if (rawImg && rawImg.naturalWidth && rawImg.naturalHeight) {
+        aspectRatio = rawImg.naturalHeight / rawImg.naturalWidth;
+      } else {
+        aspectRatio = 1.25; // Default natural portrait aspect ratio for chip bags
+      }
+    }
+
+    // Width tied to cell width logic; height derived directly from image's true aspect ratio!
+    const blockW = Math.ceil(cW * baseScale);
+    const blockH = Math.ceil(blockW * aspectRatio);
 
     const px = Math.floor(offsetX + x * cW);
+    // Align base of packet inside grid cell foot, letting top overflow naturally per true aspect ratio
     const defaultPy = offsetY + y * cH - (blockH - cH);
     const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
-    const flavorId = flavor ? flavor.id : 'salted';
-    const img = PACKET_IMAGES[flavorId];
-
     if (isGhost) {
-      if (img && img.complete && img.naturalWidth) {
+      if (spriteSource) {
         ctx.save();
         ctx.globalAlpha = 0.28;
-        ctx.drawImage(img, px, py, blockW, blockH);
+        ctx.drawImage(spriteSource, px, py, blockW, blockH);
         ctx.restore();
       }
       return;
     }
 
-    if (img && img.complete && img.naturalWidth) {
+    if (spriteSource) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1.0, alpha));
       if (typeof ctx.filter !== 'undefined') {
         ctx.filter = 'none';
       }
 
-      ctx.drawImage(img, px, py, blockW, blockH);
+      ctx.drawImage(spriteSource, px, py, blockW, blockH);
       ctx.restore();
     }
   }
@@ -384,23 +459,26 @@ export class CanvasRenderer {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!holdPiece) return;
 
-      const miniCellH = Math.round(miniCellW * PACKET_RATIO);
+      const flavorId = holdPiece.flavor ? holdPiece.flavor.id : 'salted';
+      const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
+      const rawImg = PACKET_IMAGES[flavorId];
+      const spriteSource = trimmedCanvas || rawImg;
+
+      let aspectRatio = PACKET_ASPECT_RATIOS[flavorId] || (rawImg && rawImg.naturalWidth ? rawImg.naturalHeight / rawImg.naturalWidth : 1.25);
+      const miniCellH = Math.round(miniCellW * aspectRatio);
       const matrix = holdPiece.matrix;
       const cols = matrix[0].length;
       const rows = matrix.length;
       const startX = (canvas.width  - cols * miniCellW) / 2;
       const startY = (canvas.height - rows * miniCellH) / 2;
 
-      const flavorId = holdPiece.flavor ? holdPiece.flavor.id : 'salted';
-      const img = PACKET_IMAGES[flavorId];
-
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (matrix[r][c]) {
             const px = startX + c * miniCellW;
             const py = startY + r * miniCellH;
-            if (img && img.complete && img.naturalWidth) {
-              ctx.drawImage(img, px, py, miniCellW, miniCellH);
+            if (spriteSource) {
+              ctx.drawImage(spriteSource, px, py, miniCellW, miniCellH);
             }
           }
         }
@@ -424,25 +502,29 @@ export class CanvasRenderer {
       const piece = createPieceFn(nextQueueTypes[0]);
       if (!piece) return;
 
-      const miniCellW = Math.min(Math.floor(canvasW / 4.5), Math.floor(canvasH / 2.8));
-      const miniCellH = Math.round(miniCellW * PACKET_RATIO);
+      const flavorId = piece.flavor ? piece.flavor.id : 'salted';
+      const trimmedCanvas = TRIMMED_PACKET_CANVASES[flavorId];
+      const rawImg = PACKET_IMAGES[flavorId];
+      const spriteSource = trimmedCanvas || rawImg;
+
+      let aspectRatio = PACKET_ASPECT_RATIOS[flavorId] || (rawImg && rawImg.naturalWidth ? rawImg.naturalHeight / rawImg.naturalWidth : 1.25);
       const matrix = piece.matrix;
       const cols = matrix[0].length;
       const rows = matrix.length;
 
+      const miniCellW = Math.min(Math.floor(canvasW / (cols + 0.5)), Math.floor(canvasH / (rows * aspectRatio)));
+      const miniCellH = Math.round(miniCellW * aspectRatio);
+
       const startX = (canvasW - cols * miniCellW) / 2;
       const startY = (canvasH - rows * miniCellH) / 2;
-
-      const flavorId = piece.flavor ? piece.flavor.id : 'salted';
-      const img = PACKET_IMAGES[flavorId];
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (matrix[r][c]) {
             const px = startX + c * miniCellW;
             const py = startY + r * miniCellH;
-            if (img && img.complete && img.naturalWidth) {
-              ctx.drawImage(img, px, py, miniCellW + 0.8, miniCellH + 0.8);
+            if (spriteSource) {
+              ctx.drawImage(spriteSource, px, py, miniCellW + 0.8, miniCellH + 0.8);
             }
           }
         }
