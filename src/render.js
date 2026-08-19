@@ -93,19 +93,30 @@ function trimImageWhitespace(flavorId, img) {
     const cropW = Math.max(10, finalMaxX - finalMinX + 1);
     const cropH = Math.max(10, finalMaxY - finalMinY + 1);
 
-    const trimmedCanvas = document.createElement('canvas');
-    trimmedCanvas.width = cropW;
-    trimmedCanvas.height = cropH;
-    const trimmedCtx = trimmedCanvas.getContext('2d');
-    trimmedCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, 0, 0, cropW, cropH);
+    // Normalize all 4 packet images into a standardized 300x375 (1.25 aspect) canvas so every packet has identical bounds & aspect ratio
+    const TARGET_CANVAS_W = 300;
+    const TARGET_CANVAS_H = 375; // 1.25 portrait aspect ratio
+    const normalizedCanvas = document.createElement('canvas');
+    normalizedCanvas.width = TARGET_CANVAS_W;
+    normalizedCanvas.height = TARGET_CANVAS_H;
+    const normCtx = normalizedCanvas.getContext('2d');
 
-    TRIMMED_PACKET_CANVASES[flavorId] = trimmedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = cropH / cropW;
-    console.log(`[Packet Trim Success] ${flavorId}: Original ${w}x${h} -> Trimmed ${cropW}x${cropH}, Aspect Ratio (H/W): ${(cropH / cropW).toFixed(3)}`);
+    // Scale trimmed artwork to fit tightly inside 300x375 canvas
+    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
+    const drawW = cropW * scale;
+    const drawH = cropH * scale;
+    const drawX = (TARGET_CANVAS_W - drawW) / 2;
+    const drawY = (TARGET_CANVAS_H - drawH) / 2;
+
+    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, drawX, drawY, drawW, drawH);
+
+    TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
+    PACKET_ASPECT_RATIOS[flavorId] = 1.25;
+    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x375 (Aspect: 1.25)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = img.naturalHeight / img.naturalWidth;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.25;
     }
   }
 }
@@ -285,13 +296,13 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // True natural height-to-width ratio of the trimmed chip bag
-    const aspectRatio = PACKET_ASPECT_RATIOS[flavorId] || (rawImg && rawImg.naturalWidth ? rawImg.naturalHeight / rawImg.naturalWidth : 1.25);
+    // Shared uniform aspect ratio across all 4 packet images (1.25) for 100% normalized rendering
+    const UNIFORM_ASPECT = 1.25;
 
     // Render packet width to fill ~96% of cell width (matching Lay's Stacks reference!)
     const fillRatio = 0.96;
     const blockW = Math.ceil(cW * fillRatio * baseScale);
-    const blockH = Math.ceil(blockW * aspectRatio);
+    const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
 
     // Center horizontally inside cell column
     const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
