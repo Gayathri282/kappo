@@ -248,23 +248,18 @@ export class CanvasRenderer {
     const animatingCellKeys = new Set();
     const activeAnimBlocks = [];
 
-    const activeSettle = game.settleAnimationState || settleAnimationState;
+    if (settleAnimationState && settleAnimationState.blocks) {
+      settleAnimationState.blocks.forEach(b => {
+        const blockDuration = b.duration || settleAnimationState.duration || 650;
+        const blockElapsed = now - settleAnimationState.startTime;
 
-    if (activeSettle && activeSettle.blocks) {
-      activeSettle.blocks.forEach(b => {
-        const blockDuration = b.duration || activeSettle.duration || 350;
-        const blockElapsed = now - activeSettle.startTime;
-
-        if (blockElapsed >= 0 && blockElapsed < blockDuration) {
+        if (blockElapsed < blockDuration) {
           // Block is actively in-flight: animation layer owns this block!
           activeAnimBlocks.push(b);
 
-          // Suppress static rendering for target cell, start cell, and fall path
-          const minR = Math.min(b.startRow, b.targetRow);
-          const maxR = Math.max(b.startRow, b.targetRow);
-          for (let r = minR; r <= maxR; r++) {
-            animatingCellKeys.add(`${r}_${b.col}`);
-          }
+          // Suppress static rendering ONLY for the target destination cell and start cell
+          animatingCellKeys.add(`${b.targetRow}_${b.col}`);
+          animatingCellKeys.add(`${b.startRow}_${b.col}`);
         }
       });
     }
@@ -316,10 +311,10 @@ export class CanvasRenderer {
     }
 
     // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Exclusively drawing in-flight blocks)
-    if (activeAnimBlocks.length > 0 && activeSettle) {
+    if (activeAnimBlocks.length > 0) {
       activeAnimBlocks.forEach(b => {
-        const blockDuration = b.duration || activeSettle.duration || 350;
-        const blockElapsed = Math.min(blockDuration, Math.max(0, now - activeSettle.startTime));
+        const blockDuration = b.duration || settleAnimationState.duration || 350;
+        const blockElapsed = Math.min(blockDuration, Math.max(0, now - settleAnimationState.startTime));
         const progress = blockElapsed / blockDuration; // 0.0 to 1.0
         // Natural gravity ease-in acceleration (progress^1.8)
         const easeInGravity = Math.pow(progress, 1.8);

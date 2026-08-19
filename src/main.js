@@ -374,8 +374,23 @@ function updateLineClearAnimation(now) {
 
       console.log(`[Live Loop Clear Callback] (Cascade Lvl ${cascadeLevel}) Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
 
-      // Sync settleAnimationState from atomic registration in game.finishClearLines
-      settleAnimationState = game.settleAnimationState;
+      // Relaxed, smooth fall speed (650ms per row) so user can clearly see blocks falling after row clear
+      const msPerRow = 650;
+
+      let maxDuration = 650;
+      if (result.settlingBlocks && result.settlingBlocks.length > 0) {
+        result.settlingBlocks.forEach(b => {
+          b.duration = Math.round(b.dropDistance * msPerRow);
+        });
+        maxDuration = Math.max(650, ...result.settlingBlocks.map(b => b.duration));
+      }
+
+      // Start smooth proportional gravity drop settling transition
+      settleAnimationState = {
+        startTime: now,
+        duration: maxDuration,
+        blocks: result.settlingBlocks
+      };
 
       if (cascadeLevel > 0) {
         sound.playMonoCrunch(1, null);
