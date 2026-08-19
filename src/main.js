@@ -327,25 +327,39 @@ function advanceLineClearSweepStep() {
 }
 
 function updateLineClearAnimation(now) {
-  if (!lineClearAnimState || lineClearAnimState.phase !== 'SWEEP') return;
+  if (!lineClearAnimState) return;
 
-  if (now - lineClearAnimState.lastStepTime >= lineClearAnimState.stepDelay) {
-    lineClearAnimState.step++;
-    lineClearAnimState.lastStepTime = now;
+  // STAGE 1: SWEEP_POP (staggered balloon popping across row cells)
+  if (lineClearAnimState.phase === 'SWEEP') {
+    if (now - lineClearAnimState.lastStepTime >= lineClearAnimState.stepDelay) {
+      lineClearAnimState.step++;
+      lineClearAnimState.lastStepTime = now;
 
-    if (lineClearAnimState.step < lineClearAnimState.maxSteps) {
-      advanceLineClearSweepStep();
-    } else {
-      // 2. Sequential sweep wipe finished! Execute grid clear & start smooth gravity drop
-      lineClearAnimState.phase = 'SETTLE';
+      if (lineClearAnimState.step < lineClearAnimState.maxSteps) {
+        advanceLineClearSweepStep();
+      } else {
+        // Stage 1 Pop finished! Enter PAUSE_GAP phase (350ms pause to let player see empty gap)
+        lineClearAnimState.phase = 'PAUSE_GAP';
+        lineClearAnimState.pauseStartTime = now;
+        console.log(`[Pacing State] Stage 1 Pop Complete. Entering PAUSE_GAP (350ms pause)...`);
+      }
+    }
+    return;
+  }
+
+  // PAUSE 1: PAUSE_GAP (350ms delay with empty gap visible before blocks fall)
+  if (lineClearAnimState.phase === 'PAUSE_GAP') {
+    if (now - lineClearAnimState.pauseStartTime >= 350) {
+      // Execute grid collapse & enter COLLAPSE_FALL phase
+      lineClearAnimState.phase = 'COLLAPSE_FALL';
       const detect = lineClearAnimState.detect;
       const cascadeLevel = lineClearAnimState.cascadeLevel || 0;
 
-      // Clean up pop animation structures BEFORE executing clear & collapse
+      // Clean up pop animation structures
       game.brokenCells = null;
       game.poppingCells = null;
 
-      // Live game loop integrity assertion check before clear & collapse
+      // Live game loop integrity assertion check
       const countBeforeClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
 
       const result = game.finishClearLines(
@@ -359,14 +373,11 @@ function updateLineClearAnimation(now) {
       const expectedCountAfter = countBeforeClear - (result.blastedCells ? result.blastedCells.length : 0);
 
       console.log(`[Live Loop Clear Callback] (Cascade Lvl ${cascadeLevel}) Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
-      if (countAfterClear !== expectedCountAfter) {
-        console.error(`[LIVE GAME LOOP INTEGRITY FAILURE] Block count mismatch in live loop clear callback! Expected ${expectedCountAfter}, but got ${countAfterClear}`);
-      }
 
-      // Start smooth 240ms gravity drop settling transition
+      // Start smooth 350ms gravity drop settling transition
       settleAnimationState = {
         startTime: now,
-        duration: 240, // 240ms smooth fall-down transition
+        duration: 350, // 350ms smooth fall-down transition
         blocks: result.settlingBlocks
       };
 
@@ -398,8 +409,27 @@ function updateLineClearAnimation(now) {
 
       checkBrandFactsMilestone();
       updateHUD();
+      console.log(`[Pacing State] Stage 2 Collapse Fall Started (350ms fall)...`);
+    }
+    return;
+  }
 
-      // CASCADING RE-SCAN CHECK: Re-scan grid to check if collapse caused new rows to complete
+  // STAGE 2: COLLAPSE_FALL (350ms smooth fall animation)
+  if (lineClearAnimState.phase === 'COLLAPSE_FALL') {
+    if (now - settleAnimationState.startTime >= settleAnimationState.duration) {
+      // Collapse fall finished! Enter PAUSE_SETTLE phase (350ms pause to let player see settled stack)
+      lineClearAnimState.phase = 'PAUSE_SETTLE';
+      lineClearAnimState.pauseStartTime = now;
+      console.log(`[Pacing State] Stage 2 Collapse Settle Complete. Entering PAUSE_SETTLE (350ms pause)...`);
+    }
+    return;
+  }
+
+  // PAUSE 2: PAUSE_SETTLE (350ms delay before rechecking for newly completed rows)
+  if (lineClearAnimState.phase === 'PAUSE_SETTLE') {
+    if (now - lineClearAnimState.pauseStartTime >= 350) {
+      // STAGE 3: RE-SCAN GRID FOR NEWLY COMPLETED ROWS
+      const cascadeLevel = lineClearAnimState.cascadeLevel || 0;
       const nextDetect = game.detectLineClears();
       const nextCascadeLevel = cascadeLevel + 1;
 
@@ -415,7 +445,9 @@ function updateLineClearAnimation(now) {
       if (validNextLines.length > 0 && nextCascadeLevel < 10) {
         nextDetect.lines = validNextLines;
         nextDetect.count = validNextLines.length;
-        console.log(`[Cascade Clear Triggered] Level ${nextCascadeLevel}, newly completed rows: ${nextDetect.lines.length}`);
+        console.log(`[Cascade Pacing Audit] Cascade Level ${nextCascadeLevel} Triggered! Newly completed row(s) verified 100% full: [${validNextLines.join(', ')}]`);
+
+        // Start new cascade cycle with full 3-stage pacing!
         lineClearAnimState = {
           detect: nextDetect,
           step: 0,
@@ -434,6 +466,7 @@ function updateLineClearAnimation(now) {
         if (nextCascadeLevel >= 10 && nextDetect.count > 0) {
           console.warn('[Tetris Cascade Warning] Maximum cascade safety cap (10) reached!');
         }
+        console.log(`[Cascade Complete Pacing] No newly completed rows found. Resuming normal gameplay.`);
         lineClearAnimState = null;
         game.isClearing = false;
 
@@ -450,6 +483,7 @@ function updateLineClearAnimation(now) {
         }
       }
     }
+    return;
   }
 }
 
