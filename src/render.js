@@ -244,27 +244,27 @@ export class CanvasRenderer {
 
     const now = performance.now();
 
-    let activeSettleKeys = null;
-    let isSettlingActive = false;
+    // Per-block granular animation ownership tracking
+    const animatingCellKeys = new Set();
+    const activeAnimBlocks = [];
 
-    if (settleAnimationState) {
-      const elapsed = now - settleAnimationState.startTime;
-      const duration = settleAnimationState.duration || 240;
-      if (elapsed < duration) {
-        isSettlingActive = true;
-        activeSettleKeys = new Set();
-        if (settleAnimationState.blocks) {
-          settleAnimationState.blocks.forEach(b => {
-            const minR = Math.min(b.startRow, b.targetRow);
-            const maxR = Math.max(b.startRow, b.targetRow);
-            for (let r = minR; r <= maxR; r++) {
-              activeSettleKeys.add(`${r}_${b.col}`);
-            }
-          });
+    if (settleAnimationState && settleAnimationState.blocks) {
+      settleAnimationState.blocks.forEach(b => {
+        const blockDuration = b.duration || settleAnimationState.duration || 350;
+        const blockElapsed = now - settleAnimationState.startTime;
+
+        if (blockElapsed < blockDuration) {
+          // Block is actively in-flight: animation layer owns this block!
+          activeAnimBlocks.push(b);
+
+          // Suppress static rendering for target cell, start cell, and fall path
+          const minR = Math.min(b.startRow, b.targetRow);
+          const maxR = Math.max(b.startRow, b.targetRow);
+          for (let r = minR; r <= maxR; r++) {
+            animatingCellKeys.add(`${r}_${b.col}`);
+          }
         }
-      } else {
-        settleAnimationState.isDone = true;
-      }
+      });
     }
 
     // 1. Locked blocks (Top-to-bottom row order for natural overlapping seam z-index)
@@ -272,8 +272,8 @@ export class CanvasRenderer {
       for (let c = 0; c < cols; c++) {
         const key = `${r}_${c}`;
 
-        // Skip static rendering for cells currently mid-settle drop animation
-        if (isSettlingActive && activeSettleKeys && activeSettleKeys.has(key)) {
+        // Skip static rendering for cells currently actively in-flight in settle animation
+        if (animatingCellKeys.has(key)) {
           continue;
         }
 
@@ -313,9 +313,9 @@ export class CanvasRenderer {
       }
     }
 
-    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Matching Active Piece Fall Speed)
-    if (isSettlingActive && settleAnimationState && settleAnimationState.blocks) {
-      settleAnimationState.blocks.forEach(b => {
+    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Exclusively drawing in-flight blocks)
+    if (activeAnimBlocks.length > 0) {
+      activeAnimBlocks.forEach(b => {
         const blockDuration = b.duration || settleAnimationState.duration || 350;
         const blockElapsed = Math.min(blockDuration, Math.max(0, now - settleAnimationState.startTime));
         const progress = blockElapsed / blockDuration; // 0.0 to 1.0
