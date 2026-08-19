@@ -270,9 +270,9 @@ export class CanvasRenderer {
         }
 
         // Check if cell is in active balloon-pop break animation
-        if (game.poppingCells && game.poppingCells.has(key)) {
+        if (game.isClearing && game.poppingCells && game.poppingCells.has(key)) {
           const popData = game.poppingCells.get(key);
-          const elapsed = now - popData.popStartTime;
+          const elapsed = now - (popData.popStartTime || now);
           const popDuration = 180; // 180ms balloon pop duration
 
           if (elapsed < popDuration) {
@@ -297,7 +297,7 @@ export class CanvasRenderer {
 
         const cell = game.grid[r] ? game.grid[r][c] : null;
         if (cell) {
-          if (game.brokenCells && game.brokenCells.has(key)) {
+          if (game.isClearing && game.brokenCells && game.brokenCells.has(key)) {
             continue; // Skip rendering broken blocks in clearing row
           }
           this.drawTile(this.ctx, c, r, this.cellWidth, cell.flavor, false, false);

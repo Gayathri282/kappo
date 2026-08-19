@@ -702,13 +702,41 @@ export class TetrisGame {
     };
   }
 
-  // Clear full horizontal lines synchronously (fallback wrapper)
+  // Clear full horizontal lines with cascading collapse re-scan loop
   clearLines() {
-    const detect = this.detectLineClears();
-    if (detect.count === 0) {
-      return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
+    let totalResult = {
+      count: 0,
+      lines: [],
+      blastedCells: [],
+      clearedDetails: [],
+      monoCount: 0,
+      earnedScore: 0,
+      leveledUp: false,
+      cascades: 0
+    };
+    let iteration = 0;
+    const maxCascades = 10;
+
+    while (iteration < maxCascades) {
+      const detect = this.detectLineClears();
+      if (detect.count === 0) break;
+
+      iteration++;
+      const res = this.finishClearLines(detect.lines, detect.clearedDetails, detect.allClearedKeys, detect.chainCells);
+      totalResult.count += res.count;
+      totalResult.earnedScore += res.earnedScore;
+      totalResult.lines.push(...res.lines);
+      if (res.blastedCells) totalResult.blastedCells.push(...res.blastedCells);
+      if (res.clearedDetails) totalResult.clearedDetails.push(...res.clearedDetails);
+      if (res.monoCount > 0) totalResult.monoCount += res.monoCount;
+      if (res.leveledUp) totalResult.leveledUp = true;
+      totalResult.cascades = iteration;
     }
-    return this.finishClearLines(detect.lines, detect.clearedDetails, detect.allClearedKeys, detect.chainCells);
+
+    if (iteration >= maxCascades) {
+      console.warn('[Tetris Cascade Warning] Maximum cascade safety cap (10) reached during clearLines!');
+    }
+    return totalResult;
   }
 
   // Tick gravity step

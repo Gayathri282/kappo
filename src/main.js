@@ -237,9 +237,12 @@ function checkBrandFactsMilestone() {
   // Toast notifications disabled per specs
 }
 
-function processLineClears() {
+function processLineClears(cascadeLevel = 0) {
   const detect = game.detectLineClears();
   if (detect.count === 0) {
+    if (cascadeLevel > 0) {
+      console.log(`[Cascade Complete] All cascading clears resolved! Total cascades: ${cascadeLevel}`);
+    }
     if (!game.gameOver) {
       game.spawnPiece();
       if (game.gameOver) {
@@ -267,7 +270,8 @@ function processLineClears() {
     lastStepTime: performance.now(),
     brokenCells: new Set(),
     poppingCells: new Map(),
-    phase: 'SWEEP' // 'SWEEP' -> 'SETTLE' -> 'DONE'
+    phase: 'SWEEP',
+    cascadeLevel: cascadeLevel
   };
 
   game.brokenCells = lineClearAnimState.brokenCells;
@@ -327,6 +331,11 @@ function updateLineClearAnimation(now) {
       // 2. Sequential sweep wipe finished! Execute grid clear & start smooth gravity drop
       lineClearAnimState.phase = 'SETTLE';
       const detect = lineClearAnimState.detect;
+      const cascadeLevel = lineClearAnimState.cascadeLevel || 0;
+
+      // Clean up pop animation structures BEFORE executing clear & collapse
+      game.brokenCells = null;
+      game.poppingCells = null;
 
       // Live game loop integrity assertion check before clear & collapse
       const countBeforeClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
@@ -341,7 +350,7 @@ function updateLineClearAnimation(now) {
       const countAfterClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
       const expectedCountAfter = countBeforeClear - (result.blastedCells ? result.blastedCells.length : 0);
 
-      console.log(`[Live Loop Clear Callback] Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
+      console.log(`[Live Loop Clear Callback] (Cascade Lvl ${cascadeLevel}) Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
       if (countAfterClear !== expectedCountAfter) {
         console.error(`[LIVE GAME LOOP INTEGRITY FAILURE] Block count mismatch in live loop clear callback! Expected ${expectedCountAfter}, but got ${countAfterClear}`);
       }
@@ -353,7 +362,10 @@ function updateLineClearAnimation(now) {
         blocks: result.settlingBlocks
       };
 
-      if (result.monoCount > 0) {
+      if (cascadeLevel > 0) {
+        sound.playMonoCrunch(1, null);
+        triggerEventBanner(`⚡ CASCADE COMBO x${cascadeLevel + 1}! ⚡`);
+      } else if (result.monoCount > 0) {
         sound.playMonoCrunch(result.monoCount, result.monoFlavor);
         particles.spawnMonoFlavorFX(detect.clearedDetails, renderer.cellSize, renderer.cellSize);
         let bannerText = result.monoCount === 1 ? `Full Batch Clear!` : `Batch Clear Jackpot! 🔥⚡`;
@@ -379,22 +391,44 @@ function updateLineClearAnimation(now) {
       checkBrandFactsMilestone();
       updateHUD();
 
-      // Clear animation references & resume gameplay piece spawning
-      lineClearAnimState = null;
-      game.isClearing = false;
-      game.brokenCells = null;
-      game.poppingCells = null;
+      // CASCADING RE-SCAN CHECK: Re-scan grid to check if collapse caused new rows to complete
+      const nextDetect = game.detectLineClears();
+      const nextCascadeLevel = cascadeLevel + 1;
 
-      if (!game.gameOver) {
-        game.spawnPiece();
-        if (game.gameOver) {
-          handleGameOver();
-        } else if (game.currentPiece) {
-          activePieceRef = game.currentPiece;
-          pieceVisualRow = game.currentPiece.y;
-        }
+      if (nextDetect.count > 0 && nextCascadeLevel < 10) {
+        console.log(`[Cascade Clear Triggered] Level ${nextCascadeLevel}, newly completed rows: ${nextDetect.lines.length}`);
+        lineClearAnimState = {
+          detect: nextDetect,
+          step: 0,
+          maxSteps: nextDetect.maxSteps,
+          stepDelay: 60,
+          lastStepTime: now,
+          brokenCells: new Set(),
+          poppingCells: new Map(),
+          phase: 'SWEEP',
+          cascadeLevel: nextCascadeLevel
+        };
+        game.brokenCells = lineClearAnimState.brokenCells;
+        game.poppingCells = lineClearAnimState.poppingCells;
+        advanceLineClearSweepStep();
       } else {
-        handleGameOver();
+        if (nextCascadeLevel >= 10 && nextDetect.count > 0) {
+          console.warn('[Tetris Cascade Warning] Maximum cascade safety cap (10) reached!');
+        }
+        lineClearAnimState = null;
+        game.isClearing = false;
+
+        if (!game.gameOver) {
+          game.spawnPiece();
+          if (game.gameOver) {
+            handleGameOver();
+          } else if (game.currentPiece) {
+            activePieceRef = game.currentPiece;
+            pieceVisualRow = game.currentPiece.y;
+          }
+        } else {
+          handleGameOver();
+        }
       }
     }
   }
