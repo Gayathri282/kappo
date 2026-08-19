@@ -220,10 +220,9 @@ export class TouchController {
         const absX = Math.abs(deltaX);
         const absY = Math.abs(deltaY);
 
-        // 1. Swipe Up -> Rotate Piece Clockwise (🔄)
+        // 1. Swipe Up -> Completely Disabled (No action)
         if (deltaY < -35 && absY > absX) {
-          this.vibrate(12);
-          this.handlers.onRotateCW();
+          // Swipe up intentionally disabled: zero effect on board or piece
           return;
         }
 

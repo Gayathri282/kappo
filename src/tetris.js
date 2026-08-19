@@ -450,6 +450,40 @@ export class TetrisGame {
     return floatingCount;
   }
 
+  validateLockConnectivity() {
+    if (!this.lastPlacedCells || this.lastPlacedCells.length === 0) return true;
+
+    // Check BFS orthogonal connectivity among all newly placed cells
+    const placedSet = new Set(this.lastPlacedCells.map(cell => `${cell.r}_${cell.c}`));
+    const visited = new Set();
+    const queue = [this.lastPlacedCells[0]];
+    visited.add(`${this.lastPlacedCells[0].r}_${this.lastPlacedCells[0].c}`);
+
+    while (queue.length > 0) {
+      const { r, c } = queue.shift();
+      const neighbors = [
+        { r: r - 1, c: c },
+        { r: r + 1, c: c },
+        { r: r, c: c - 1 },
+        { r: r, c: c + 1 }
+      ];
+
+      neighbors.forEach(n => {
+        const key = `${n.r}_${n.c}`;
+        if (placedSet.has(key) && !visited.has(key)) {
+          visited.add(key);
+          queue.push(n);
+        }
+      });
+    }
+
+    if (visited.size !== this.lastPlacedCells.length) {
+      console.error(`[CRITICAL SHAPE DISCONNECTION BUG] Locked piece cells are DISCONNECTED! Placed count: ${this.lastPlacedCells.length}, Connected cluster: ${visited.size}`, this.lastPlacedCells);
+      return false;
+    }
+    return true;
+  }
+
   lockPiece() {
     if (this.isLocking || !this.currentPiece) return;
     this.isLocking = true;
@@ -487,11 +521,8 @@ export class TetrisGame {
       this.gameOver = true;
     }
 
-    // Auto-compact columns after piece lock to guarantee gravity physics integrity
-    this.collapseGrid();
-
-    // Run live physics audit check for floating blocks
-    this.validatePhysicsNoGaps();
+    // Run lock connectivity validation check
+    this.validateLockConnectivity();
 
     this.timeSinceLastPlacement = 0;
     this.currentPiece = null;
