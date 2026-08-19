@@ -313,15 +313,15 @@ export class CanvasRenderer {
       }
     }
 
-    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks
+    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Matching Active Piece Fall Speed)
     if (isSettlingActive && settleAnimationState && settleAnimationState.blocks) {
-      const elapsed = now - settleAnimationState.startTime;
-      const duration = settleAnimationState.duration || 200;
-      const progress = Math.min(1.0, elapsed / duration);
-      // Natural gravity ease-in (quadratic acceleration)
-      const easeInGravity = progress * progress;
-
       settleAnimationState.blocks.forEach(b => {
+        const blockDuration = b.duration || settleAnimationState.duration || 350;
+        const blockElapsed = Math.min(blockDuration, Math.max(0, now - settleAnimationState.startTime));
+        const progress = blockElapsed / blockDuration; // 0.0 to 1.0
+        // Natural gravity ease-in acceleration (progress^1.8)
+        const easeInGravity = Math.pow(progress, 1.8);
+
         const visualRow = b.startRow + easeInGravity * b.dropDistance;
         const visualY = visualRow * this.cellHeight;
         this.drawTile(this.ctx, b.col, 0, this.cellWidth, b.flavor, false, false, 1.0, 0, 0, null, visualY);
