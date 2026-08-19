@@ -186,13 +186,13 @@ export class CanvasRenderer {
     const verticalMargin = 20;
     const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
-    // 2. Compute target board width DIRECTLY from viewport (wider max-width for 8-column legibility)
+    // 2. Compute target board width DIRECTLY from viewport (extra wide max-width for HUGE 9-column packets)
     const isMobile = viewportW <= 768;
     const targetW = isMobile
-      ? Math.min(viewportW * 0.95, 600)
-      : Math.min(viewportW * 0.70, 760);
+      ? Math.min(viewportW * 0.98, 720)
+      : Math.min(viewportW * 0.80, 880);
 
-    // 3. Grid dimensions: 8 columns x 14 rows for 8-column layout
+    // 3. Grid dimensions: 9 columns x 15 rows for 9-column layout
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
