@@ -33,65 +33,87 @@ function trimImageWhitespace(flavorId, img) {
     const imgData = ctx.getImageData(0, 0, w, h);
     const data = imgData.data;
 
-    function isBgPixel(x, y) {
-      const idx = (y * w + x) * 4;
+    // Helper: Is pixel background padding (transparent, near-white, or near-black)?
+    function isBgColor(idx) {
       const r = data[idx];
       const g = data[idx + 1];
       const b = data[idx + 2];
       const a = data[idx + 3];
-      // Transparent pixel OR pure white background padding OR pure black background padding
-      return a < 15 || (r > 240 && g > 240 && b > 240) || (r < 15 && g < 15 && b < 15);
+      return a < 20 || (r > 230 && g > 230 && b > 230) || (r < 25 && g < 25 && b < 25);
     }
 
-    // Edge-inward scan to locate the exact bounding box of the chip bag artwork
-    let minY = 0;
-    topLoop: for (let y = 0; y < h; y++) {
+    // Flood-fill background pixels starting from outer borders to make them 100% transparent
+    const visited = new Uint8Array(w * h);
+    const queue = [];
+
+    // Push all border pixels that match background color
+    for (let x = 0; x < w; x++) {
+      let topIdx = (0 * w + x) * 4;
+      if (isBgColor(topIdx)) { visited[0 * w + x] = 1; queue.push(x, 0); }
+      let botIdx = ((h - 1) * w + x) * 4;
+      if (isBgColor(botIdx)) { visited[(h - 1) * w + x] = 1; queue.push(x, h - 1); }
+    }
+    for (let y = 0; y < h; y++) {
+      let leftIdx = (y * w + 0) * 4;
+      if (isBgColor(leftIdx) && !visited[y * w + 0]) { visited[y * w + 0] = 1; queue.push(0, y); }
+      let rightIdx = (y * w + (w - 1)) * 4;
+      if (isBgColor(rightIdx) && !visited[y * w + (w - 1)]) { visited[y * w + (w - 1)] = 1; queue.push(w - 1, y); }
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const qx = queue[head++];
+      const qy = queue[head++];
+      const pIdx = (qy * w + qx) * 4;
+      data[pIdx + 3] = 0; // Make transparent!
+
+      // 4-neighbor expansion
+      const neighbors = [
+        [qx + 1, qy], [qx - 1, qy], [qx, qy + 1], [qx, qy - 1]
+      ];
+      for (let i = 0; i < 4; i++) {
+        const nx = neighbors[i][0];
+        const ny = neighbors[i][1];
+        if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+          const nPos = ny * w + nx;
+          if (!visited[nPos]) {
+            visited[nPos] = 1;
+            const nIdx = nPos * 4;
+            if (isBgColor(nIdx)) {
+              queue.push(nx, ny);
+            }
+          }
+        }
+      }
+    }
+
+    // Put cleaned transparent image data back to tempCanvas
+    ctx.putImageData(imgData, 0, 0);
+
+    // Locate exact bounding box of non-transparent artwork pixels
+    let minX = w, maxX = 0, minY = h, maxY = 0;
+    let found = false;
+    for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (!isBgPixel(x, y)) {
-          minY = y;
-          break topLoop;
+        const a = data[(y * w + x) * 4 + 3];
+        if (a > 20) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          found = true;
         }
       }
     }
 
-    let maxY = h - 1;
-    bottomLoop: for (let y = h - 1; y >= 0; y--) {
-      for (let x = 0; x < w; x++) {
-        if (!isBgPixel(x, y)) {
-          maxY = y;
-          break bottomLoop;
-        }
-      }
+    if (!found) {
+      minX = 0; maxX = w - 1; minY = 0; maxY = h - 1;
     }
 
-    let minX = 0;
-    leftLoop: for (let x = 0; x < w; x++) {
-      for (let y = 0; y < h; y++) {
-        if (!isBgPixel(x, y)) {
-          minX = x;
-          break leftLoop;
-        }
-      }
-    }
+    const cropW = Math.max(10, maxX - minX + 1);
+    const cropH = Math.max(10, maxY - minY + 1);
 
-    let maxX = w - 1;
-    rightLoop: for (let x = w - 1; x >= 0; x--) {
-      for (let y = 0; y < h; y++) {
-        if (!isBgPixel(x, y)) {
-          maxX = x;
-          break rightLoop;
-        }
-      }
-    }
-
-    // Safety margin of 2 pixels around the packet artwork
-    const finalMinX = Math.max(0, minX - 2);
-    const finalMinY = Math.max(0, minY - 2);
-    const finalMaxX = Math.min(w - 1, maxX + 2);
-    const finalMaxY = Math.min(h - 1, maxY + 2);
-
-    const cropW = Math.max(10, finalMaxX - finalMinX + 1);
-    const cropH = Math.max(10, finalMaxY - finalMinY + 1);    // Standardized 300x340 square-ish tile canvas (Strict 1 Packet = 1 Cell model)
+    // Standardized tile canvas (300x340)
     const TARGET_CANVAS_W = 300;
     const TARGET_CANVAS_H = 340;
     const normalizedCanvas = document.createElement('canvas');
@@ -99,18 +121,18 @@ function trimImageWhitespace(flavorId, img) {
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork using COVER fit so it completely fills the 300x340 canvas in both dimensions with ZERO empty background gaps!
+    // Scale trimmed artwork using COVER fit so it completely fills the 300x340 canvas in both dimensions with zero white/black background boxes!
     const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
     const drawX = (TARGET_CANVAS_W - drawW) / 2;
     const drawY = (TARGET_CANVAS_H - drawH) / 2;
 
-    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, drawX, drawY, drawW, drawH);
+    normCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
     PACKET_ASPECT_RATIOS[flavorId] = 1.0;
-    console.log(`[Cover Fit Packet Canvas] ${flavorId}: Filled 100% of 300x340 canvas with zero letterboxing gaps`);
+    console.log(`[Clean Transparent Packet Canvas] ${flavorId}: Scaled ${cropW}x${cropH} to 300x340 (Zero BG box, Cover Fit)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
