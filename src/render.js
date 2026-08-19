@@ -299,8 +299,8 @@ export class CanvasRenderer {
     // Shared uniform aspect ratio across all 4 packet images (1.25) for 100% normalized rendering
     const UNIFORM_ASPECT = 1.25;
 
-    // Render packet width to fill ~96% of cell width (matching Lay's Stacks reference!)
-    const fillRatio = 0.96;
+    // Render packet width to fill 100% of cell width flush edge-to-edge so curved pillow bags leave zero gaps inside blocks!
+    const fillRatio = 1.01;
     const blockW = Math.ceil(cW * fillRatio * baseScale);
     const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
 
