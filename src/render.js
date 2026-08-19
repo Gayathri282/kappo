@@ -250,10 +250,19 @@ export class CanvasRenderer {
 
     if (settleAnimationState) {
       const elapsed = now - settleAnimationState.startTime;
-      const duration = settleAnimationState.duration || 200;
+      const duration = settleAnimationState.duration || 240;
       if (elapsed < duration) {
         isSettlingActive = true;
-        activeSettleKeys = new Set(settleAnimationState.blocks.map(b => `${b.targetRow}_${b.col}`));
+        activeSettleKeys = new Set();
+        if (settleAnimationState.blocks) {
+          settleAnimationState.blocks.forEach(b => {
+            const minR = Math.min(b.startRow, b.targetRow);
+            const maxR = Math.max(b.startRow, b.targetRow);
+            for (let r = minR; r <= maxR; r++) {
+              activeSettleKeys.add(`${r}_${b.col}`);
+            }
+          });
+        }
       } else {
         settleAnimationState.isDone = true;
       }

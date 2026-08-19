@@ -291,8 +291,16 @@ function advanceLineClearSweepStep() {
     if (seq.steps[step]) {
       seq.steps[step].forEach(c => {
         const key = `${seq.row}_${c}`;
+        const cellObj = game.grid[seq.row] ? game.grid[seq.row][c] : null;
+        const cellFlavor = cellObj ? cellObj.flavor : null;
+
+        console.log(`[Visual FX Log] [Clear Flash/Pop] Row: ${seq.row}, Col: ${c}, Flavor: ${cellFlavor ? cellFlavor.id : 'default'}`);
+
         lineClearAnimState.brokenCells.add(key);
-        lineClearAnimState.poppingCells.set(key, performance.now());
+        lineClearAnimState.poppingCells.set(key, {
+          popStartTime: performance.now(),
+          flavor: cellFlavor
+        });
 
         // Spawn particle confetti burst per cell step
         for (let i = 0; i < 4; i++) {
@@ -303,7 +311,7 @@ function advanceLineClearSweepStep() {
             vy: (Math.random() - 0.6) * 7,
             gravity: 0.22,
             size: Math.random() * 6 + 2,
-            color: '#FACC15',
+            color: cellFlavor ? cellFlavor.mainColor : '#FACC15',
             rotation: Math.random() * Math.PI * 2,
             vRot: (Math.random() - 0.5) * 0.3,
             life: 1.0,
