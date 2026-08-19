@@ -92,31 +92,24 @@ function trimImageWhitespace(flavorId, img) {
 
     const cropW = Math.max(10, finalMaxX - finalMinX + 1);
     const cropH = Math.max(10, finalMaxY - finalMinY + 1);
-
-    // Standardized 300x336 (1.12 aspect ratio) canvas so every packet has identical bounds & legibility
+    // Standardized 300x384 (1.28 natural aspect ratio) canvas so every packet fills its box edge-to-edge
     const TARGET_CANVAS_W = 300;
-    const TARGET_CANVAS_H = 336; // 1.12 portrait aspect ratio for optimal vertical stack legibility
+    const TARGET_CANVAS_H = 384; // 1.28 natural 3D pillow bag aspect ratio
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork to fit tightly inside 300x336 canvas
-    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
-    const drawW = cropW * scale;
-    const drawH = cropH * scale;
-    const drawX = (TARGET_CANVAS_W - drawW) / 2;
-    const drawY = (TARGET_CANVAS_H - drawH) / 2;
-
-    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, drawX, drawY, drawW, drawH);
+    // Draw trimmed artwork to fill 100% of the 300x384 canvas with zero internal padding/margin
+    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, 0, 0, TARGET_CANVAS_W, TARGET_CANVAS_H);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.12;
-    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x336 (Aspect: 1.12)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.28;
+    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x384 (Aspect: 1.28)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.12;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.28;
     }
   }
 }
@@ -279,7 +272,7 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (Flush Edge-to-Edge & Legible Stacking) ─────
+  // ─── Draw 3D packet block tile (Large Prominent 97% Width, 1.28 Proportional Height) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
@@ -291,17 +284,17 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Shared uniform aspect ratio (1.12) for optimal vertical stack legibility without burying artwork
-    const UNIFORM_ASPECT = 1.12;
+    // Hard Rule: Never shrink packet to fit cell. Visual height scales proportionally with width (1.28 aspect)
+    const UNIFORM_ASPECT = 1.28;
+    const fillRatio = 0.97; // Fill 97% of cell width with near-zero 1px gap between adjacent columns
 
-    // Span 100% of cell width flush edge-to-edge with zero horizontal gaps between adjacent packets
-    const blockW = Math.ceil(cW * baseScale);
+    const blockW = Math.ceil(cW * fillRatio * baseScale);
     const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
 
-    // Exact horizontal column alignment
-    const px = Math.floor(offsetX + x * cW);
+    // Center horizontally inside cell column
+    const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
 
-    // Align base of packet inside grid cell foot, letting top overflow slightly per 1.12 aspect ratio
+    // Align base of packet inside grid cell foot, letting top overflow naturally per 1.28 aspect ratio
     const defaultPy = offsetY + y * cH - (blockH - cH);
     const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
