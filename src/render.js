@@ -112,16 +112,15 @@ function trimImageWhitespace(flavorId, img) {
 
     const cropW = Math.max(10, maxX - minX + 1);
     const cropH = Math.max(10, maxY - minY + 1);
-
-    // Standardized tile canvas (300x340)
-    const TARGET_CANVAS_W = 300;
-    const TARGET_CANVAS_H = 340;
+    // Standardized 900x1200px (Strict 3:4 portrait ratio) tile canvas
+    const TARGET_CANVAS_W = 900;
+    const TARGET_CANVAS_H = 1200; // Exact 3:4 ratio (900x1200px)
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork using COVER fit so it completely fills the 300x340 canvas in both dimensions with zero white/black background boxes!
+    // Cover scale to fill 100% of 900x1200 canvas with horizontal side trimming to preserve full height
     const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
@@ -131,12 +130,12 @@ function trimImageWhitespace(flavorId, img) {
     normCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.0;
-    console.log(`[Clean Transparent Packet Canvas] ${flavorId}: Scaled ${cropW}x${cropH} to 300x340 (Zero BG box, Cover Fit)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
+    console.log(`[Strict 3:4 Packet Canvas] ${flavorId}: Standardized to 900x1200px (Exact 3:4 Ratio)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.0;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
     }
   }
 }
@@ -228,7 +227,7 @@ export class CanvasRenderer {
     // 5. Set container dimensions via inline style
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
-    container.style.overflow = 'hidden';
+    container.style.overflow = 'visible';
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
 
@@ -299,7 +298,7 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (Strict 1 Packet = 1 Cell Model, Zero Overlap) ─────
+  // ─── Draw 3D packet block tile (Strict 3:4 Portrait Aspect Ratio: 900x1200px) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
@@ -311,12 +310,15 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Strict 1:1 Cell Footprint — Zero overflow into adjacent rows or columns
+    // Strict 3:4 portrait aspect ratio (Height = 1.3333 * Width, exact 3:4 ratio)
+    const UNIFORM_ASPECT = 1.3333;
+
     const blockW = Math.ceil(cW * baseScale);
-    const blockH = Math.ceil(cH * baseScale);
+    const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
 
     const px = Math.floor(offsetX + x * cW);
-    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
+    const defaultPy = offsetY + y * cH - (blockH - cH);
+    const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
     const srcW = spriteSource.width || spriteSource.naturalWidth;
     const srcH = spriteSource.height || spriteSource.naturalHeight;
@@ -352,10 +354,10 @@ export class CanvasRenderer {
 
     this.clear();
 
-    // Clip outer board boundary to exact playfield dimensions
+    // Clip outer board boundary allowing top overflow up to -1.5x cell height
     this.ctx.save();
     this.ctx.beginPath();
-    this.ctx.rect(0, 0, width, height);
+    this.ctx.rect(0, -this.cellHeight * 1.5, width, height + this.cellHeight * 1.5);
     this.ctx.clip();
 
     this.drawGrid(width, height, cols, rows);
