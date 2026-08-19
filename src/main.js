@@ -558,60 +558,60 @@ function update(time = 0) {
     if (game.isClearing && lineClearAnimState) {
       updateLineClearAnimation(time);
     } else if (game.currentPiece) {
-        const piece = game.currentPiece;
+      const piece = game.currentPiece;
 
-        if (activePieceRef !== piece) {
-          activePieceRef = piece;
-          pieceVisualRow = piece.y;
-        }
+      if (activePieceRef !== piece) {
+        activePieceRef = piece;
+        pieceVisualRow = piece.y;
+      }
 
-        const landingRow = game.getGhostY();
-        const rowsPerSec = game.getFallSpeedRowsPerSec();
-        const nextVisualRow = pieceVisualRow + rowsPerSec * deltaSeconds;
+      const landingRow = game.getGhostY();
+      const rowsPerSec = game.getFallSpeedRowsPerSec();
+      const nextVisualRow = pieceVisualRow + rowsPerSec * deltaSeconds;
 
-        if (nextVisualRow >= landingRow) {
-          pieceVisualRow = landingRow;
-          piece.y = landingRow;
+      if (nextVisualRow >= landingRow) {
+        pieceVisualRow = landingRow;
+        piece.y = landingRow;
 
-          sound.playBagLanding();
-          game.lockPiece();
-          if (game.gameOver) {
-            handleGameOver();
-          } else {
-            console.log(`[LOCK CHECK AUDIT] Checking rows after merging piece at (x: ${piece.x}, y: ${piece.y}).`);
-            processLineClears();
-          }
-        } else {
-          pieceVisualRow = nextVisualRow;
-          piece.y = Math.floor(pieceVisualRow);
-
-          // 500ms Fall-Stall Runtime Audit Check
-          if (time - fallStallCheckTime >= 500) {
-            if (activePieceRef === piece && pieceVisualRow < landingRow) {
-              const deltaY = pieceVisualRow - fallStallCheckY;
-              if (deltaY < 0.05) {
-                console.warn(`[Tetris Physics Warning] Free-fall stalled! pieceVisualRow advanced only ${deltaY.toFixed(3)} rows in 500ms.`);
-              }
-            }
-            fallStallCheckTime = time;
-            fallStallCheckY = pieceVisualRow;
-          }
-        }
-      } else if (!game.isClearing && !game.isLocking) {
-        // Recovery guard: guarantee game never freezes without an active piece
-        console.warn('[Tetris] No active piece found during gameplay loop. Spawning replacement piece.');
-        game.spawnPiece();
+        sound.playBagLanding();
+        game.lockPiece();
         if (game.gameOver) {
           handleGameOver();
-        } else if (game.currentPiece) {
-          activePieceRef = game.currentPiece;
-          pieceVisualRow = game.currentPiece.y;
+        } else {
+          console.log(`[LOCK CHECK AUDIT] Checking rows after merging piece at (x: ${piece.x}, y: ${piece.y}).`);
+          processLineClears();
+        }
+      } else {
+        pieceVisualRow = nextVisualRow;
+        piece.y = Math.floor(pieceVisualRow);
+
+        // 500ms Fall-Stall Runtime Audit Check
+        if (time - fallStallCheckTime >= 500) {
+          if (activePieceRef === piece && pieceVisualRow < landingRow) {
+            const deltaY = pieceVisualRow - fallStallCheckY;
+            if (deltaY < 0.05) {
+              console.warn(`[Tetris Physics Warning] Free-fall stalled! pieceVisualRow advanced only ${deltaY.toFixed(3)} rows in 500ms.`);
+            }
+          }
+          fallStallCheckTime = time;
+          fallStallCheckY = pieceVisualRow;
         }
       }
-
+    } else if (!game.isClearing && !game.isLocking) {
+      // Recovery guard: guarantee game never freezes without an active piece
+      console.warn('[Tetris] No active piece found during gameplay loop. Spawning replacement piece.');
+      game.spawnPiece();
       if (game.gameOver) {
         handleGameOver();
+      } else if (game.currentPiece) {
+        activePieceRef = game.currentPiece;
+        pieceVisualRow = game.currentPiece.y;
       }
+    }
+
+    if (game.gameOver) {
+      handleGameOver();
+    }
   }
 
   updateHUD();
