@@ -93,15 +93,15 @@ function trimImageWhitespace(flavorId, img) {
     const cropW = Math.max(10, finalMaxX - finalMinX + 1);
     const cropH = Math.max(10, finalMaxY - finalMinY + 1);
 
-    // Normalize all 4 packet images into a standardized 300x375 (1.25 aspect) canvas so every packet has identical bounds & aspect ratio
+    // Standardized 300x336 (1.12 aspect ratio) canvas so every packet has identical bounds & legibility
     const TARGET_CANVAS_W = 300;
-    const TARGET_CANVAS_H = 375; // 1.25 portrait aspect ratio
+    const TARGET_CANVAS_H = 336; // 1.12 portrait aspect ratio for optimal vertical stack legibility
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork to fit tightly inside 300x375 canvas
+    // Scale trimmed artwork to fit tightly inside 300x336 canvas
     const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
@@ -111,12 +111,12 @@ function trimImageWhitespace(flavorId, img) {
     normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.25;
-    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x375 (Aspect: 1.25)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.12;
+    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x336 (Aspect: 1.12)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.25;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.12;
     }
   }
 }
@@ -150,8 +150,6 @@ export class CanvasRenderer {
   }
 
   // ─── Resize: JS is the SINGLE SOURCE OF TRUTH for board dimensions ───────
-  // Board = 7 cols × 15 rows (Large, clearly legible packet branding first)
-  // Width is computed directly from viewport — NOT read from CSS/DOM.
   resizeToContainer(container, game = null) {
     if (!container) return;
 
@@ -169,8 +167,6 @@ export class CanvasRenderer {
     const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
     // 2. Compute target board width DIRECTLY from viewport (not from DOM measurement)
-    //    Mobile (≤768px): ~75% of viewport width, capped at 440px
-    //    Desktop (>768px): ~55% of viewport width, capped at 600px
     const isMobile = viewportW <= 768;
     const targetW = isMobile
       ? Math.min(viewportW * 0.75, 440)
@@ -181,7 +177,6 @@ export class CanvasRenderer {
     const rows = game ? game.rows : GRID_ROWS;
 
     // 4. Option A Aspect Ratio Clamping: Clamp cell height-to-width ratio within [1.0, 1.20]
-    // Prevents distortion across tall screens (e.g. Vivo) vs shorter/wider screens (e.g. iPhone)
     const MIN_CELL_ASPECT = 1.0;
     const MAX_CELL_ASPECT = 1.20;
 
@@ -284,7 +279,7 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (Chunky 96% Full-Width Packets) ─────
+  // ─── Draw 3D packet block tile (Flush Edge-to-Edge & Legible Stacking) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
@@ -296,18 +291,17 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Shared uniform aspect ratio across all 4 packet images (1.25) for 100% normalized rendering
-    const UNIFORM_ASPECT = 1.25;
+    // Shared uniform aspect ratio (1.12) for optimal vertical stack legibility without burying artwork
+    const UNIFORM_ASPECT = 1.12;
 
-    // Render packet width to fill 100% of cell width flush edge-to-edge so curved pillow bags leave zero gaps inside blocks!
-    const fillRatio = 1.01;
-    const blockW = Math.ceil(cW * fillRatio * baseScale);
+    // Span 100% of cell width flush edge-to-edge with zero horizontal gaps between adjacent packets
+    const blockW = Math.ceil(cW * baseScale);
     const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
 
-    // Center horizontally inside cell column
-    const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
+    // Exact horizontal column alignment
+    const px = Math.floor(offsetX + x * cW);
 
-    // Align base of packet inside grid cell foot, letting top overflow naturally per true aspect ratio
+    // Align base of packet inside grid cell foot, letting top overflow slightly per 1.12 aspect ratio
     const defaultPy = offsetY + y * cH - (blockH - cH);
     const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
