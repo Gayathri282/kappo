@@ -112,15 +112,15 @@ function trimImageWhitespace(flavorId, img) {
 
     const cropW = Math.max(10, maxX - minX + 1);
     const cropH = Math.max(10, maxY - minY + 1);
-    // Standardized tile canvas (600x600px square-ish cell canvas)
+    // Standardized 600x800px (3:4 portrait ratio) tile canvas matching true packet proportions
     const TARGET_CANVAS_W = 600;
-    const TARGET_CANVAS_H = 600;
+    const TARGET_CANVAS_H = 800; // Exact 3:4 ratio (600x800px)
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork using CONTAIN fit so 100% of the complete packet artwork (top crimp to bottom crimp) is fully visible inside every cell without cropping
+    // Scale trimmed artwork using CONTAIN fit so 100% of the complete packet artwork is fully visible inside 600x800 canvas without cropping
     const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
@@ -131,12 +131,12 @@ function trimImageWhitespace(flavorId, img) {
     normCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.0;
-    console.log(`[Full Packet Canvas] ${flavorId}: 100% complete packet artwork centered in 600x600px cell (Zero cropping)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
+    console.log(`[Full Packet Canvas] ${flavorId}: 100% complete packet artwork centered in 600x800px cell (3:4 Ratio, Zero Cropping)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.0;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
     }
   }
 }
@@ -161,7 +161,7 @@ export class CanvasRenderer {
     this.nextCanvasMobile = nextCanvasMobile;
 
     this.cellWidth  = 30;
-    this.cellHeight = 30; // Square cells: cellWidth === cellHeight
+    this.cellHeight = 40; // 3:4 portrait aspect ratio
     this.cellSize   = 30;
     this.dpr = window.devicePixelRatio || 1;
 
@@ -192,26 +192,20 @@ export class CanvasRenderer {
       ? Math.min(viewportW * 0.75, 440)
       : Math.min(viewportW * 0.55, 600);
 
-    // 3. Grid dimensions: 7 columns × 15 rows for large chunky packet cells
+    // 3. Grid dimensions: 7 columns × 15 rows
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
-    // 4. Option A Aspect Ratio Clamping: Clamp cell height-to-width ratio within [1.0, 1.20]
-    const MIN_CELL_ASPECT = 1.0;
-    const MAX_CELL_ASPECT = 1.20;
-
-    const rawCellW = targetW / cols;
-    const rawCellH = availH / rows;
-    const naturalAspect = rawCellH / rawCellW;
-    const clampedAspect = Math.max(MIN_CELL_ASPECT, Math.min(MAX_CELL_ASPECT, naturalAspect));
+    // 4. Match CELL ASPECT RATIO exactly to packet's 3:4 portrait aspect ratio (1.3333)
+    const PACKET_ASPECT = 1.3333; // 4/3 height-to-width ratio
 
     let cellW = targetW / cols;
-    let cellH = cellW * clampedAspect;
+    let cellH = cellW * PACKET_ASPECT;
 
-    // Height constraint: if board would exceed available height, scale down maintaining clamped aspect
+    // Height constraint: if board exceeds available height, scale down maintaining exact 3:4 aspect ratio
     if (cellH * rows > availH) {
       cellH = availH / rows;
-      cellW = cellH / clampedAspect;
+      cellW = cellH / PACKET_ASPECT;
     }
 
     this.cellWidth  = cellW;
