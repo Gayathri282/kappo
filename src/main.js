@@ -374,23 +374,9 @@ function updateLineClearAnimation(now) {
 
       console.log(`[Live Loop Clear Callback] (Cascade Lvl ${cascadeLevel}) Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
 
-      // Relaxed, smooth fall speed (650ms per row) so user can clearly see blocks falling after row clear
-      const msPerRow = 650;
-
-      let maxDuration = 650;
-      if (result.settlingBlocks && result.settlingBlocks.length > 0) {
-        result.settlingBlocks.forEach(b => {
-          b.duration = Math.round(b.dropDistance * msPerRow);
-        });
-        maxDuration = Math.max(650, ...result.settlingBlocks.map(b => b.duration));
-      }
-
       // Start smooth proportional gravity drop settling transition
-      settleAnimationState = {
-        startTime: now,
-        duration: maxDuration,
-        blocks: result.settlingBlocks
-      };
+      lineClearAnimState.collapseStartTime = now;
+      lineClearAnimState.collapseDuration = result.maxDuration || 650;
 
       if (cascadeLevel > 0) {
         sound.playMonoCrunch(1, null);
@@ -420,14 +406,14 @@ function updateLineClearAnimation(now) {
 
       checkBrandFactsMilestone();
       updateHUD();
-      console.log(`[Pacing State] Stage 2 Collapse Fall Started (350ms fall)...`);
+      console.log(`[Pacing State] Stage 2 Collapse Fall Started (${lineClearAnimState.collapseDuration}ms fall)...`);
     }
     return;
   }
 
-  // STAGE 2: COLLAPSE_FALL (350ms smooth fall animation)
+  // STAGE 2: COLLAPSE_FALL (smooth fall animation driven directly by cell objects)
   if (lineClearAnimState.phase === 'COLLAPSE_FALL') {
-    if (now - settleAnimationState.startTime >= settleAnimationState.duration) {
+    if (now - lineClearAnimState.collapseStartTime >= lineClearAnimState.collapseDuration) {
       // Collapse fall finished! Enter PAUSE_SETTLE phase (350ms pause to let player see settled stack)
       lineClearAnimState.phase = 'PAUSE_SETTLE';
       lineClearAnimState.pauseStartTime = now;

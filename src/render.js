@@ -244,85 +244,54 @@ export class CanvasRenderer {
 
     const now = performance.now();
 
-    // Per-block granular animation ownership tracking
-    const animatingCellKeys = new Set();
-    const activeAnimBlocks = [];
-
-    if (settleAnimationState && settleAnimationState.blocks) {
-      settleAnimationState.blocks.forEach(b => {
-        const blockDuration = b.duration || settleAnimationState.duration || 650;
-        const blockElapsed = now - settleAnimationState.startTime;
-
-        if (blockElapsed < blockDuration) {
-          // Block is actively in-flight: animation layer owns this block!
-          activeAnimBlocks.push(b);
-
-          // Suppress static rendering ONLY for the target destination cell and start cell
-          animatingCellKeys.add(`${b.targetRow}_${b.col}`);
-          animatingCellKeys.add(`${b.startRow}_${b.col}`);
-        }
-      });
-    }
-
-    // 1. Locked blocks (Top-to-bottom row order for natural overlapping seam z-index)
+    // Single Unified Grid Render Pass (Stationary & Falling Blocks drawn from 1 authoritative source)
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const key = `${r}_${c}`;
+        const cell = game.grid[r] ? game.grid[r][c] : null;
+        if (!cell) continue;
 
-        // Skip static rendering for cells currently actively in-flight in settle animation
-        if (animatingCellKeys.has(key)) {
-          continue;
-        }
+        let drawRow = r;
+        let alpha = 1.0;
+        let scale = 1.0;
 
-        // Check if cell is in active balloon-pop break animation
-        if (game.isClearing && game.poppingCells && game.poppingCells.has(key)) {
-          const popData = game.poppingCells.get(key);
-          const elapsed = now - (popData.popStartTime || now);
-          const popDuration = 180; // 180ms balloon pop duration
+        // 1. Continuous falling interpolation (Single source of truth per block)
+        if (cell.animStartTime !== undefined && cell.startRow !== undefined && cell.targetRow !== undefined) {
+          const blockDuration = cell.animDuration || 650;
+          const blockElapsed = Math.max(0, now - cell.animStartTime);
+          const progress = Math.min(1.0, blockElapsed / blockDuration);
+          const easeInGravity = Math.pow(progress, 1.8);
 
+          drawRow = cell.startRow + easeInGravity * (cell.targetRow - cell.startRow);
+
+          // Once block reaches destination, finalize position
+          if (progress >= 1.0) {
+            delete cell.animStartTime;
+            delete cell.startRow;
+            delete cell.targetRow;
+            delete cell.animDuration;
+            drawRow = r;
+          }
+        } else if (cell.popStartTime !== undefined) {
+          // Balloon pop break animation
+          const elapsed = now - cell.popStartTime;
+          const popDuration = 180;
           if (elapsed < popDuration) {
-            const t = elapsed / popDuration; // 0.0 to 1.0
-            let scale = 1.0;
-            let alpha = 1.0;
-
+            const t = elapsed / popDuration;
             if (t < 0.25) {
-              // Quick bulge scale up to 1.12x (0ms to 45ms)
               scale = 1.0 + (t / 0.25) * 0.12;
             } else {
-              // Rapid scale down to 0x & fade out (45ms to 180ms)
               const shrinkT = (t - 0.25) / 0.75;
               scale = 1.12 * (1.0 - shrinkT);
               alpha = 1.0 - shrinkT;
             }
-
-            this.drawTile(this.ctx, c, r, this.cellWidth, popData.flavor, false, false, Math.max(0, alpha), 0, 0, null, null, scale);
+          } else {
+            continue; // Popped block finished, skip drawing
           }
-          continue;
         }
 
-        const cell = game.grid[r] ? game.grid[r][c] : null;
-        if (cell) {
-          if (game.isClearing && game.brokenCells && game.brokenCells.has(key)) {
-            continue; // Skip rendering broken blocks in clearing row
-          }
-          this.drawTile(this.ctx, c, r, this.cellWidth, cell.flavor, false, false);
-        }
+        const visualY = drawRow * this.cellHeight;
+        this.drawTile(this.ctx, c, 0, this.cellWidth, cell.flavor, false, false, Math.max(0, alpha), 0, 0, null, visualY, scale);
       }
-    }
-
-    // 1b. Smooth Gravity-Drop Row-Collapse Animated Blocks (Exclusively drawing in-flight blocks)
-    if (activeAnimBlocks.length > 0) {
-      activeAnimBlocks.forEach(b => {
-        const blockDuration = b.duration || settleAnimationState.duration || 350;
-        const blockElapsed = Math.min(blockDuration, Math.max(0, now - settleAnimationState.startTime));
-        const progress = blockElapsed / blockDuration; // 0.0 to 1.0
-        // Natural gravity ease-in acceleration (progress^1.8)
-        const easeInGravity = Math.pow(progress, 1.8);
-
-        const visualRow = b.startRow + easeInGravity * b.dropDistance;
-        const visualY = visualRow * this.cellHeight;
-        this.drawTile(this.ctx, b.col, 0, this.cellWidth, b.flavor, false, false, 1.0, 0, 0, null, visualY);
-      });
     }
 
     if (game.currentPiece && !game.gameOver) {

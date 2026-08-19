@@ -757,6 +757,24 @@ export class TetrisGame {
     // Rescan board and compact occupied cells downward column-by-column
     this.collapseGrid();
 
+    // Attach fall animation properties directly to collapsed cell objects for single-source rendering
+    const now = performance.now();
+    let maxDuration = 350;
+    const msPerRow = 650; // Relaxed 650ms per row fall speed
+
+    settlingBlocks.forEach(b => {
+      const cell = this.grid[b.targetRow] ? this.grid[b.targetRow][b.col] : null;
+      if (cell) {
+        cell.startRow = b.startRow;
+        cell.targetRow = b.targetRow;
+        cell.animStartTime = now;
+        cell.animDuration = Math.round(b.dropDistance * msPerRow);
+        if (cell.animDuration > maxDuration) {
+          maxDuration = cell.animDuration;
+        }
+      }
+    });
+
     const count = clearedIndices.length;
     this.lines += count;
 
@@ -792,7 +810,8 @@ export class TetrisGame {
       monoFlavor: monoCount > 0 ? monoDetails[0].flavor : null,
       earnedScore: earnedScore,
       leveledUp: leveledUp,
-      settlingBlocks: settlingBlocks
+      settlingBlocks: settlingBlocks,
+      maxDuration: maxDuration
     };
   }
 
