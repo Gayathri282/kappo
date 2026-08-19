@@ -220,10 +220,10 @@ export class TouchController {
         const absX = Math.abs(deltaX);
         const absY = Math.abs(deltaY);
 
-        // 1. Swipe Up -> Hold Piece (📦)
+        // 1. Swipe Up -> Rotate Piece Clockwise (🔄)
         if (deltaY < -35 && absY > absX) {
           this.vibrate(12);
-          this.handlers.onHold();
+          this.handlers.onRotateCW();
           return;
         }
 

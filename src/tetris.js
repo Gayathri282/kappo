@@ -295,6 +295,33 @@ export class TetrisGame {
     return result;
   }
 
+  validatePieceIntegrity(piece) {
+    if (!piece || !piece.matrix || !Array.isArray(piece.matrix)) {
+      console.error('[CRITICAL SHAPE CORRUPTION] Piece matrix is invalid or not an array!', piece);
+      return false;
+    }
+
+    let cellCount = 0;
+    for (let r = 0; r < piece.matrix.length; r++) {
+      if (!Array.isArray(piece.matrix[r])) {
+        console.error(`[CRITICAL SHAPE CORRUPTION] Piece matrix row ${r} is not an array!`, piece.matrix);
+        return false;
+      }
+      for (let c = 0; c < piece.matrix[r].length; c++) {
+        if (piece.matrix[r][c] === 1) {
+          cellCount++;
+        }
+      }
+    }
+
+    if (cellCount !== 4) {
+      console.error(`[CRITICAL SHAPE CORRUPTION] Invalid cell count in piece shape matrix! Expected 4 cells, found ${cellCount}. Matrix:`, JSON.stringify(piece.matrix));
+      return false;
+    }
+
+    return true;
+  }
+
   rotate(dir = 1) {
     if (this.gameOver || this.paused || this.isClearing || this.isLocking || !this.currentPiece) return false;
 
@@ -309,6 +336,13 @@ export class TetrisGame {
 
     const rotatedMatrix = this.rotateMatrix(piece.matrix, dir);
     const newRotation = (origRotation + dir + 4) % 4;
+
+    // Pre-rotation shape matrix integrity validation
+    const tempPiece = { matrix: rotatedMatrix };
+    if (!this.validatePieceIntegrity(tempPiece)) {
+      console.error('[Tetris] Rotated matrix failed shape integrity validation! Rejecting rotation.');
+      return false;
+    }
 
     // SRS Wall kick test + Extended Floor Kick offsets so rotation works all the way down to the last grid!
     const kickIndex = dir > 0 ? origRotation : newRotation;
@@ -334,8 +368,8 @@ export class TetrisGame {
         piece.rotation = newRotation;
 
         // Post-rotation Integrity Guard: Verify state is 100% valid & collision-free
-        if (this.checkCollision(piece.x, piece.y, piece.matrix)) {
-          console.warn('[Tetris] Post-rotation collision detected! Reverting rotation state.');
+        if (this.checkCollision(piece.x, piece.y, piece.matrix) || !this.validatePieceIntegrity(piece)) {
+          console.warn('[Tetris] Post-rotation collision or shape corruption detected! Reverting rotation state.');
           piece.x = origX;
           piece.y = origY;
           piece.matrix = origMatrix;

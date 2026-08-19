@@ -179,20 +179,19 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D neon packet block tile (Large Legible Packets - 1.45x height ratio) ─────
+  // ─── Draw 3D neon packet block tile (Clean Proportional Packets) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
 
-    // Large legible packet scaling: width fills cell (1.02x), height scales to 1.45x for tall chip bag art
+    // Clean proportional packet scaling: aligns crisp and solid inside cell footprint
     const baseScale = customScale != null ? customScale : 1.0;
-    const packetH = cH * 1.45;
+    const packetH = cH * 1.05;
 
-    const blockW = Math.ceil(cW * 1.02 * baseScale);
+    const blockW = Math.ceil(cW * 1.0 * baseScale);
     const blockH = Math.ceil(packetH * baseScale);
 
     const px = Math.floor(offsetX + x * cW);
-    // Overflow into upper cell visually while keeping base aligned to bottom of grid row
     const defaultPy = offsetY + y * cH - (blockH - cH);
     const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
 
