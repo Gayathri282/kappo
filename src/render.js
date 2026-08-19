@@ -414,7 +414,8 @@ export class CanvasRenderer {
   // ─── Next queue preview (horizontal strip for top header) ───────────
   renderNextQueue(nextQueueTypes, createPieceFn) {
     const drawHorizontalQueue = (canvas) => {
-      if (!canvas || !nextQueueTypes || nextQueueTypes.length === 0) return;
+      if (!canvas) return;
+      if (!nextQueueTypes || nextQueueTypes.length === 0) return;
       const ctx = canvas.getContext('2d');
       const canvasW = canvas.width;
       const canvasH = canvas.height;
