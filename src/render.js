@@ -112,15 +112,15 @@ function trimImageWhitespace(flavorId, img) {
 
     const cropW = Math.max(10, maxX - minX + 1);
     const cropH = Math.max(10, maxY - minY + 1);
-    // Standardized 900x1200px (Strict 3:4 portrait ratio) tile canvas
-    const TARGET_CANVAS_W = 900;
-    const TARGET_CANVAS_H = 1200; // Exact 3:4 ratio (900x1200px)
+    // Standardized tile canvas (600x600px square-ish cell canvas)
+    const TARGET_CANVAS_W = 600;
+    const TARGET_CANVAS_H = 600;
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Cover scale to fill 100% of 900x1200 canvas with horizontal side trimming to preserve full height
+    // Scale trimmed artwork using COVER fit so it completely fills the cell canvas in both dimensions with ZERO empty background space
     const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
@@ -130,12 +130,12 @@ function trimImageWhitespace(flavorId, img) {
     normCtx.drawImage(tempCanvas, minX, minY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
-    console.log(`[Strict 3:4 Packet Canvas] ${flavorId}: Standardized to 900x1200px (Exact 3:4 Ratio)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.0;
+    console.log(`[Strict No-Overlap Canvas] ${flavorId}: Standardized to 600x600px Cell Canvas (Zero Overlap, Cover Fit)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.0;
     }
   }
 }
@@ -227,7 +227,7 @@ export class CanvasRenderer {
     // 5. Set container dimensions via inline style
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
-    container.style.overflow = 'visible';
+    container.style.overflow = 'hidden';
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
 
@@ -298,7 +298,7 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (Strict 3:4 Portrait Aspect Ratio: 900x1200px) ─────
+  // ─── Draw 3D packet block tile (Strict No-Overlap Model: packetWidth = cellWidth, packetHeight = cellHeight) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
@@ -310,15 +310,12 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Strict 3:4 portrait aspect ratio (Height = 1.3333 * Width, exact 3:4 ratio)
-    const UNIFORM_ASPECT = 1.3333;
-
+    // Strict 1:1 Cell Footprint — packetWidth = cellWidth, packetHeight = cellHeight (Zero vertical overlap!)
     const blockW = Math.ceil(cW * baseScale);
-    const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
+    const blockH = Math.ceil(cH * baseScale);
 
     const px = Math.floor(offsetX + x * cW);
-    const defaultPy = offsetY + y * cH - (blockH - cH);
-    const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
+    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
 
     const srcW = spriteSource.width || spriteSource.naturalWidth;
     const srcH = spriteSource.height || spriteSource.naturalHeight;
@@ -354,10 +351,10 @@ export class CanvasRenderer {
 
     this.clear();
 
-    // Clip outer board boundary allowing top overflow up to -1.5x cell height
+    // Clip outer board boundary to exact playfield dimensions (No vertical overflow into outer space)
     this.ctx.save();
     this.ctx.beginPath();
-    this.ctx.rect(0, -this.cellHeight * 1.5, width, height + this.cellHeight * 1.5);
+    this.ctx.rect(0, 0, width, height);
     this.ctx.clip();
 
     this.drawGrid(width, height, cols, rows);
