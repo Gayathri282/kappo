@@ -359,7 +359,8 @@ function updateLineClearAnimation(now) {
         detect.lines,
         detect.clearedDetails,
         detect.allClearedKeys,
-        detect.chainCells
+        detect.chainCells,
+        now
       );
 
       const countAfterClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
@@ -367,9 +368,9 @@ function updateLineClearAnimation(now) {
 
       console.log(`[Live Loop Clear Callback] (Cascade Lvl ${cascadeLevel}) Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
 
-      // Start smooth proportional gravity drop settling transition
+      // Start synchronized uniform batch fall settling transition (350ms)
       lineClearAnimState.collapseStartTime = now;
-      lineClearAnimState.collapseDuration = result.maxDuration || 250;
+      lineClearAnimState.collapseDuration = 350;
 
       if (cascadeLevel > 0) {
         sound.playMonoCrunch(1, null);

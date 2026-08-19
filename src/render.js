@@ -356,7 +356,7 @@ export class CanvasRenderer {
 
         // 1. Continuous falling interpolation (Single source of truth per block)
         if (cell.animStartTime !== undefined && cell.startRow !== undefined && cell.targetRow !== undefined) {
-          const blockDuration = cell.animDuration || 250;
+          const blockDuration = cell.animDuration || 350;
           const blockElapsed = Math.max(0, now - cell.animStartTime);
           const progress = Math.min(1.0, blockElapsed / blockDuration);
           const easeInGravity = Math.pow(progress, 1.8);

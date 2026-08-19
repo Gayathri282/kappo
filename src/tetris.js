@@ -665,7 +665,10 @@ export class TetrisGame {
   }
 
   // Rescan entire board column by column (bottom to top), shift blocks down & pad top with empty cells
-  collapseGrid() {
+  collapseGrid(collapseTime = null) {
+    const startTime = collapseTime || performance.now();
+    const UNIFORM_FALL_DURATION = 350;
+
     // 1. Pre-collapse sanity check: count occupied cells
     let countBefore = 0;
     for (let r = 0; r < this.rows; r++) {
@@ -681,7 +684,7 @@ export class TetrisGame {
       const occupied = [];
       for (let r = 0; r < this.rows; r++) {
         if (this.grid[r][c] !== null) {
-          occupied.push(this.grid[r][c]);
+          occupied.push({ cell: this.grid[r][c], oldRow: r });
         }
       }
 
@@ -691,7 +694,19 @@ export class TetrisGame {
         this.grid[r][c] = null;
       }
       for (let i = 0; i < occupied.length; i++) {
-        this.grid[emptyCount + i][c] = occupied[i];
+        const newRow = emptyCount + i;
+        const item = occupied[i];
+        const cell = item.cell;
+
+        this.grid[newRow][c] = cell;
+
+        // If block moved down, attach fall animation properties directly to cell object!
+        if (newRow > item.oldRow) {
+          cell.startRow = item.oldRow;
+          cell.targetRow = newRow;
+          cell.animStartTime = startTime;
+          cell.animDuration = UNIFORM_FALL_DURATION;
+        }
       }
     }
 
@@ -715,8 +730,10 @@ export class TetrisGame {
   }
 
   // Collapse clearing rows & apply score/level stats after break animation
-  finishClearLines(clearedIndices, clearedDetails, allClearedKeys = null, chainCells = []) {
-    if (!clearedIndices || clearedIndices.length === 0) return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false, settlingBlocks: [] };
+  finishClearLines(clearedIndices, clearedDetails, allClearedKeys, chainCells, batchStartTime = null) {
+    if ((!clearedIndices || clearedIndices.length === 0) && (!allClearedKeys || allClearedKeys.size === 0)) {
+      return { count: 0, lines: [], blastedCells: [], chainCount: 0, clearedDetails: [], maxDuration: 0 };
+    }
 
     // Safety Audit Check: Log warning if single clear event clears > 21 cells (>3 rows)
     const totalCellsToClear = allClearedKeys ? allClearedKeys.size : (clearedIndices.length * this.cols);
@@ -754,26 +771,10 @@ export class TetrisGame {
       });
     }
 
-    // Rescan board and compact occupied cells downward column-by-column
-    this.collapseGrid();
-
-    // Attach fall animation properties directly to collapsed cell objects for single-source rendering
-    const now = performance.now();
-    let maxDuration = 350;
-    const msPerRow = 650; // Relaxed 650ms per row fall speed
-
-    settlingBlocks.forEach(b => {
-      const cell = this.grid[b.targetRow] ? this.grid[b.targetRow][b.col] : null;
-      if (cell) {
-        cell.startRow = b.startRow;
-        cell.targetRow = b.targetRow;
-        cell.animStartTime = now;
-        cell.animDuration = Math.round(b.dropDistance * msPerRow);
-        if (cell.animDuration > maxDuration) {
-          maxDuration = cell.animDuration;
-        }
-      }
-    });
+    // Rescan board and compact occupied cells downward column-by-column, attaching uniform batch fall properties
+    const collapseTime = batchStartTime || performance.now();
+    this.collapseGrid(collapseTime);
+    const UNIFORM_FALL_DURATION = 350;
 
     const count = clearedIndices.length;
     this.lines += count;
@@ -811,7 +812,7 @@ export class TetrisGame {
       earnedScore: earnedScore,
       leveledUp: leveledUp,
       settlingBlocks: settlingBlocks,
-      maxDuration: maxDuration
+      maxDuration: UNIFORM_FALL_DURATION
     };
   }
 
