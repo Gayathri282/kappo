@@ -99,8 +99,8 @@ function trimImageWhitespace(flavorId, img) {
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork to fit tightly inside 300x340 canvas (contain fit)
-    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
+    // Scale trimmed artwork using COVER fit so it completely fills the 300x340 canvas in both dimensions with ZERO empty background gaps!
+    const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
     const drawX = (TARGET_CANVAS_W - drawW) / 2;
@@ -110,7 +110,7 @@ function trimImageWhitespace(flavorId, img) {
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
     PACKET_ASPECT_RATIOS[flavorId] = 1.0;
-    console.log(`[Strict 1:1 Packet Canvas] ${flavorId}: Centered ${cropW}x${cropH} inside 300x340 canvas`);
+    console.log(`[Cover Fit Packet Canvas] ${flavorId}: Filled 100% of 300x340 canvas with zero letterboxing gaps`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
