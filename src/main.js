@@ -563,10 +563,8 @@ function update(time = 0) {
           if (game.gameOver) {
             handleGameOver();
           } else {
-            // Defer line clear animation by 1 frame so locked piece renders solid in row gap on screen
-            requestAnimationFrame(() => {
-              processLineClears();
-            });
+            console.log(`[LOCK CHECK AUDIT] Checking rows after merging piece at (x: ${piece.x}, y: ${piece.y}).`);
+            processLineClears();
           }
         } else {
           pieceVisualRow = nextVisualRow;
