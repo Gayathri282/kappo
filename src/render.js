@@ -75,14 +75,23 @@ export class CanvasRenderer {
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
-    // 4. Chunky square logical cells: cellWidth === cellHeight
-    let cellW = targetW / cols;
-    let cellH = cellW; // SQUARE logical grid footprint
+    // 4. Option A Aspect Ratio Clamping: Clamp cell height-to-width ratio within [1.0, 1.20]
+    // Prevents distortion across tall screens (e.g. Vivo) vs shorter/wider screens (e.g. iPhone)
+    const MIN_CELL_ASPECT = 1.0;
+    const MAX_CELL_ASPECT = 1.20;
 
-    // Height constraint: if board would exceed available height, scale down
+    const rawCellW = targetW / cols;
+    const rawCellH = availH / rows;
+    const naturalAspect = rawCellH / rawCellW;
+    const clampedAspect = Math.max(MIN_CELL_ASPECT, Math.min(MAX_CELL_ASPECT, naturalAspect));
+
+    let cellW = targetW / cols;
+    let cellH = cellW * clampedAspect;
+
+    // Height constraint: if board would exceed available height, scale down maintaining clamped aspect
     if (cellH * rows > availH) {
       cellH = availH / rows;
-      cellW = cellH; // maintain square logical footprint
+      cellW = cellH / clampedAspect;
     }
 
     this.cellWidth  = cellW;

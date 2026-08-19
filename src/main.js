@@ -328,12 +328,23 @@ function updateLineClearAnimation(now) {
       lineClearAnimState.phase = 'SETTLE';
       const detect = lineClearAnimState.detect;
 
+      // Live game loop integrity assertion check before clear & collapse
+      const countBeforeClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
+
       const result = game.finishClearLines(
         detect.lines,
         detect.clearedDetails,
         detect.allClearedKeys,
         detect.chainCells
       );
+
+      const countAfterClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
+      const expectedCountAfter = countBeforeClear - (result.blastedCells ? result.blastedCells.length : 0);
+
+      console.log(`[Live Loop Clear Callback] Grid blocks before clear: ${countBeforeClear}, blasted: ${result.blastedCells ? result.blastedCells.length : 0}, expected after: ${expectedCountAfter}, actual after: ${countAfterClear}`);
+      if (countAfterClear !== expectedCountAfter) {
+        console.error(`[LIVE GAME LOOP INTEGRITY FAILURE] Block count mismatch in live loop clear callback! Expected ${expectedCountAfter}, but got ${countAfterClear}`);
+      }
 
       // Start smooth 240ms gravity drop settling transition
       settleAnimationState = {

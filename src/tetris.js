@@ -583,6 +583,53 @@ export class TetrisGame {
     return settlingBlocks;
   }
 
+  // Rescan entire board column by column (bottom to top), shift blocks down & pad top with empty cells
+  collapseGrid() {
+    // 1. Pre-collapse sanity check: count occupied cells
+    let countBefore = 0;
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (this.grid[r][c] !== null) {
+          countBefore++;
+        }
+      }
+    }
+
+    // 2. Column-by-column compaction (from top to bottom preserving relative order)
+    for (let c = 0; c < this.cols; c++) {
+      const occupied = [];
+      for (let r = 0; r < this.rows; r++) {
+        if (this.grid[r][c] !== null) {
+          occupied.push(this.grid[r][c]);
+        }
+      }
+
+      const emptyCount = this.rows - occupied.length;
+      // Re-write column: top padded with null, bottom filled with occupied cells
+      for (let r = 0; r < emptyCount; r++) {
+        this.grid[r][c] = null;
+      }
+      for (let i = 0; i < occupied.length; i++) {
+        this.grid[emptyCount + i][c] = occupied[i];
+      }
+    }
+
+    // 3. Post-collapse sanity check: verify count matches
+    let countAfter = 0;
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (this.grid[r][c] !== null) {
+          countAfter++;
+        }
+      }
+    }
+
+    console.log(`[Collapse Integrity Check] Occupied blocks count before collapse: ${countBefore}, after collapse: ${countAfter}`);
+    if (countBefore !== countAfter) {
+      console.warn(`[Collapse Bug Warning] Occupied cell mismatch detected! Before: ${countBefore}, After: ${countAfter}`);
+    }
+  }
+
   // Collapse clearing rows & apply score/level stats after break animation
   finishClearLines(clearedIndices, clearedDetails, allClearedKeys = null, chainCells = []) {
     if (!clearedIndices || clearedIndices.length === 0) return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false, settlingBlocks: [] };
@@ -592,24 +639,29 @@ export class TetrisGame {
 
     const blastedCells = [];
 
-    if (allClearedKeys) {
+    if (allClearedKeys && allClearedKeys.size > 0) {
       allClearedKeys.forEach(key => {
         const [rStr, cStr] = key.split('_');
         const r = parseInt(rStr, 10);
         const c = parseInt(cStr, 10);
-        if (this.grid[r] && this.grid[r][c]) {
+        if (this.grid[r] && this.grid[r][c] !== null) {
           blastedCells.push({ r, c, flavor: this.grid[r][c].flavor, isDirectLine: clearedIndices.includes(r) });
           this.grid[r][c] = null;
         }
       });
+    } else if (clearedIndices && clearedIndices.length > 0) {
+      clearedIndices.forEach(r => {
+        for (let c = 0; c < this.cols; c++) {
+          if (this.grid[r] && this.grid[r][c] !== null) {
+            blastedCells.push({ r, c, flavor: this.grid[r][c].flavor, isDirectLine: true });
+            this.grid[r][c] = null;
+          }
+        }
+      });
     }
 
-    // Remove full cleared rows in DESCENDING order so indices do not shift!
-    const sortedLines = [...clearedIndices].sort((a, b) => b - a);
-    sortedLines.forEach(index => {
-      this.grid.splice(index, 1);
-      this.grid.unshift(new Array(this.cols).fill(null));
-    });
+    // Rescan board and compact occupied cells downward column-by-column
+    this.collapseGrid();
 
     const count = clearedIndices.length;
     this.lines += count;
@@ -656,7 +708,7 @@ export class TetrisGame {
     if (detect.count === 0) {
       return { count: 0, lines: [], blastedCells: [], extraBlastCount: 0, clearedDetails: [], monoCount: 0, monoFlavor: null, earnedScore: 0, leveledUp: false };
     }
-    return this.finishClearLines(detect.lines, detect.clearedDetails);
+    return this.finishClearLines(detect.lines, detect.clearedDetails, detect.allClearedKeys, detect.chainCells);
   }
 
   // Tick gravity step
