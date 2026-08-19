@@ -91,25 +91,30 @@ function trimImageWhitespace(flavorId, img) {
     const finalMaxY = Math.min(h - 1, maxY + 2);
 
     const cropW = Math.max(10, finalMaxX - finalMinX + 1);
-    const cropH = Math.max(10, finalMaxY - finalMinY + 1);
-    // Standardized 300x384 (1.28 natural aspect ratio) canvas so every packet fills its box edge-to-edge
+    const cropH = Math.max(10, finalMaxY - finalMinY + 1);    // Standardized 300x340 square-ish tile canvas (Strict 1 Packet = 1 Cell model)
     const TARGET_CANVAS_W = 300;
-    const TARGET_CANVAS_H = 384; // 1.28 natural 3D pillow bag aspect ratio
+    const TARGET_CANVAS_H = 340;
     const normalizedCanvas = document.createElement('canvas');
     normalizedCanvas.width = TARGET_CANVAS_W;
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Draw trimmed artwork to fill 100% of the 300x384 canvas with zero internal padding/margin
-    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, 0, 0, TARGET_CANVAS_W, TARGET_CANVAS_H);
+    // Scale trimmed artwork to fit tightly inside 300x340 canvas (contain fit)
+    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
+    const drawW = cropW * scale;
+    const drawH = cropH * scale;
+    const drawX = (TARGET_CANVAS_W - drawW) / 2;
+    const drawY = (TARGET_CANVAS_H - drawH) / 2;
+
+    normCtx.drawImage(tempCanvas, finalMinX, finalMinY, cropW, cropH, drawX, drawY, drawW, drawH);
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
-    PACKET_ASPECT_RATIOS[flavorId] = 1.28;
-    console.log(`[Packet Trim & Normalize Success] ${flavorId}: Scaled ${cropW}x${cropH} to 300x384 (Aspect: 1.28)`);
+    PACKET_ASPECT_RATIOS[flavorId] = 1.0;
+    console.log(`[Strict 1:1 Packet Canvas] ${flavorId}: Centered ${cropW}x${cropH} inside 300x340 canvas`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
-      PACKET_ASPECT_RATIOS[flavorId] = 1.28;
+      PACKET_ASPECT_RATIOS[flavorId] = 1.0;
     }
   }
 }
@@ -198,10 +203,10 @@ export class CanvasRenderer {
       game.setDimensions(cols, rows);
     }
 
-    // 5. Set container dimensions via inline style (overflow: visible allows top packet overflow)
+    // 5. Set container dimensions via inline style
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
-    container.style.overflow = 'visible';
+    container.style.overflow = 'hidden';
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
 
@@ -272,7 +277,7 @@ export class CanvasRenderer {
     }
   }
 
-  // ─── Draw 3D packet block tile (Large Prominent 97% Width, 1.28 Proportional Height) ─────
+  // ─── Draw 3D packet block tile (Strict 1 Packet = 1 Cell Model, Zero Overlap) ─────
   drawTile(ctx, x, y, cellSize, flavor, isGhost = false, isActiveFalling = false, alpha = 1.0, offsetX = 0, offsetY = 0, customCellH = null, customPy = null, customScale = null) {
     const cW = cellSize;
     const cH = customCellH != null ? customCellH : (this.cellHeight || cellSize);
@@ -284,19 +289,12 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Hard Rule: Never shrink packet to fit cell. Visual height scales proportionally with width (1.28 aspect)
-    const UNIFORM_ASPECT = 1.28;
-    const fillRatio = 0.97; // Fill 97% of cell width with near-zero 1px gap between adjacent columns
+    // Strict 1:1 Cell Footprint — Zero overflow into adjacent rows or columns
+    const blockW = Math.ceil(cW * baseScale);
+    const blockH = Math.ceil(cH * baseScale);
 
-    const blockW = Math.ceil(cW * fillRatio * baseScale);
-    const blockH = Math.ceil(blockW * UNIFORM_ASPECT);
-
-    // Center horizontally inside cell column
-    const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
-
-    // Align base of packet inside grid cell foot, letting top overflow naturally per 1.28 aspect ratio
-    const defaultPy = offsetY + y * cH - (blockH - cH);
-    const py = Math.floor(customPy != null ? (customPy - (blockH - cH)) : defaultPy);
+    const px = Math.floor(offsetX + x * cW);
+    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
 
     const srcW = spriteSource.width || spriteSource.naturalWidth;
     const srcH = spriteSource.height || spriteSource.naturalHeight;
@@ -332,10 +330,10 @@ export class CanvasRenderer {
 
     this.clear();
 
-    // Clip outer board boundary allowing top overflow up to -1.5x cell height so top row packets aren't clipped
+    // Clip outer board boundary to exact playfield dimensions
     this.ctx.save();
     this.ctx.beginPath();
-    this.ctx.rect(0, -this.cellHeight * 1.5, width, height + this.cellHeight * 1.5);
+    this.ctx.rect(0, 0, width, height);
     this.ctx.clip();
 
     this.drawGrid(width, height, cols, rows);
