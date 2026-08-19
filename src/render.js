@@ -39,8 +39,8 @@ function trimImageWhitespace(flavorId, img) {
       const g = data[idx + 1];
       const b = data[idx + 2];
       const a = data[idx + 3];
-      // Transparent pixel OR pure white background padding pixel
-      return a < 15 || (r > 245 && g > 245 && b > 245);
+      // Transparent pixel OR pure white background padding OR pure black background padding
+      return a < 15 || (r > 240 && g > 240 && b > 240) || (r < 15 && g < 15 && b < 15);
     }
 
     // Edge-inward scan to locate the exact bounding box of the chip bag artwork
