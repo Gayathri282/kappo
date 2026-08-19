@@ -493,7 +493,7 @@ export class TetrisGame {
     const landingY = this.getGhostY();
     piece.y = landingY;
 
-    const intX = Math.floor(piece.x);
+    const intX = Math.round(piece.x);
     const intY = Math.floor(piece.y);
 
     this.lastPlacedCells = [];

@@ -292,15 +292,12 @@ function advanceLineClearSweepStep() {
       seq.steps[step].forEach(c => {
         const key = `${seq.row}_${c}`;
         const cellObj = game.grid[seq.row] ? game.grid[seq.row][c] : null;
+        if (cellObj) {
+          cellObj.popStartTime = performance.now();
+        }
         const cellFlavor = cellObj ? cellObj.flavor : null;
 
         console.log(`[Visual FX Log] [Clear Flash/Pop] Row: ${seq.row}, Col: ${c}, Flavor: ${cellFlavor ? cellFlavor.id : 'default'}`);
-
-        lineClearAnimState.brokenCells.add(key);
-        lineClearAnimState.poppingCells.set(key, {
-          popStartTime: performance.now(),
-          flavor: cellFlavor
-        });
 
         // Spawn particle confetti burst per cell step
         for (let i = 0; i < 4; i++) {
@@ -355,10 +352,6 @@ function updateLineClearAnimation(now) {
       const detect = lineClearAnimState.detect;
       const cascadeLevel = lineClearAnimState.cascadeLevel || 0;
 
-      // Clean up pop animation structures
-      game.brokenCells = null;
-      game.poppingCells = null;
-
       // Live game loop integrity assertion check
       const countBeforeClear = game.grid.reduce((acc, row) => acc + row.filter(c => c !== null).length, 0);
 
@@ -376,7 +369,7 @@ function updateLineClearAnimation(now) {
 
       // Start smooth proportional gravity drop settling transition
       lineClearAnimState.collapseStartTime = now;
-      lineClearAnimState.collapseDuration = result.maxDuration || 650;
+      lineClearAnimState.collapseDuration = result.maxDuration || 250;
 
       if (cascadeLevel > 0) {
         sound.playMonoCrunch(1, null);
@@ -414,31 +407,56 @@ function updateLineClearAnimation(now) {
   // STAGE 2: COLLAPSE_FALL (smooth fall animation driven directly by cell objects)
   if (lineClearAnimState.phase === 'COLLAPSE_FALL') {
     if (now - lineClearAnimState.collapseStartTime >= lineClearAnimState.collapseDuration) {
-      // Collapse fall finished! Enter PAUSE_SETTLE phase (350ms pause to let player see settled stack)
+      // Collapse fall finished! Enter PAUSE_SETTLE phase (250ms pause to let player see settled stack)
       lineClearAnimState.phase = 'PAUSE_SETTLE';
       lineClearAnimState.pauseStartTime = now;
-      console.log(`[Pacing State] Stage 2 Collapse Settle Complete. Entering PAUSE_SETTLE (350ms pause)...`);
+      console.log(`[Pacing State] Stage 2 Collapse Settle Complete. Entering PAUSE_SETTLE (250ms pause)...`);
     }
     return;
   }
 
-  // PAUSE 2: PAUSE_SETTLE (350ms delay before resuming gameplay)
+  // PAUSE 2: PAUSE_SETTLE (250ms delay before rechecking for newly completed rows)
   if (lineClearAnimState.phase === 'PAUSE_SETTLE') {
-    if (now - lineClearAnimState.pauseStartTime >= 350) {
-      console.log(`[Pure Tetris Line Clear] Line clear sequence complete. Resuming normal gameplay.`);
-      lineClearAnimState = null;
-      game.isClearing = false;
+    if (now - lineClearAnimState.pauseStartTime >= 250) {
+      // STAGE 3: RE-SCAN GRID FOR NEWLY COMPLETED ROWS (CASCADE)
+      const cascadeLevel = (lineClearAnimState.cascadeLevel || 0) + 1;
+      const nextDetect = game.detectLineClears();
 
-      if (!game.gameOver) {
-        game.spawnPiece();
-        if (game.gameOver) {
-          handleGameOver();
-        } else if (game.currentPiece) {
-          activePieceRef = game.currentPiece;
-          pieceVisualRow = game.currentPiece.y;
-        }
+      if (nextDetect.count > 0 && cascadeLevel < 10) {
+        console.log(`[Cascade Triggered] Level ${cascadeLevel}, newly completed rows: [${nextDetect.lines.join(', ')}]`);
+        sound.playMonoCrunch(1, null);
+        triggerEventBanner(`⚡ CASCADE COMBO x${cascadeLevel + 1}! ⚡`);
+
+        // Start new sweep clear cycle for the newly completed row!
+        lineClearAnimState = {
+          detect: nextDetect,
+          step: 0,
+          maxSteps: nextDetect.maxSteps,
+          stepDelay: 60,
+          lastStepTime: now,
+          phase: 'SWEEP',
+          cascadeLevel: cascadeLevel
+        };
+        advanceLineClearSweepStep();
       } else {
-        handleGameOver();
+        if (cascadeLevel >= 10 && nextDetect.count > 0) {
+          console.warn('[Tetris Cascade Warning] Maximum cascade safety cap (10) reached!');
+        }
+        console.log(`[Cascade Complete] No newly completed rows found. Resuming normal gameplay.`);
+        lineClearAnimState = null;
+        game.isClearing = false;
+
+        if (!game.gameOver) {
+          game.spawnPiece();
+          if (game.gameOver) {
+            handleGameOver();
+          } else if (game.currentPiece) {
+            activePieceRef = game.currentPiece;
+            pieceVisualRow = game.currentPiece.y;
+          }
+        } else {
+          handleGameOver();
+        }
       }
     }
     return;
