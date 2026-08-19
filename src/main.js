@@ -403,7 +403,18 @@ function updateLineClearAnimation(now) {
       const nextDetect = game.detectLineClears();
       const nextCascadeLevel = cascadeLevel + 1;
 
-      if (nextDetect.count > 0 && nextCascadeLevel < 10) {
+      const validNextLines = (nextDetect.lines || []).filter(r => {
+        const isActuallyFull = game.grid[r] && game.grid[r].every(cell => cell !== null);
+        if (!isActuallyFull) {
+          console.error(`[BUG CAUGHT] Live Cascade Row ${r} was about to be cleared but is NOT full. Contents:`, JSON.stringify(game.grid[r]));
+          return false;
+        }
+        return true;
+      });
+
+      if (validNextLines.length > 0 && nextCascadeLevel < 10) {
+        nextDetect.lines = validNextLines;
+        nextDetect.count = validNextLines.length;
         console.log(`[Cascade Clear Triggered] Level ${nextCascadeLevel}, newly completed rows: ${nextDetect.lines.length}`);
         lineClearAnimState = {
           detect: nextDetect,
@@ -557,7 +568,10 @@ function update(time = 0) {
           if (game.gameOver) {
             handleGameOver();
           } else {
-            processLineClears();
+            // Defer line clear animation by 1 frame so locked piece renders solid in row gap on screen
+            requestAnimationFrame(() => {
+              processLineClears();
+            });
           }
         } else {
           pieceVisualRow = nextVisualRow;

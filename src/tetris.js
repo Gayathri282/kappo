@@ -537,14 +537,19 @@ export class TetrisGame {
     for (let r = this.rows - 1; r >= 0; r--) {
       const isFull = this.grid[r] && this.grid[r].every(cell => cell !== null);
       if (isFull) {
-        clearedIndices.push(r);
-        const firstFlavorId = this.grid[r][0].flavor ? this.grid[r][0].flavor.id : null;
-        const isMono = this.grid[r].every(cell => cell && cell.flavor && cell.flavor.id === firstFlavorId);
-        clearedDetails.push({
-          lineIndex: r,
-          isMono: isMono,
-          flavor: this.grid[r][0].flavor
-        });
+        const isActuallyFull = this.grid[r] && this.grid[r].every(cell => cell !== null);
+        if (!isActuallyFull) {
+          console.error(`[BUG CAUGHT] Row ${r} was about to be cleared but is NOT full. Contents:`, JSON.stringify(this.grid[r]));
+        } else {
+          clearedIndices.push(r);
+          const firstFlavorId = this.grid[r][0].flavor ? this.grid[r][0].flavor.id : null;
+          const isMono = this.grid[r].every(cell => cell && cell.flavor && cell.flavor.id === firstFlavorId);
+          clearedDetails.push({
+            lineIndex: r,
+            isMono: isMono,
+            flavor: this.grid[r][0].flavor
+          });
+        }
       }
     }
 
@@ -811,8 +816,19 @@ export class TetrisGame {
       const detect = this.detectLineClears();
       if (detect.count === 0) break;
 
+      const validLines = detect.lines.filter(r => {
+        const isActuallyFull = this.grid[r] && this.grid[r].every(cell => cell !== null);
+        if (!isActuallyFull) {
+          console.error(`[BUG CAUGHT] Cascade Row ${r} was about to be cleared but is NOT full. Contents:`, JSON.stringify(this.grid[r]));
+          return false;
+        }
+        return true;
+      });
+
+      if (validLines.length === 0) break;
+
       iteration++;
-      const res = this.finishClearLines(detect.lines, detect.clearedDetails, detect.allClearedKeys, detect.chainCells);
+      const res = this.finishClearLines(validLines, detect.clearedDetails, detect.allClearedKeys, detect.chainCells);
       totalResult.count += res.count;
       totalResult.earnedScore += res.earnedScore;
       totalResult.lines.push(...res.lines);
