@@ -310,12 +310,13 @@ export class CanvasRenderer {
     const spriteSource = trimmedCanvas || rawImg;
     if (!spriteSource) return;
 
-    // Strict 1:1 Cell Footprint — packetWidth = cellWidth, packetHeight = cellHeight (Zero vertical overlap!)
-    const blockW = Math.ceil(cW * baseScale);
-    const blockH = Math.ceil(cH * baseScale);
+    // Strict 1:1 Cell Footprint with 101% coverage for zero subpixel gaps
+    const fillRatio = 1.01;
+    const blockW = Math.ceil(cW * fillRatio * baseScale);
+    const blockH = Math.ceil(cH * fillRatio * baseScale);
 
-    const px = Math.floor(offsetX + x * cW);
-    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH));
+    const px = Math.floor(offsetX + x * cW + (cW - blockW) / 2);
+    const py = Math.floor(customPy != null ? customPy : (offsetY + y * cH + (cH - blockH) / 2));
 
     const srcW = spriteSource.width || spriteSource.naturalWidth;
     const srcH = spriteSource.height || spriteSource.naturalHeight;
@@ -413,64 +414,24 @@ export class CanvasRenderer {
 
     if (game.currentPiece && !game.gameOver) {
       const piece = game.currentPiece;
-      const flavorId = piece.flavor ? piece.flavor.id : 'salted';
 
-      // Subtle Dynamic Laser Beam Gradient matching exact packet flavor
-      const FLAVOR_BEAM_COLORS = {
-        salted:   { start: 'rgba(250, 204, 21, 0.16)', mid: 'rgba(234, 179, 8, 0.06)',  end: 'rgba(250, 204, 21, 0)' },
-        chilli:   { start: 'rgba(34, 197, 94, 0.16)',  mid: 'rgba(22, 163, 74, 0.06)',  end: 'rgba(34, 197, 94, 0)' },
-        tomato:   { start: 'rgba(239, 68, 68, 0.16)',  mid: 'rgba(220, 38, 38, 0.06)',  end: 'rgba(239, 68, 68, 0)' },
-        dynamite: { start: 'rgba(168, 85, 247, 0.16)', mid: 'rgba(217, 70, 239, 0.06)', end: 'rgba(168, 85, 247, 0)' }
-      };
-      const beamColors = FLAVOR_BEAM_COLORS[flavorId] || FLAVOR_BEAM_COLORS.salted;
-
-      // 1. Ghost Piece
+      // 1. Ghost Landing Preview (Only drawn when active piece is falling above landing spot)
       const ghostY = game.getGhostY();
-      for (let r = 0; r < piece.matrix.length; r++) {
-        for (let c = 0; c < piece.matrix[r].length; c++) {
-          if (piece.matrix[r][c]) {
-            const gx = piece.x + c;
-            const gy = ghostY + r;
-            if (gy >= 0) {
-              this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true);
+      if (ghostY !== piece.y) {
+        for (let r = 0; r < piece.matrix.length; r++) {
+          for (let c = 0; c < piece.matrix[r].length; c++) {
+            if (piece.matrix[r][c]) {
+              const gx = piece.x + c;
+              const gy = ghostY + r;
+              if (gy >= 0) {
+                this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true);
+              }
             }
           }
         }
       }
 
-      // 2. Dynamic Laser Beam Drop Guide Line
-      const ghostYPixel = ghostY * this.cellHeight;
-      for (let r = 0; r < piece.matrix.length; r++) {
-        for (let c = 0; c < piece.matrix[r].length; c++) {
-          if (piece.matrix[r][c]) {
-            const colIndex = piece.x + c;
-            const beamX = colIndex * this.cellWidth;
-            const activeCellTopY = (piece.y + r) * this.cellHeight;
-            const beamHeight = ghostYPixel - activeCellTopY;
-
-            if (beamHeight > 4) {
-              const beamGrad = this.ctx.createLinearGradient(beamX, activeCellTopY, beamX, ghostYPixel);
-              beamGrad.addColorStop(0.0, beamColors.start);
-              beamGrad.addColorStop(0.5, beamColors.mid);
-              beamGrad.addColorStop(1.0, beamColors.end);
-
-              this.ctx.fillStyle = beamGrad;
-              this.ctx.fillRect(beamX, activeCellTopY, this.cellWidth, beamHeight);
-
-              this.ctx.strokeStyle = beamColors.start;
-              this.ctx.lineWidth = 1.0;
-              this.ctx.beginPath();
-              this.ctx.moveTo(beamX + 0.5, activeCellTopY);
-              this.ctx.lineTo(beamX + 0.5, ghostYPixel);
-              this.ctx.moveTo(beamX + this.cellWidth - 0.5, activeCellTopY);
-              this.ctx.lineTo(beamX + this.cellWidth - 0.5, ghostYPixel);
-              this.ctx.stroke();
-            }
-          }
-        }
-      }
-
-      // 3. Active Falling Piece (Rendered with continuous free-fall smooth Y motion)
+      // 2. Active Falling Piece (Rendered with continuous free-fall smooth Y motion)
       const activePieceBaseY = (continuousRow != null ? continuousRow : piece.y) * this.cellHeight;
       for (let r = 0; r < piece.matrix.length; r++) {
         for (let c = 0; c < piece.matrix[r].length; c++) {
