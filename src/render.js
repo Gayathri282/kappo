@@ -344,8 +344,12 @@ export class CanvasRenderer {
           if (piece.matrix[r][c]) {
             const bx = (piece.x + c) * this.cellWidth;
             const by = activePieceBaseY + r * this.cellHeight;
-            if (by > 0) {
-              const maxBeamH = this.cellHeight * 3;
+            const gridX = piece.x + c;
+            const gridY = Math.floor(visualRow) + r;
+
+            // Only draw beam if space above piece is empty (never overlay yellow beam on occupied blocks)
+            if (by > 0 && (gridY < 0 || gridY >= game.rows || !game.grid[gridY] || game.grid[gridY][gridX] === null)) {
+              const maxBeamH = this.cellHeight * 2;
               const beamH = Math.min(maxBeamH, by);
               const startY = by - beamH;
 
@@ -361,15 +365,20 @@ export class CanvasRenderer {
       }
       this.ctx.restore();
 
-      // 2b. Ghost piece (remains locked to exact discrete grid landing position)
-      const ghostY = game.getGhostY();
-      for (let r = 0; r < piece.matrix.length; r++) {
-        for (let c = 0; c < piece.matrix[r].length; c++) {
-          if (piece.matrix[r][c]) {
-            const gx = piece.x + c;
-            const gy = ghostY + r;
-            if (gy >= 0) {
-              this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true, false);
+      // 2b. Ghost piece (only render ghost landing preview on clean empty cells, never over occupied blocks)
+      if (!game.isClearing) {
+        const ghostY = game.getGhostY();
+        for (let r = 0; r < piece.matrix.length; r++) {
+          for (let c = 0; c < piece.matrix[r].length; c++) {
+            if (piece.matrix[r][c]) {
+              const gx = piece.x + c;
+              const gy = ghostY + r;
+              if (gy >= 0 && gy < game.rows && gx >= 0 && gx < game.cols) {
+                // Ensure target cell is empty before rendering ghost preview
+                if (game.grid[gy] && game.grid[gy][gx] === null) {
+                  this.drawTile(this.ctx, gx, gy, this.cellWidth, piece.flavor, true, false);
+                }
+              }
             }
           }
         }

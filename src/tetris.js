@@ -403,13 +403,28 @@ export class TetrisGame {
     return ghostY;
   }
 
+  validatePhysicsNoGaps() {
+    let floatingCount = 0;
+    for (let r = 0; r < this.rows - 1; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (this.grid[r][c] !== null && this.grid[r + 1][c] === null) {
+          floatingCount++;
+          console.error(`[CRITICAL PHYSICS BUG] Floating block detected at Row ${r}, Col ${c} with empty gap at Row ${r + 1}!`);
+        }
+      }
+    }
+    return floatingCount;
+  }
+
   lockPiece() {
     if (this.isLocking || !this.currentPiece) return;
     this.isLocking = true;
     const piece = this.currentPiece;
 
-    // Lock piece at exact integer ghost landing row
-    piece.y = this.getGhostY();
+    // Recalculate landing row dynamically for piece's exact current x and matrix
+    const landingY = this.getGhostY();
+    piece.y = landingY;
+
     const intX = Math.floor(piece.x);
     const intY = Math.floor(piece.y);
 
@@ -437,6 +452,12 @@ export class TetrisGame {
     if (lockedAboveTop) {
       this.gameOver = true;
     }
+
+    // Auto-compact columns after piece lock to guarantee gravity physics integrity
+    this.collapseGrid();
+
+    // Run live physics audit check for floating blocks
+    this.validatePhysicsNoGaps();
 
     this.timeSinceLastPlacement = 0;
     this.currentPiece = null;
@@ -628,6 +649,9 @@ export class TetrisGame {
     if (countBefore !== countAfter) {
       console.warn(`[Collapse Bug Warning] Occupied cell mismatch detected! Before: ${countBefore}, After: ${countAfter}`);
     }
+
+    // Run physics gap audit check
+    this.validatePhysicsNoGaps();
   }
 
   // Collapse clearing rows & apply score/level stats after break animation
@@ -710,6 +734,7 @@ export class TetrisGame {
       blastedCells: [],
       clearedDetails: [],
       monoCount: 0,
+      chainCount: 0,
       earnedScore: 0,
       leveledUp: false,
       cascades: 0
@@ -729,6 +754,7 @@ export class TetrisGame {
       if (res.blastedCells) totalResult.blastedCells.push(...res.blastedCells);
       if (res.clearedDetails) totalResult.clearedDetails.push(...res.clearedDetails);
       if (res.monoCount > 0) totalResult.monoCount += res.monoCount;
+      if (res.chainCount > 0) totalResult.chainCount += res.chainCount;
       if (res.leveledUp) totalResult.leveledUp = true;
       totalResult.cascades = iteration;
     }
