@@ -425,62 +425,23 @@ function updateLineClearAnimation(now) {
     return;
   }
 
-  // PAUSE 2: PAUSE_SETTLE (350ms delay before rechecking for newly completed rows)
+  // PAUSE 2: PAUSE_SETTLE (350ms delay before resuming gameplay)
   if (lineClearAnimState.phase === 'PAUSE_SETTLE') {
     if (now - lineClearAnimState.pauseStartTime >= 350) {
-      // STAGE 3: RE-SCAN GRID FOR NEWLY COMPLETED ROWS
-      const cascadeLevel = lineClearAnimState.cascadeLevel || 0;
-      const nextDetect = game.detectLineClears();
-      const nextCascadeLevel = cascadeLevel + 1;
+      console.log(`[Pure Tetris Line Clear] Line clear sequence complete. Resuming normal gameplay.`);
+      lineClearAnimState = null;
+      game.isClearing = false;
 
-      const validNextLines = (nextDetect.lines || []).filter(r => {
-        const isActuallyFull = game.grid[r] && game.grid[r].every(cell => cell !== null);
-        if (!isActuallyFull) {
-          console.error(`[BUG CAUGHT] Live Cascade Row ${r} was about to be cleared but is NOT full. Contents:`, JSON.stringify(game.grid[r]));
-          return false;
-        }
-        return true;
-      });
-
-      if (validNextLines.length > 0 && nextCascadeLevel < 10) {
-        nextDetect.lines = validNextLines;
-        nextDetect.count = validNextLines.length;
-        console.log(`[Cascade Pacing Audit] Cascade Level ${nextCascadeLevel} Triggered! Newly completed row(s) verified 100% full: [${validNextLines.join(', ')}]`);
-
-        // Start new cascade cycle with full 3-stage pacing!
-        lineClearAnimState = {
-          detect: nextDetect,
-          step: 0,
-          maxSteps: nextDetect.maxSteps,
-          stepDelay: 60,
-          lastStepTime: now,
-          brokenCells: new Set(),
-          poppingCells: new Map(),
-          phase: 'SWEEP',
-          cascadeLevel: nextCascadeLevel
-        };
-        game.brokenCells = lineClearAnimState.brokenCells;
-        game.poppingCells = lineClearAnimState.poppingCells;
-        advanceLineClearSweepStep();
-      } else {
-        if (nextCascadeLevel >= 10 && nextDetect.count > 0) {
-          console.warn('[Tetris Cascade Warning] Maximum cascade safety cap (10) reached!');
-        }
-        console.log(`[Cascade Complete Pacing] No newly completed rows found. Resuming normal gameplay.`);
-        lineClearAnimState = null;
-        game.isClearing = false;
-
-        if (!game.gameOver) {
-          game.spawnPiece();
-          if (game.gameOver) {
-            handleGameOver();
-          } else if (game.currentPiece) {
-            activePieceRef = game.currentPiece;
-            pieceVisualRow = game.currentPiece.y;
-          }
-        } else {
+      if (!game.gameOver) {
+        game.spawnPiece();
+        if (game.gameOver) {
           handleGameOver();
+        } else if (game.currentPiece) {
+          activePieceRef = game.currentPiece;
+          pieceVisualRow = game.currentPiece.y;
         }
+      } else {
+        handleGameOver();
       }
     }
     return;
