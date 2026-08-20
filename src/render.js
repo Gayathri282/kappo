@@ -120,8 +120,8 @@ function trimImageWhitespace(flavorId, img) {
     normalizedCanvas.height = TARGET_CANVAS_H;
     const normCtx = normalizedCanvas.getContext('2d');
 
-    // Scale trimmed artwork using CONTAIN fit so 100% of the complete packet artwork is fully visible inside 600x800 canvas without cropping
-    const scale = Math.min(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
+    // Scale trimmed artwork using COVER fit (Math.max) so artwork fills 100% of 600x800 canvas edge-to-edge with ZERO transparent padding
+    const scale = Math.max(TARGET_CANVAS_W / cropW, TARGET_CANVAS_H / cropH);
     const drawW = cropW * scale;
     const drawH = cropH * scale;
     const drawX = (TARGET_CANVAS_W - drawW) / 2;
@@ -132,7 +132,7 @@ function trimImageWhitespace(flavorId, img) {
 
     TRIMMED_PACKET_CANVASES[flavorId] = normalizedCanvas;
     PACKET_ASPECT_RATIOS[flavorId] = 1.3333;
-    console.log(`[Full Packet Canvas] ${flavorId}: 100% complete packet artwork centered in 600x800px cell (3:4 Ratio, Zero Cropping)`);
+    console.log(`[Full Cover Packet Canvas] ${flavorId}: 100% cover filled in 600x800px cell (Zero margin gaps)`);
   } catch (e) {
     console.warn(`[Packet Trim Warning] ${flavorId}:`, e);
     if (img.naturalWidth && img.naturalHeight) {
@@ -186,21 +186,24 @@ export class CanvasRenderer {
     const verticalMargin = 20;
     const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
-    // 2. Compute play grid target width dynamically: calc(100% - 50px) with 25px side margins
-    const targetW = Math.max(200, viewportW - 50);
+    // 2. Compute play grid target width dynamically: calc(100% - 30px) on mobile, up to 720px on desktop
+    const isMobile = viewportW <= 768;
+    const targetW = isMobile
+      ? Math.max(240, viewportW - 30)
+      : Math.min(viewportW - 50, 720);
 
-    // 3. Fixed constant column count (GRID_COLS = 9)
+    // 3. Fixed constant column count (GRID_COLS = 8)
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
     // 4. Lock packet portrait aspect ratio to 3:4 (1.3333)
     const PACKET_ASPECT = 1.3333; // 4/3 height-to-width ratio
 
-    // cellWidth scales dynamically with grid target width
+    // Calculate cellWidth directly from targetW:
     let cellW = targetW / cols;
     let cellH = cellW * PACKET_ASPECT;
 
-    // Height constraint: if total board height exceeds available space, scale cellH & cellW down in lockstep
+    // Height constraint: if total board height exceeds available space, scale down maintaining exact 3:4 aspect ratio
     if (cellH * rows > availH) {
       cellH = availH / rows;
       cellW = cellH / PACKET_ASPECT;
