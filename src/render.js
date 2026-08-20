@@ -186,23 +186,21 @@ export class CanvasRenderer {
     const verticalMargin = 20;
     const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
 
-    // 2. Compute target board width DIRECTLY from viewport (MAXIMUM playgrid width for huge cells & packets)
-    const isMobile = viewportW <= 768;
-    const targetW = isMobile
-      ? Math.min(viewportW * 0.98, 800)
-      : Math.min(viewportW * 0.88, 1000);
+    // 2. Compute play grid target width dynamically: calc(100% - 50px) with 25px side margins
+    const targetW = Math.max(200, viewportW - 50);
 
-    // 3. Grid dimensions: 9 columns x 15 rows for 9-column layout
+    // 3. Fixed constant column count (GRID_COLS = 9)
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
 
-    // 4. Match CELL ASPECT RATIO exactly to packet's 3:4 portrait aspect ratio (1.3333)
+    // 4. Lock packet portrait aspect ratio to 3:4 (1.3333)
     const PACKET_ASPECT = 1.3333; // 4/3 height-to-width ratio
 
+    // cellWidth scales dynamically with grid target width
     let cellW = targetW / cols;
     let cellH = cellW * PACKET_ASPECT;
 
-    // Height constraint: if board exceeds available height, scale down maintaining exact 3:4 aspect ratio
+    // Height constraint: if total board height exceeds available space, scale cellH & cellW down in lockstep
     if (cellH * rows > availH) {
       cellH = availH / rows;
       cellW = cellH / PACKET_ASPECT;
