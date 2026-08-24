@@ -293,6 +293,7 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+  filter: drop-shadow(0 0 10px rgba(0, 195, 255, 0.5));
 }
 
 .brand-logo-img {
@@ -1000,7 +1001,7 @@ body {
   max-width: 180px;
   height: auto;
   margin: 0 auto 4px;
-  filter: drop-shadow(0 0 10px rgba(0, 195, 255, 0.5));
+  /* filter: drop-shadow(0 0 10px rgba(0, 195, 255, 0.5)); */
 }
 
 .overlay-subtitle-stacks {
@@ -1008,7 +1009,7 @@ body {
   font-size: 1.4rem;
   font-weight: 900;
   letter-spacing: 3px;
-  color: #00C3FF;
+  /* color: #00C3FF; */
   text-shadow: 0 0 12px rgba(0, 195, 255, 0.8);
   margin: 0 0 10px;
 }
@@ -1146,6 +1147,7 @@ body {
   box-shadow: 0 4px 15px rgba(0, 195, 255, 0.4);
   transition: all 0.2s ease;
   width: 100%;
+  margin-top: 11px;
 }
 
 .btn-primary:hover {
