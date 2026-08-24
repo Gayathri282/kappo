@@ -244,18 +244,16 @@ body {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
   padding: 4px 10px;
   justify-content: space-between;
   align-items: center;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-sizing: border-box;
 }
 
@@ -314,7 +312,7 @@ body {
 }
 
 .brand-titles {
-  display: flex;
+  display: none;
   flex-direction: column;
 }
 
@@ -409,42 +407,76 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
+.header-action-btn,
 .sound-pill-btn,
-.pause-pill-btn,
-.boost-pill-btn {
-  background: #05070e;
-  border: 2px solid rgba(0, 195, 255, 0.4);
-  border-radius: 10px;
-  width: 40px;
-  height: 40px;
+.pause-pill-btn {
+  width: 44px;
+  height: 44px;
+  background: #050814;
+  border: 2.5px solid #00C3FF;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(0, 195, 255, 0.25);
-  transition: all 0.2s ease;
+  box-shadow: 0 0 15px rgba(0, 195, 255, 0.3) !important;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  padding: 0;
+  flex-shrink: 0;
 }
 
-.boost-pill-btn {
-  border-color: rgba(255, 215, 0, 0.6);
-  color: #FFD700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+.header-action-btn:hover,
+.sound-pill-btn:hover,
+.pause-pill-btn:hover {
+  background: rgba(0, 195, 255, 0.25);
+  border-color: #00C3FF;
+  box-shadow: 0 0 22px rgba(0, 195, 255, 0.6) !important;
 }
 
-.boost-pill-btn.active,
-.boost-pill-btn:active {
-  background: rgba(255, 215, 0, 0.35);
-  border-color: #FFA502;
-  transform: scale(0.95);
+.header-action-btn:active,
+.sound-pill-btn:active,
+.pause-pill-btn:active {
+  transform: scale(0.92);
+  background: #00C3FF;
+  color: #050814;
 }
 
 .sound-icon,
-.boost-icon {
-  font-size: 1rem;
+.music-icon,
+.pause-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.header-icon-svg {
+  width: 22px;
+  height: 22px;
+  stroke: #FFFFFF;
+  stroke-width: 2.2;
+  filter: drop-shadow(0 0 6px rgba(0, 195, 255, 0.8));
+  transition: all 0.15s ease;
+}
+
+.header-action-btn:hover .header-icon-svg,
+.sound-pill-btn:hover .header-icon-svg,
+.pause-pill-btn:hover .header-icon-svg {
+  stroke: #00C3FF;
+  filter: drop-shadow(0 0 10px rgba(0, 195, 255, 1));
+}
+
+.header-action-btn:active .header-icon-svg,
+.sound-pill-btn:active .header-icon-svg,
+.pause-pill-btn:active .header-icon-svg {
+  stroke: #050814;
+  filter: drop-shadow(0 0 12px #FFFFFF);
 }
 
 /* Compact Horizontal Top HUD Bar */

@@ -173,37 +173,36 @@ export class CanvasRenderer {
   resizeToContainer(container, game = null) {
     if (!container) return;
 
+    // 1. Measure header & control deck heights to ensure no vertical overlap
+    const headerEl = document.querySelector('.game-header');
+    const controlsEl = document.getElementById('touch-controls-deck');
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 70;
+    const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 100;
+
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    // 1. Measure header & control deck heights
-    const headerEl = document.querySelector('.game-header');
-    const controlsEl = document.getElementById('touch-controls-deck');
-    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 80;
-    const controlsH = controlsEl ? controlsEl.getBoundingClientRect().height : 90;
+    // Available vertical space for playfield grid with 24px safety margins
+    const availH = Math.max(150, viewportH - headerH - controlsH - 24);
 
-    // Available vertical space for the board (viewport minus header, controls, margins)
-    const verticalMargin = 20;
-    const availH = Math.max(100, viewportH - headerH - controlsH - verticalMargin);
+    // Parent container available width
+    const parent = container.parentElement;
+    const parentW = parent && parent.clientWidth > 0 ? parent.clientWidth : viewportW;
+    const availW = Math.min(parentW, viewportW);
 
-    // 2. Compute play grid target width dynamically: calc(100% - 30px) on mobile, up to 720px on desktop
-    const isMobile = viewportW <= 768;
-    const targetW = isMobile
-      ? Math.max(240, viewportW - 30)
-      : Math.min(viewportW - 50, 720);
+    // Target grid width based on available width (calc(100% - 40px))
+    const targetW = Math.max(200, availW - 40);
 
-    // 3. Fixed constant column count (GRID_COLS = 8)
     const cols = game ? game.cols : GRID_COLS;
     const rows = game ? game.rows : GRID_ROWS;
+    const PACKET_ASPECT = 1.3333; // 3:4 aspect ratio
 
-    // 4. Lock packet portrait aspect ratio to 3:4 (1.3333)
-    const PACKET_ASPECT = 1.3333; // 4/3 height-to-width ratio
-
-    // Calculate cellWidth directly from targetW:
+    // Calculate cell dimensions from target width
     let cellW = targetW / cols;
     let cellH = cellW * PACKET_ASPECT;
 
-    // Height constraint: if total board height exceeds available space, scale down maintaining exact 3:4 aspect ratio
+    // Height containment: if total board height (cellH * rows) would exceed availH,
+    // scale cell dimensions down proportionally so all 4 sides of the grid border fit inside the viewport
     if (cellH * rows > availH) {
       cellH = availH / rows;
       cellW = cellH / PACKET_ASPECT;
@@ -220,7 +219,7 @@ export class CanvasRenderer {
       game.setDimensions(cols, rows);
     }
 
-    // 5. Set container dimensions via inline style
+    // Set container dimensions via inline style
     container.style.width  = `${this.boardWidth}px`;
     container.style.height = `${this.boardHeight}px`;
     container.style.overflow = 'hidden';
@@ -230,15 +229,17 @@ export class CanvasRenderer {
     this.offsetX = 0;
     this.offsetY = 0;
 
-    // 6. Set canvas resolution (retina-aware)
+    // Set canvas resolution (retina-aware)
     this.canvas.width  = Math.floor(this.boardWidth  * this.dpr);
     this.canvas.height = Math.floor(this.boardHeight * this.dpr);
+    this.canvas.style.width  = `${this.boardWidth}px`;
+    this.canvas.style.height = `${this.boardHeight}px`;
 
     const particleCanvas = document.getElementById('particle-canvas');
     if (particleCanvas) {
-      particleCanvas.width = this.canvas.width;
+      particleCanvas.width  = this.canvas.width;
       particleCanvas.height = this.canvas.height;
-      particleCanvas.style.width = `${this.boardWidth}px`;
+      particleCanvas.style.width  = `${this.boardWidth}px`;
       particleCanvas.style.height = `${this.boardHeight}px`;
     }
 

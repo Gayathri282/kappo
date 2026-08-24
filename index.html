@@ -34,7 +34,7 @@
           <div class="kappo-logo-shield">
             <img src="/assets/kappo_logo.png" alt="Kappo Logo" class="brand-logo-img" />
           </div>
-          <div class="brand-titles">
+          <div class="brand-titles" style="display: none;">
             <h1 class="brand-title"><span class="title-kappo">KAPPO</span> <span class="title-stacks">STACKS</span></h1>
             <span class="brand-tagline">STACK. CLEAR. CRUNCH!</span>
           </div>
@@ -54,14 +54,31 @@
 
         <!-- Header Actions: Sound, Music & Pause -->
         <div class="header-actions">
-          <button id="btn-sound" class="icon-btn sound-pill-btn" title="Toggle Sound SFX" aria-label="Toggle Sound SFX">
-            <span class="sound-icon">🔊</span>
+          <button id="btn-sound" class="header-action-btn sound-pill-btn" title="Toggle Sound SFX" aria-label="Toggle Sound SFX">
+            <span class="sound-icon">
+              <svg class="header-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              </svg>
+            </span>
           </button>
-          <button id="btn-music" class="icon-btn sound-pill-btn" title="Toggle Music" aria-label="Toggle Music">
-            <span class="music-icon">🎵</span>
+          <button id="btn-music" class="header-action-btn sound-pill-btn" title="Toggle Music" aria-label="Toggle Music">
+            <span class="music-icon">
+              <svg class="header-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </span>
           </button>
-          <button id="btn-pause" class="icon-btn pause-pill-btn" title="Pause Game" aria-label="Pause Game">
-            <span class="pause-icon">❚❚</span>
+          <button id="btn-pause" class="header-action-btn pause-pill-btn" title="Pause Game" aria-label="Pause Game">
+            <span class="pause-icon">
+              <svg class="header-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
